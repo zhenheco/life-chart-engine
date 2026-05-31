@@ -1,131 +1,385 @@
+> 🌐 **English** · [繁體中文](./README.zh-TW.md) · [简体中文](./README.zh-CN.md) · [日本語](./README.ja.md) · [한국어](./README.ko.md) · [Español](./README.es.md) · [Français](./README.fr.md) · [Deutsch](./README.de.md) · [Português](./README.pt.md) · [Русский](./README.ru.md) · [العربية](./README.ar.md) · [हिन्दी](./README.hi.md) · [Bahasa Indonesia](./README.id.md) · [Tiếng Việt](./README.vi.md) · [ไทย](./README.th.md) · [Italiano](./README.it.md) · [Türkçe](./README.tr.md) · [Nederlands](./README.nl.md) · [Polski](./README.pl.md)
+
 # life-chart-engine
 
-> 一份出生資料，一次算出 **西洋星盤 + 人類圖 + 紫微斗數** 三套盤面，並以原生天文／曆法計算（非查表、非記憶），結果可重現、可交叉驗證。
+**Deterministic native computation of three life-chart systems — Western natal astrology, 人類圖 (Human Design), and 紫微斗數 (Zi Wei Dou Shu) — from a single birth record.**
 
-`life-chart-engine` 是一個小巧的命令列引擎。給它出生的「日期、時間、經緯度、時區」，它用 [Swiss Ephemeris](https://www.astro.com/swisseph/) 算行星與宮位、用 88° 太陽弧推導人類圖、用 [py-iztro](https://github.com/x-haose/py-iztro) 排紫微斗數，輸出一份結構化盤面。
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
+[![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
 
-支援兩種輸出：
+`life-chart-engine` is a small, offline command-line tool. You give it one person's birth data — date, time, timezone, and place coordinates — and it computes three independent chart systems in one pass, then emits either a human-readable Markdown report or a structured JSON object for programs and AI agents to consume.
 
-- **Markdown**（預設）— 給人看。
-- **JSON**（`--json`）— 給 AI agent 看。介面契約見 [`AGENTS.md`](./AGENTS.md)。
-
----
-
-## 三套系統
-
-| 系統 | 引擎 | 算出什麼 |
-|------|------|----------|
-| 西洋星盤 | Swiss Ephemeris（Tropical / Placidus / Moshier） | 上升、天頂、十大行星 + 南北交點（含落宮與逆行）、12 宮頭、主要相位 |
-| 人類圖 Human Design | Swiss Ephemeris（太陽退 88°） | 類型、權威、角色、定義、定義／開放中心、通道、輪迴交叉、26 閘門（個性盤＋設計盤） |
-| 紫微斗數 | py-iztro | 五行局、命主、身主、12 宮全星（含亮度與四化）、大限／流年 |
-
-類型／權威／定義等並非寫死，而是由「定義中心的連通圖」自動推導。
+It is built for people who want **reproducible, verifiable** chart calculations rather than a black-box web app: practitioners, developers building self-awareness tools, and AI agents that need a pure compute step. Every number comes from real astronomical computation (Swiss Ephemeris) and a real 紫微斗數 library (py-iztro) — not from a remote service, not from cached lookups, and never over the network.
 
 ---
 
-## 為什麼要原生計算
+## What it computes
 
-- **可重現**：同一組輸入永遠得到同一份盤；不靠模型記憶、不會「每次講不一樣」。
-- **精度高**：行星位置與紫微星曜入宮由天文與曆法決定，不是估算。
-- **可交叉驗證**：三套系統同時指向同一件事的訊號，才當高可信主幹；單一系統細節僅供參考。
+The engine runs three systems against the **same birth moment**, so their outputs can corroborate one another. Each system answers a different kind of question:
+
+| System | What it is (plain English) | What the engine yields |
+|--------|----------------------------|------------------------|
+| **Western natal** (Tropical / Placidus) | Classical Western astrology — where the planets sat against the zodiac at your birth, divided into 12 houses. | Ascendant + Midheaven, 12 planets/points (太陽 → 南交點) with sign, degree, house and retrograde flag, all 12 house cusps, and every detected aspect (合相/六分/四分/三分/對分) sorted by tightness. |
+| **人類圖 Human Design** | A modern synthesis of astrology, the I-Ching, and the chakra system. Describes how your energy is "wired" via gates, channels, and centers. | Type, Authority, Profile, Definition, Incarnation Cross, the 88°-earlier Design date, defined/open centers, defined channels, and per-planet gate.line activations for both the Personality and Design charts. |
+| **紫微斗數 Zi Wei Dou Shu** | A traditional Chinese astrology system that maps fate onto a 12-palace board, populated by named stars. | 五行局 (Five Elements Class), 命主 (soul) / 身主 (body), the 時辰 hour index, and per-palace data — ganzhi, 命/身 flags, decadal age range, and major/minor/adjective stars (with brightness and 四化). Optionally a best-effort 大限/流年 horoscope. |
+
+Type, Authority, and Definition in Human Design are **not hardcoded** — they are derived from the connectivity graph of the defined centers.
 
 ---
 
-## 安裝
+## Why native calculation
 
-需要 [`uv`](https://docs.astral.sh/uv/)。引擎依賴 py-iztro，其原生套件（pythonmonkey / pydantic-core）**只支援 CPython 3.12**，較新版本（3.13+/3.14）無法編譯，請務必走 3.12 venv。
+This engine does the real math instead of approximating or calling out to a service. That choice buys three properties that matter for any serious chart tool:
+
+- **Deterministic.** The same birth input always produces the same output, byte-for-byte. There is no randomness, no model, no rounding drift between runs.
+- **Reproducible.** Anyone with the repo and the same inputs can regenerate your exact chart. Calculations use Swiss Ephemeris (Moshier model) for the sky and py-iztro for 紫微斗數 — both deterministic.
+- **Cross-verifiable.** Because three independent systems are computed from one birth moment, you can triangulate. **When all three systems point at the same signal, treat it as high confidence. When only one system shows a detail, treat it as a reference point, not a conclusion.** This is the engine's core design principle — it produces facts to cross-read, not a single verdict.
+
+---
+
+## Quick start
+
+### One-line install (recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
+```
+
+Installs into `~/.life-chart-engine` (override with `LIFE_CHART_DIR`). No `sudo`, no system-wide changes — it only clones the repo and builds an isolated CPython 3.12 venv. Requires `git` and [`uv`](https://docs.astral.sh/uv/). Re-run any time to update to the latest version.
+
+### From source
 
 ```bash
 git clone https://github.com/zhenheco/life-chart-engine.git
 cd life-chart-engine
-bash setup.sh          # 建立 .venv（Python 3.12）+ 安裝相依 + 冒煙測試
+bash setup.sh
 ```
 
-`setup.sh` 等同：
+### What `setup.sh` does
+
+It runs under `set -euo pipefail` and performs five steps:
+
+1. **Resolves the venv location** — `${LIFE_VENV:-<repo>/.venv}`. Set the `LIFE_VENV` env var to override; the default `.venv/` is git-ignored.
+2. **Preflight: requires [`uv`](https://docs.astral.sh/uv/)** — if `uv` is not on `PATH` it exits `1` and prints the install hint:
+   ```
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+3. **Creates a CPython 3.12 venv** — `uv venv --python 3.12 "$VENV"` (see [Why CPython 3.12](#why-cpython-312-specifically)).
+4. **Installs pinned dependencies** — `uv pip install --python "$VENV/bin/python" -r requirements.txt`.
+5. **Runs a smoke test** — executes the engine once with fixed sample inputs (discarding stdout) and prints `OK — engine runs.` on success. It also prints usage hints for both modes.
+
+### Manual `uv` steps (no `setup.sh`)
 
 ```bash
+# 1. Create CPython 3.12 venv (default <repo>/.venv; override with LIFE_VENV)
 uv venv --python 3.12 .venv
+
+# 2. Install pinned deps
 uv pip install --python .venv/bin/python -r requirements.txt
+
+# 3. (Optional) smoke test
+.venv/bin/python scripts/chart_engine.py --json \
+  --name "Setup Test" --gender 女 --date 1990-06-15 --time 08:30 \
+  --tz 8 --lat 25.0 --lon 121.5 --target 2025-01-01 >/dev/null
+```
+
+The only two direct dependencies are pinned in `requirements.txt`:
+
+```
+pyswisseph==2.10.3.2
+py-iztro==0.1.5
 ```
 
 ---
 
-## 使用
+## Why CPython 3.12 specifically
 
-### 給人看（Markdown）
+You must run the engine on **CPython 3.12** — not 3.13, not 3.14. The reason is stated identically in `requirements.txt` and `setup.sh`:
+
+> py-iztro's native deps (**pythonmonkey / pydantic-core**) have **no wheels for 3.13+/3.14 and fail to build from source**. Pin to 3.12.
+
+In short: `py-iztro` depends on native extensions (`pythonmonkey`, `pydantic-core`) whose prebuilt wheels stop at 3.12. On 3.13/3.14 there are no wheels and the source build fails. That is exactly why `setup.sh` calls `uv venv --python 3.12`, and why you should always invoke the engine with the project venv's Python (`<repo>/.venv/bin/python`), never the system `python3`.
+
+---
+
+## Usage
+
+The engine has two modes, selected by the presence of the `--json` flag.
+
+### Human mode (Markdown)
+
+Omit `--json` to get a readable console report. Use your venv's Python:
 
 ```bash
 .venv/bin/python scripts/chart_engine.py \
-  --name "小明" --gender 女 \
+  --name "Sample" --gender 女 \
   --date 1990-06-15 --time 08:30 \
-  --tz 8 --lat 25.0330 --lon 121.5654 \
+  --tz 8 --lat 25.033 --lon 121.5654 \
   --target 2025-01-01
 ```
 
-### 給 agent 看（JSON）
+Trimmed real sample (aspects are capped at top-10 in Markdown mode):
+
+```
+### Sample｜女｜1990-06-15 08:30 (UTC+8)
+
+【西洋星盤 Tropical/Placidus】
+上升 獅子 08°29' ｜ 天頂 金牛 04°22'
+  太陽   雙子 23°40'  11宮
+  月亮   雙魚 09°00'  8宮
+  ...
+  主要相位: 北交點-南交點對分(0.0°)；北交點-上升對分(0.4°)；南交點-上升合相(0.4°)；木星-冥王星三分(0.4°)；月亮-天王星六分(0.8°)…
+
+【人類圖 Human Design】
+類型 投射者 ｜ 權威 自我投射型權威 ｜ 角色 1/3 ｜ 定義 一分人(單一定義)
+輪迴交叉 右角度交叉（12/11 | 36/6）
+定義中心 G,喉 ｜ 開放中心 情緒,意志,根,脾,薦骨,邏輯,頭
+設計日期 1990-03-16
+通道 ['13-33']
+
+【紫微斗數 py-iztro】
+五行局 土五局 ｜ 命主 祿存 ｜ 身主 火星
+  命宮   戊寅  (5-14): 七殺(廟)｜天廚 蜚廉
+  父母   己卯  (115-124): 天同(平)[忌]｜地劫 天喜 咸池 恩光 天德
+  ...
+```
+
+### Agent mode (JSON)
+
+Add `--json` to get one JSON object on stdout and nothing else — ideal for programs and AI agents:
 
 ```bash
 .venv/bin/python scripts/chart_engine.py --json \
   --name "小明" --gender 女 \
   --date 1990-06-15 --time 08:30 \
-  --tz 8 --lat 25.0330 --lon 121.5654
+  --tz 8 --lat 25.033 --lon 121.5654 \
+  --target 2025-01-01
 ```
 
-輸出單一 JSON 物件（`ok / input / western / human_design / ziwei / meta`）。完整欄位 schema、exit code、錯誤格式見 [`AGENTS.md`](./AGENTS.md)；範例輸出見 [`examples/`](./examples/)。
+Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
 
-### 參數
-
-| 旗標 | 必填 | 說明 |
-|------|:---:|------|
-| `--name` | 否 | 純標籤，只用於顯示 |
-| `--gender` | 是* | `男` / `女`。紫微用於大限方向與命主／身主；星盤與人類圖不需要 |
-| `--date` | 是 | 出生日期（**西曆／陽曆**）`YYYY-MM-DD`。只有農曆時請先換算 |
-| `--time` | 是 | 出生時間 `HH:MM`（24 小時，**本地時鐘時間**） |
-| `--tz` | 是 | 出生地當時的 UTC 時差，**必須含夏令時**（台灣 1980 後固定 `8`） |
-| `--lat` / `--lon` | 是 | 緯度／經度（城市級即可，誤差對盤面 < 0.1°） |
-| `--target` | 否 | 紫微運限參考日 `YYYY-MM-DD`，預設帶入內建值，通常傳「今天」 |
-
-\* 省略時使用內建範例值。實際排盤請一律明確傳入。
-
-> ⚠️ **時區與夏令時是最常見的錯誤來源。** `--tz` 是「出生地、出生當下」的 UTC 時差。非台灣、或 1980 年前出生，務必查證當年是否實施日光節約時間。引擎不會自己查城市時區，由呼叫端（人或 agent）負責換算。
+```json
+{
+  "ok": true,
+  "schema_version": "1.0",
+  "input": {
+    "name": "小明", "gender": "女",
+    "date": "1990-06-15", "time": "08:30",
+    "tz_offset": 8.0, "lat": 25.033, "lon": 121.5654,
+    "target": "2025-01-01"
+  },
+  "western": {
+    "system": "Tropical / Placidus / Moshier",
+    "ascendant": { "lon": 128.483, "sign": "獅子", "deg": 8, "min": 29, "label": "獅子 08°29'" },
+    "midheaven": { "lon": 34.3665, "sign": "金牛", "deg": 4, "min": 22, "label": "金牛 04°22'" },
+    "planets": [
+      { "name": "太陽", "retrograde": false, "house": 11, "lon": 83.6719, "sign": "雙子", "deg": 23, "min": 40, "label": "雙子 23°40'" }
+    ],
+    "houses": [
+      { "house": 1, "lon": 128.483, "label": "獅子 08°29'" }
+    ],
+    "aspects": [
+      { "a": "北交點", "b": "南交點", "type": "對分", "orb": 0.0 },
+      { "a": "木星", "b": "冥王星", "type": "三分", "orb": 0.3744 }
+    ]
+  },
+  "human_design": {
+    "type": "投射者",
+    "authority": "自我投射型權威",
+    "profile": "1/3",
+    "definition": "一分人(單一定義)",
+    "incarnation_cross": "右角度交叉（12/11 | 36/6）",
+    "design_date": "1990-03-16",
+    "defined_centers": ["G", "喉"],
+    "open_centers": ["情緒", "意志", "根", "脾", "薦骨", "邏輯", "頭"],
+    "channels": ["13-33"],
+    "gates": [
+      { "planet": "☉", "personality": { "gate": 12, "line": 1 }, "design": { "gate": 36, "line": 3 } }
+    ]
+  },
+  "ziwei": {
+    "five_elements_class": "土五局",
+    "soul": "祿存",
+    "body": "火星",
+    "hour_index": 4,
+    "palaces": [
+      {
+        "name": "命宮", "ganzhi": "戊寅", "flags": "", "decadal_range": "5-14",
+        "major_stars": ["七殺(廟)"], "minor_stars": [], "adjective_stars": ["天廚", "蜚廉"]
+      }
+    ],
+    "horoscope": { "decadal": { "...": "best-effort, may be null" } }
+  },
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+}
+```
 
 ---
 
-## 精準度分級
+## CLI flags reference
 
-| 可信度 | 項目 |
-|--------|------|
-| 最高（天文／曆法決定） | 行星位置；紫微星入宮、命宮／身宮、五行局、生年四化 |
-| 高（依賴出生時間精準度） | 上升、宮位、人類圖爻線、紫微時辰 |
-| 高（已驗證） | 紫微星曜亮度（py-iztro 對齊文墨天機） |
-| 需標注 | 任何行星／閘門／爻落在分界 ±0.3° 內者 → 標為「待定」並說明影響 |
+There are **no `required=True` flags** — argparse never errors on a missing one. Omitting `--date`/`--time`/`--tz`/`--lat`/`--lon` silently falls back to a built-in example person (`範例`, born `2000-01-01 12:00`, UTC+8, Taipei 101). So for a correct chart, supply them all.
 
----
+| Flag | Type | Required for correct use? | Default | Format / rule |
+|------|------|---------------------------|---------|---------------|
+| `--name` | string | No (cosmetic) | `"範例"` | Free text; echoed into output only. |
+| `--gender` | string | Only for 紫微 | `"女"` | Must be exactly `男` or `女` (argparse `choices`; anything else → exit `2`). |
+| `--date` | string | **Yes** | falls back to `2000-01-01` | `YYYY-MM-DD`, split on `-`. No zero-pad requirement. |
+| `--time` | string | **Yes** | falls back to `12:00` | `HH:MM`, 24-hour local clock time, split on `:`. |
+| `--tz` | float | **Yes** | falls back to `8.0` | UTC offset including DST (Taiwan = `8`). Written to input key `tz_offset`. |
+| `--lat` | float | **Yes** | falls back to `25.0330` | Latitude in decimal degrees (Western houses/Asc/MC). |
+| `--lon` | float | **Yes** | falls back to `121.5654` | Longitude in decimal degrees. |
+| `--target` | string | No | `"2025-01-01"` | `YYYY-MM-DD`; 紫微 luck-period reference date (運限參考日). |
+| `--json` | flag | No | `False` (Markdown) | Presence → JSON mode; absence → Markdown. Takes no value. |
 
-## 已知限制
-
-- Moshier 星曆不含凱龍等小天體。
-- 紫微四化採 py-iztro 預設派系；慣用飛星等其他流派時主結構不變、細節可能略異。
-- 出生時間只有「大概」時，上升／宮位／爻線／時辰皆為敏感項，建議用生命事件回推校時。
-
----
-
-## 計算原理
-
-- **星盤**：Tropical 黃道、Placidus 分宮、Moshier 星曆。
-- **人類圖**：個性盤＝出生時刻；設計盤＝太陽退 88° 黃道弧度之時刻（約出生前 3 個月）。閘門用 Rave 曼陀羅序列，offset 以已知盤校準。
-- **紫微**：py-iztro；時辰 index 由出生小時換算（子 0 … 戌 10 … 晚子 12）。
+> The engine does **not** geocode places or look up time zones. The caller must convert place → `lat`/`lon`/`tz` themselves — and timezone/DST is the most common source of error, so verify the UTC offset that applied at the birth place and birth date.
 
 ---
 
-## 授權
+## Output reference
 
-本專案以 **GNU AGPL v3** 釋出（見 [`LICENSE`](./LICENSE)）。原因：引擎連結 Swiss Ephemeris，後者採 AGPL／商用雙授權。**若你將本引擎部署為網路服務，AGPL §13 要求你向服務使用者提供完整原始碼。** 需閉源／商用，請改向 Astrodienst 取得 Swiss Ephemeris 商用授權。
+The `--json` envelope has seven top-level keys, in this order:
 
-相依與致謝見 [`CREDITS.md`](./CREDITS.md)。
+`ok` · `schema_version` · `input` · `western` · `human_design` · `ziwei` · `meta`
+
+| Block | Summary |
+|-------|---------|
+| `ok` | `true` on success (`false` in the error envelope). |
+| `schema_version` | `"1.0"`. |
+| `input` | Echo of normalized inputs: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (note `tz_offset`, not `tz`). |
+| `western` | `system` string, `ascendant`/`midheaven` position objects, `planets[]`, `houses[]` (×12), `aspects[]`. |
+| `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object or `null`). |
+| `meta` | `{ engine, version, ephemeris }` — all literals (`ephemeris: "Moshier"`). |
+
+For the full field contract — every key, type, and the agent invocation protocol — see **[AGENTS.md](./AGENTS.md)**.
+
+### Field quirks worth knowing
+
+- **`aspects` are NOT capped in JSON.** The JSON path returns *every* detected aspect, sorted ascending by orb (tightest first). The 10-item cap exists only in the Markdown report.
+- **`ziwei.horoscope` is best-effort and may be `null`.** It is wrapped in `try/except`; on any exception it serializes as `null`. When present it is `{ decadal, yearly }`. (Those sub-objects expose extra internal structure — `index`, `mutagen[]`, `stars[][]`, `yearly_dec_star`, etc. — beyond the documented placeholder.)
+- **Star strings encode brightness + 四化.** Format is `name(brightness)[mutagen]`, with each part optional — e.g. `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, or plain `天機`. `adjective_stars` are plain names only (no brightness/mutagen).
 
 ---
 
-## 免責
+## Accuracy tiers
 
-命理是**詮釋性的自我覺察框架，不是預測工具**。請以「校準」而非「宿命」的角度使用，並以你的實際經驗為最終權威。本工具不提供醫療、法律、財務或心理診斷。
+Not every output carries the same confidence. Read each tier accordingly:
+
+| Tier | What it covers | Confidence |
+|------|----------------|------------|
+| **Highest** | Planetary longitudes, signs, retrograde, plus 紫微 star placement / 命宮·身宮 / 五行局 — pure ephemeris and calendar math. | Astronomically/calendrically exact. |
+| **High, time-dependent** | Ascendant, Midheaven, all 12 house cusps, the house each planet falls in, Human Design lines, and the 紫微 時辰 index. | Exact *given* an accurate birth time; sensitive to minutes. |
+| **Verified** | 紫微斗數 star brightness — aligned to the py-iztro library's outputs. | Verified against the library. |
+| **Flag boundary ±0.3°** | Any planet / gate / line sitting within ±0.3° of a boundary. | Treat as provisional and note the impact — ±0.3° can flip it across the line. |
+
+---
+
+## Known limitations
+
+- **No Chiron / minor bodies.** The build uses the Moshier ephemeris (`swe.FLG_MOSEPH`, no data files), which does not provide Chiron or other minor bodies. Only the 10 classical planets plus the lunar nodes are computed.
+- **紫微斗數 uses one default school.** py-iztro is called with fixed options (`by_solar(..., True, 'zh-TW')`); the star-placement school and 四化 are whatever py-iztro defaults to. If you normally use 飛星 or another school, the main structure is unchanged but some details may differ.
+- **Approximate birth time degrades the time-dependent tier.** If the birth time is uncertain, the Ascendant/MC/house assignments, Human Design lines, and 時辰 — and anything derived from them — become unreliable. In that case, **treat the time-dependent fields as provisional** and consider **event-based rectification** (matching known life events to chart timing) before relying on them.
+
+---
+
+## Use it from an AI agent / Hermes
+
+The intended integration model is **self-install**, not SaaS.
+
+A user copies this repo's URL, and **their own** agent or CLI (Claude Code, Hermes, a script, etc.) clones it and runs it **locally on the user's machine**. The compute happens on the user's side. There is no hosted endpoint to call, no account, and **no SaaS integration required** — the engine is a stateless, deterministic, offline subprocess.
+
+Because the publisher does not operate it as a network service, no §13 obligation falls on the publisher for someone else's self-install. (Separately, §13 only obligates an operator who runs a *modified* network-reachable version — not unmodified local use.)
+
+For agents, the contract is simple: dispatch the `--json` subprocess with the venv Python in the repo workdir, parse stdout as JSON, branch on `ok` (and the exit code), then hand off the structured object. No cleanup needed — it is stateless. The full CLI + JSON contract lives in **[AGENTS.md](./AGENTS.md)**.
+
+### Copy-paste setup for your AI agent
+
+Paste this block straight into Claude Code, ChatGPT, or any coding agent — it tells the agent how to install and call the tool:
+
+```text
+Set up and use "life-chart-engine" — a CLI that computes a Western natal chart +
+Human Design + Zi Wei Dou Shu (紫微斗數) from birth data.
+
+1. Install (needs `git` and `uv`; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+   curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
+
+2. Compute a chart and read stdout as JSON:
+   ~/.life-chart-engine/.venv/bin/python ~/.life-chart-engine/scripts/chart_engine.py --json \
+     --name "<label>" --gender <男|女> \
+     --date <YYYY-MM-DD> --time <HH:MM> \
+     --tz <utc_offset_including_DST> --lat <latitude> --lon <longitude> \
+     --target <YYYY-MM-DD>
+
+3. Rules:
+   - YOU resolve the birth city to --lat/--lon and the correct historical UTC
+     offset (DST-aware). The tool does not geocode.
+   - Confirm whether the birth time is exact before trusting the ascendant,
+     houses, Human Design lines, or the Zi Wei hour pillar.
+   - Never fabricate chart values — always call the tool.
+   - Full output schema, exit codes, and the agent contract: ~/.life-chart-engine/AGENTS.md
+```
+
+---
+
+## Licensing
+
+This repository is licensed under **[AGPL-3.0](./LICENSE)**.
+
+**AGPL-3.0 in plain English.** It is the GNU GPL-3.0 (a strong copyleft license: if you distribute the software, you must release your complete corresponding source under the same license) **plus one extra clause, Section 13**. §13 closes the "SaaS loophole": beyond the GPL's *distribution* trigger, it adds that if you *modify* the program and let users interact with your modified version over a network, you must offer those remote users your corresponding source. (Running an unmodified upstream as a network service does not by itself trigger §13.) AGPL is reciprocal but not boundlessly viral — it only reaches code that is a derivative of, or linked with, the AGPL code.
+
+**Why this repo is AGPL.** The engine links **Swiss Ephemeris** (via `pyswisseph`) for planetary positions and house cusps. Astrodienst **dual-licenses** Swiss Ephemeris as **AGPL-3.0 OR a commercial license**, and its code cannot be relicensed as anything more permissive. Because AGPL is copyleft and this project links it, the whole combined work must be AGPL. (`py-iztro` is MIT and imposes no copyleft; Swiss Ephemeris is the only component forcing AGPL here.)
+
+**What it means in practice.**
+
+| You do | AGPL obligation |
+|--------|-----------------|
+| **Self-install** (run it locally for yourself) | §13 is *not* triggered — there are no remote users to serve, and you already have the source. Clean. |
+| **Run a *modified* version as a network service** | §13 *is* triggered — you must offer those remote users the complete corresponding source of your deployed version, under AGPL, including your modifications. Note: §13's source-offer duty is conditioned on modification — running the unmodified upstream as a network service does not by itself trigger §13, though the source is already public anyway. |
+
+**Your three options** if the network-source obligation does not fit your use case:
+
+1. **Keep AGPL** — publish your complete corresponding source (including modifications) to anyone who uses it, including over a network per §13. Free, no negotiation.
+2. **Buy a Swiss Ephemeris commercial license from [Astrodienst](https://www.astro.com/swisseph/)** — this lifts the AGPL obligation for the Swiss Ephemeris portion, letting you relicense your own code and ship/host a closed build. (This is Astrodienst's dual-licensing model.)
+3. **Swap the ephemeris** — replace `pyswisseph` with a permissively licensed astronomy source (for example **Skyfield (MIT)** plus the public-domain **JPL DE440** ephemeris — illustrative alternatives, not the only option). With Swiss Ephemeris gone, the remaining stack (py-iztro MIT, plus the MPL-2.0/MIT/Apache deps) no longer forces AGPL and the whole repo could be MIT. This is real engineering effort: you must reimplement everything currently sourced from Swiss Ephemeris — planetary longitudes, retrograde flags, Asc/MC, Placidus house cusps, and the inputs to the Human Design 88° design solver.
+
+See **[CREDITS.md](./CREDITS.md)** for full attribution and per-dependency licenses.
+
+---
+
+## FAQ
+
+**Can I enter a lunar date?**
+No. Inputs are a Gregorian solar date (`--date YYYY-MM-DD`) and clock time (`--time HH:MM`). If you only have a lunar date, convert it first. 紫微斗數 is computed via py-iztro's solar entry point (`by_solar`).
+
+**My birth time is only approximate — is that a problem?**
+The planetary positions are fine, but the Ascendant, Midheaven, house cusps, the house each planet sits in, Human Design lines, and the 時辰 are all time-sensitive. Treat those as provisional and consider event-based rectification before relying on them.
+
+**Where's Chiron / asteroids / minor bodies?**
+Not included. The Moshier ephemeris used here does not provide them; only the 10 classical planets and the lunar nodes are computed.
+
+**Which 紫微斗數 school does it use?**
+The default school as implemented by py-iztro (`by_solar(..., True, 'zh-TW')`). The school is not user-selectable.
+
+**Does it phone home / use the network?**
+No. The engine is fully offline — no telemetry, no network calls, no side effects. It is a stateless, deterministic one-shot subprocess.
+
+**Can I use it inside a closed-source product?**
+Under AGPL-3.0, yes for private/local use. Distributing a build triggers the GPL conveying/source obligations, and network-serving a *modified* build triggers AGPL §13 — either way you must offer corresponding source. To go fully closed-source, either buy a Swiss Ephemeris commercial license from Astrodienst or swap the ephemeris to Skyfield + JPL DE440 (see [Licensing](#licensing)).
+
+---
+
+## Disclaimer
+
+`life-chart-engine` is an **interpretive self-awareness framework, not prediction or fatalism**. The outputs are structured reference points for reflection — they do not foretell events and do not determine outcomes. Use them as calibration, with your own lived experience as the final authority. Nothing here is medical, legal, psychological, or financial advice. For decisions in those domains, consult a qualified professional.
+
+---
+
+## Credits & License
+
+- **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, dual-licensed AGPL-3.0 / commercial (<https://www.astro.com/swisseph/>).
+- **py-iztro** (and upstream `iztro`) — MIT, for 紫微斗數.
+- Full attribution: **[CREDITS.md](./CREDITS.md)**.
+- **License:** [AGPL-3.0](./LICENSE).
+- **Agent / JSON contract:** [AGENTS.md](./AGENTS.md).
