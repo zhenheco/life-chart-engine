@@ -26,6 +26,13 @@ parallel and to sandbox read-only.
 ## 2. Invocation
 
 ```bash
+life-chart --json \
+  --name "<label>" --gender <男|女> \
+  --date <YYYY-MM-DD> --time <HH:MM> \
+  --tz <float> --lat <float> --lon <float> \
+  [--target <YYYY-MM-DD>]
+
+# Fallback if life-chart is not on PATH:
 <VENV_PY> <REPO>/scripts/chart_engine.py --json \
   --name "<label>" --gender <男|女> \
   --date <YYYY-MM-DD> --time <HH:MM> \
@@ -33,6 +40,8 @@ parallel and to sandbox read-only.
   [--target <YYYY-MM-DD>]
 ```
 
+- `life-chart` = the installed wrapper created by `install.sh`, symlinked to
+  `~/.local/bin/life-chart`.
 - `<VENV_PY>` = the project venv's Python (CPython 3.12), created by `setup.sh`
   (default `<REPO>/.venv/bin/python`). Do **not** use the system `python3`.
 - Pass `--json` for the structured contract below. Omit it for human Markdown.
@@ -178,6 +187,11 @@ This tool fits the **CLI + JSON** agent pattern directly:
 ## 7. Minimal example
 
 ```bash
+life-chart --json \
+  --name "小明" --gender 女 --date 1990-06-15 --time 08:30 \
+  --tz 8 --lat 25.0330 --lon 121.5654 --target 2025-01-01
+
+# Fallback if life-chart is not on PATH:
 .venv/bin/python scripts/chart_engine.py --json \
   --name "小明" --gender 女 --date 1990-06-15 --time 08:30 \
   --tz 8 --lat 25.0330 --lon 121.5654 --target 2025-01-01

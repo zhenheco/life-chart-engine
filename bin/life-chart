@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# resolve symlinks to find the real script location (macOS-compatible)
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+BIN_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+REPO="$(cd -P "$BIN_DIR/.." && pwd)"
+PY="${LIFE_VENV:-$REPO/.venv}/bin/python"
+
+if [ ! -x "$PY" ]; then
+  echo "error: venv python not found at $PY — run setup.sh first." >&2
+  exit 1
+fi
+
+exec "$PY" "$REPO/scripts/chart_engine.py" "$@"

@@ -36,13 +36,29 @@ echo "==> Running setup (CPython 3.12 venv + dependencies)"
 cd "$DEST"
 bash setup.sh
 
+mkdir -p "$HOME/.local/bin"
+ln -sf "$DEST/bin/life-chart" "$HOME/.local/bin/life-chart"
+
 cat <<EOF
 
 ==> Done. Installed at: $DEST
 
 Compute a chart (human-readable):
+  life-chart --help
+Fallback if life-chart is not on your PATH:
   "$DEST/.venv/bin/python" "$DEST/scripts/chart_engine.py" --help
 
 Machine-readable (for AI agents), add --json. See:
   $DEST/AGENTS.md
 EOF
+
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*)
+    echo "You can now run: life-chart --help"
+    ;;
+  *)
+    echo 'note: ~/.local/bin is not on your PATH. Add this to your shell profile:'
+    echo '  export PATH="$HOME/.local/bin:$PATH"'
+    echo "or run the engine directly: $DEST/.venv/bin/python $DEST/scripts/chart_engine.py --help"
+    ;;
+esac

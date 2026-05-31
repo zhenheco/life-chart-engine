@@ -99,7 +99,7 @@ You must run the engine on **CPython 3.12** — not 3.13, not 3.14. The reason i
 
 > py-iztro's native deps (**pythonmonkey / pydantic-core**) have **no wheels for 3.13+/3.14 and fail to build from source**. Pin to 3.12.
 
-In short: `py-iztro` depends on native extensions (`pythonmonkey`, `pydantic-core`) whose prebuilt wheels stop at 3.12. On 3.13/3.14 there are no wheels and the source build fails. That is exactly why `setup.sh` calls `uv venv --python 3.12`, and why you should always invoke the engine with the project venv's Python (`<repo>/.venv/bin/python`), never the system `python3`.
+In short: `py-iztro` depends on native extensions (`pythonmonkey`, `pydantic-core`) whose prebuilt wheels stop at 3.12. On 3.13/3.14 there are no wheels and the source build fails. That is exactly why `setup.sh` calls `uv venv --python 3.12`, and why you should always invoke the engine with either the installed `life-chart` wrapper or the project venv's Python (`<repo>/.venv/bin/python`), never the system `python3`.
 
 ---
 
@@ -109,10 +109,20 @@ The engine has two modes, selected by the presence of the `--json` flag.
 
 ### Human mode (Markdown)
 
-Omit `--json` to get a readable console report. Use your venv's Python:
+Omit `--json` to get a readable console report. After `install.sh`, the short command is:
 
 ```bash
-.venv/bin/python scripts/chart_engine.py \
+life-chart \
+  --name "Sample" --gender 女 \
+  --date 1990-06-15 --time 08:30 \
+  --tz 8 --lat 25.033 --lon 121.5654 \
+  --target 2025-01-01
+```
+
+If `life-chart` is not on your `PATH`, use:
+
+```bash
+~/.life-chart-engine/.venv/bin/python ~/.life-chart-engine/scripts/chart_engine.py \
   --name "Sample" --gender 女 \
   --date 1990-06-15 --time 08:30 \
   --tz 8 --lat 25.033 --lon 121.5654 \
@@ -150,7 +160,17 @@ Trimmed real sample (aspects are capped at top-10 in Markdown mode):
 Add `--json` to get one JSON object on stdout and nothing else — ideal for programs and AI agents:
 
 ```bash
-.venv/bin/python scripts/chart_engine.py --json \
+life-chart --json \
+  --name "小明" --gender 女 \
+  --date 1990-06-15 --time 08:30 \
+  --tz 8 --lat 25.033 --lon 121.5654 \
+  --target 2025-01-01
+```
+
+If `life-chart` is not on your `PATH`, use:
+
+```bash
+~/.life-chart-engine/.venv/bin/python ~/.life-chart-engine/scripts/chart_engine.py --json \
   --name "小明" --gender 女 \
   --date 1990-06-15 --time 08:30 \
   --tz 8 --lat 25.033 --lon 121.5654 \
@@ -292,7 +312,7 @@ A user copies this repo's URL, and **their own** agent or CLI (Claude Code, Herm
 
 Because the publisher does not operate it as a network service, no §13 obligation falls on the publisher for someone else's self-install. (Separately, §13 only obligates an operator who runs a *modified* network-reachable version — not unmodified local use.)
 
-For agents, the contract is simple: dispatch the `--json` subprocess with the venv Python in the repo workdir, parse stdout as JSON, branch on `ok` (and the exit code), then hand off the structured object. No cleanup needed — it is stateless. The full CLI + JSON contract lives in **[AGENTS.md](./AGENTS.md)**.
+For agents, the contract is simple: dispatch the installed `life-chart --json` wrapper when available, or fall back to the venv Python command in the repo workdir, parse stdout as JSON, branch on `ok` (and the exit code), then hand off the structured object. No cleanup needed — it is stateless. The full CLI + JSON contract lives in **[AGENTS.md](./AGENTS.md)**.
 
 ### Copy-paste setup for your AI agent
 
@@ -306,6 +326,12 @@ Human Design + Zi Wei Dou Shu (紫微斗數) from birth data.
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Compute a chart and read stdout as JSON:
+   life-chart --json \
+     --name "<label>" --gender <男|女> \
+     --date <YYYY-MM-DD> --time <HH:MM> \
+     --tz <utc_offset_including_DST> --lat <latitude> --lon <longitude> \
+     --target <YYYY-MM-DD>
+   If life-chart is not on your PATH, use:
    ~/.life-chart-engine/.venv/bin/python ~/.life-chart-engine/scripts/chart_engine.py --json \
      --name "<label>" --gender <男|女> \
      --date <YYYY-MM-DD> --time <HH:MM> \

@@ -30,4 +30,5 @@ echo
 echo "Run a chart (human-readable Markdown):"
 echo "  $VENV/bin/python scripts/chart_engine.py --name 你的名字 --gender 女 \\"
 echo "    --date 1990-06-15 --time 08:30 --tz 8 --lat 25.0 --lon 121.5"
+echo "After install.sh, the PATH shortcut is available as: life-chart --help"
 echo "Add --json for machine-readable output (see AGENTS.md)."
