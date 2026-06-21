@@ -167,7 +167,7 @@ PAGE = r"""<!DOCTYPE html>
     <div class="actions">
       <button class="primary" onclick="run()">算盤</button>
       <button class="ghost" onclick="compareBoundary()">邊界對照 ±30分</button>
-      <button class="ghost" id="dlBtn" onclick="downloadJSON()" disabled>下載 JSON</button>
+      <button class="ghost" onclick="downloadJSON()">下載 JSON</button>
       <button class="ghost" onclick="downloadMD()">下載 Markdown</button>
       <button class="ghost" onclick="downloadPDF()">下載 PDF</button>
     </div>
@@ -216,7 +216,7 @@ async function run(){
     target:$('target').value
   };
   const st = $('status'); st.className=''; st.textContent='計算中…';
-  $('results').style.display='none'; $('dlBtn').disabled=true;
+  $('results').style.display='none';
   try{
     const r = await fetch('/api/chart', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     const data = await r.json();
@@ -224,7 +224,6 @@ async function run(){
     lastJSON = data;
     st.textContent='';
     render(data);
-    $('dlBtn').disabled=false;
   }catch(e){ st.className='err'; st.textContent='請求失敗：'+e.message; }
 }
 
@@ -345,7 +344,7 @@ async function compareBoundary(){
   const offsets=[-30,-15,0,15,30];
   const times=offsets.map(o=>shiftTime(base,o));
   const st=$('status'); st.className=''; st.textContent='邊界對照計算中…（5 張盤）';
-  $('results').style.display='none'; $('dlBtn').disabled=true;
+  $('results').style.display='none';
   try{
     const datas=[];
     for(const t of times){ datas.push(await chartAt(t)); }
@@ -392,9 +391,17 @@ function renderCompare(offsets,times,datas){
   R.appendChild(el('div','note','綠色列＝這 ±30 分鐘內完全不變（可信任）；黃色＝會隨時間變動，代表該欄位對出生時間敏感，請先確認時間精確度再採用。'));
 }
 
-function downloadJSON(){
-  if(!lastJSON) return;
-  saveBlob(new Blob([JSON.stringify(lastJSON,null,2)],{type:'application/json'}), 'json');
+async function downloadJSON(){
+  if(lastJSON){ saveBlob(new Blob([JSON.stringify(lastJSON,null,2)],{type:'application/json'}), 'json'); return; }
+  const st=$('status'); st.className=''; st.textContent='產生 JSON…';
+  try{
+    const r=await fetch('/api/chart',{method:'POST',headers:{'Content-Type':'application/json'},body:curBody2()});
+    const data=await r.json();
+    if(!data.ok){ st.className='err'; st.textContent='JSON 失敗：'+(data.error||'未知'); return; }
+    lastJSON=data;
+    saveBlob(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}), 'json');
+    st.textContent='JSON 已下載 ✓';
+  }catch(e){ st.className='err'; st.textContent='JSON 失敗：'+e.message; }
 }
 function fname(ext){
   const nm=($('name').value||'chart').replace(/[\\/:*?"<>|]/g,'_');
