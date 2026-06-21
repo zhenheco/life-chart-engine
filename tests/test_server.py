@@ -26,6 +26,9 @@ def server_client(monkeypatch):
 
     fake_engine.build_json = build_json
     monkeypatch.setitem(sys.modules, "scripts.chart_engine", fake_engine)
+    # These tests exercise input forwarding/validation, not auth: run in the
+    # intentional keyless mode. Auth + fail-closed are covered by their own tests.
+    monkeypatch.setenv("ENGINE_ALLOW_OPEN", "1")
     sys.modules.pop("server", None)
 
     import server
@@ -127,3 +130,16 @@ def test_api_key_accepts_matching_header(server_client, monkeypatch):
 
     assert response.status_code == 200
     assert len(calls) == 1
+
+
+def test_fail_closed_when_no_key_configured(server_client, monkeypatch):
+    # No ENGINE_API_KEY and no explicit ENGINE_ALLOW_OPEN => refuse, so a
+    # misconfigured public deploy is not an open compute endpoint.
+    client, calls = server_client
+    monkeypatch.delenv("ENGINE_ALLOW_OPEN", raising=False)
+    monkeypatch.delenv("ENGINE_API_KEY", raising=False)
+
+    response = client.post("/chart", json=BODY)
+
+    assert response.status_code == 503
+    assert calls == []

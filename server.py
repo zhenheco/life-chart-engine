@@ -5,6 +5,7 @@ from json import JSONDecodeError
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from scripts.chart_engine import INPUT, build_json
 
@@ -26,12 +27,27 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
         body = await request.json()
     except JSONDecodeError as exc:
         raise HTTPException(status_code=400, detail="invalid JSON body") from exc
-    return build_json(_engine_input(body))
+    try:
+        return build_json(_engine_input(body))
+    except HTTPException:
+        raise  # 400s from _engine_input pass through unchanged
+    except Exception as exc:  # build_json / Swiss Ephemeris edge input
+        return JSONResponse(
+            status_code=500,
+            content={"ok": False, "error": str(exc), "schema_version": "1.0"},
+        )
 
 
 def _require_key(x_engine_key: str | None) -> None:
     key = os.environ.get("ENGINE_API_KEY")
-    if key and x_engine_key != key:
+    if not key:
+        # Fail closed: the HTTP server sits behind a public reverse proxy, so a
+        # missing key would expose an open compute endpoint. Set ENGINE_ALLOW_OPEN=1
+        # to intentionally run keyless (local/dev only).
+        if os.environ.get("ENGINE_ALLOW_OPEN") == "1":
+            return
+        raise HTTPException(status_code=503, detail="ENGINE_API_KEY not configured")
+    if x_engine_key != key:
         raise HTTPException(status_code=401, detail="unauthorized")
 
 
