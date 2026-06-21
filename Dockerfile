@@ -8,10 +8,11 @@ ENV PORT=8000
 
 WORKDIR /app
 
-# build-essential: fallback compiler if a wheel is missing. libstdc++6/libffi8:
-# runtime libs pythonmonkey's SpiderMonkey .so dynamically links (slim lacks them).
+# build-essential: compile pyswisseph. nodejs+npm: py-iztro's pythonmonkey dep
+# builds `pminit`, whose post-install hook shells out to npm (fails without it).
+# libstdc++6/libffi8: runtime libs the SpiderMonkey .so dynamically links.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential libstdc++6 libffi8 ca-certificates \
+      build-essential libstdc++6 libffi8 ca-certificates nodejs npm \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
