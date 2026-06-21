@@ -47,6 +47,19 @@ life-chart --json \
 - Pass `--json` for the structured contract below. Omit it for human Markdown.
 - The process prints **exactly one JSON object to stdout** and nothing else.
 
+Optional HTTP wrapper:
+
+```bash
+uvicorn server:app --host 0.0.0.0 --port 8000
+```
+
+- `GET /health` returns `200`.
+- `POST /chart` accepts the same input fields as the CLI flags, with `tz`
+  mapped to `tz_offset` internally, and returns the same `schema_version: "1.0"`
+  JSON object.
+- If `ENGINE_API_KEY` is set, callers must send `X-Engine-Key`.
+- Hetzner Docker+Caddy deployment notes live in [`DEPLOY-HETZNER.md`](./DEPLOY-HETZNER.md).
+
 ---
 
 ## 3. Input contract

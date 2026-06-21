@@ -237,6 +237,24 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
 
 ---
 
+### HTTP service
+
+The optional FastAPI wrapper exposes the same JSON contract over HTTP:
+
+```bash
+uvicorn server:app --host 0.0.0.0 --port 8000
+```
+
+- `GET /health` returns `{"ok": true}`.
+- `POST /chart` accepts JSON keys matching the CLI flags: `date`, `time`, `tz`,
+  `lat`, `lon`, `gender`, optional `name`, optional `target`.
+- If `ENGINE_API_KEY` is set, requests to `/chart` must include
+  `X-Engine-Key: <value>` or they return `401`.
+
+For Hetzner Docker+Caddy deployment, see **[DEPLOY-HETZNER.md](./DEPLOY-HETZNER.md)**.
+
+---
+
 ## CLI flags reference
 
 There are **no `required=True` flags** — argparse never errors on a missing one. Omitting `--date`/`--time`/`--tz`/`--lat`/`--lon` silently falls back to a built-in example person (`範例`, born `2000-01-01 12:00`, UTC+8, Taipei 101). So for a correct chart, supply them all.

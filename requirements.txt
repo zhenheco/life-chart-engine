@@ -7,3 +7,6 @@
 
 pyswisseph==2.10.3.2
 py-iztro==0.1.5
+fastapi==0.128.8
+uvicorn==0.39.0
+httpx==0.28.1
