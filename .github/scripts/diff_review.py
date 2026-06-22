@@ -14,8 +14,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
-from agent_fix_security import parse_review_verdict
-from build_agent_prompt import escape_untrusted_markdown
+from review_common import parse_review_verdict, escape_untrusted_markdown
 
 
 MODEL_ANGLES = (
