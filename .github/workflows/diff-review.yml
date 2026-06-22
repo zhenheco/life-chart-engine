@@ -1,0 +1,76 @@
+name: diff-review
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: diff-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  diff-review:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TARGET_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      DIFF_REVIEW_DEEPSEEK_MODEL: ${{ vars.DIFF_REVIEW_DEEPSEEK_MODEL }}
+      DIFF_REVIEW_GEMINI_MODEL: ${{ vars.DIFF_REVIEW_GEMINI_MODEL }}
+    steps:
+      - name: Checkout trusted base scripts
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Set pending status
+        run: |
+          set -euo pipefail
+          gh api -X POST "repos/${TARGET_REPO}/statuses/${HEAD_SHA}" \
+            -f state=pending \
+            -f context=diff-review-verdict \
+            -f description="reviewing"
+
+      - name: Fetch PR diff (data only; no checkout/execute of PR code)
+        run: |
+          set -euo pipefail
+          gh pr diff "$PR_NUMBER" --repo "$TARGET_REPO" > "$RUNNER_TEMP/pr.diff"
+
+      - name: Run diff reviewer (trusted base script)
+        id: review
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/diff_review.py review "$RUNNER_TEMP/pr.diff"
+
+      - name: Publish diff-review-verdict status (fail-closed)
+        if: ${{ always() }}
+        env:
+          REVIEW_OUTCOME: ${{ steps.review.outcome }}
+          REVIEW_REASONS: ${{ steps.review.outputs.reasons }}
+        run: |
+          set -euo pipefail
+          state=failure
+          desc="diff review failed or errored (fail-closed)"
+          if [ "$REVIEW_OUTCOME" = "success" ]; then
+            state=success
+            desc="diff review passed"
+          elif [ -n "${REVIEW_REASONS:-}" ]; then
+            reason="$(printf '%s' "$REVIEW_REASONS" | tr '\n' '; ' | cut -c1-113)"
+            desc="diff review failed: ${reason}"
+          fi
+          desc="$(printf '%s' "$desc" | cut -c1-140)"
+          gh api -X POST "repos/${TARGET_REPO}/statuses/${HEAD_SHA}" \
+            -f state="$state" \
+            -f context=diff-review-verdict \
+            -f description="$desc"
