@@ -255,6 +255,54 @@ For Hetzner Docker+Caddy deployment, see **[DEPLOY-HETZNER.md](./DEPLOY-HETZNER.
 
 ---
 
+## Windows quick start
+
+The Unix `install.sh` / `setup.sh` assume a POSIX layout (`.venv/bin/python`) and pin
+CPython 3.12. On Windows, `pyswisseph==2.10.3.2` has **no 3.12 wheel**, so a 3.12 venv
+tries to compile it from C and fails unless MSVC Build Tools are installed. The bundled
+`setup.ps1` avoids this by using **CPython 3.11**, where every native dep
+(`pyswisseph` / `pythonmonkey` / `pydantic-core`) ships a wheel — no compiler needed.
+`py-iztro` behaves identically on 3.11.
+
+```powershell
+# prerequisites: git, and uv
+irm https://astral.sh/uv/install.ps1 | iex      # if uv is not installed
+
+git clone https://github.com/zhenheco/life-chart-engine.git
+cd life-chart-engine
+./setup.ps1            # CPython 3.11 venv + pinned deps (no compiler)
+./life-chart.ps1 --help
+```
+
+`life-chart.ps1` is the Windows equivalent of the `life-chart` wrapper (the venv lives at
+`.venv\Scripts\python.exe`, not `.venv/bin/python`). For the Markdown report, set
+`$env:PYTHONUTF8 = "1"` so the console doesn't choke on the `℞` retrograde glyph under
+legacy code pages — `setup.ps1` / the launchers already do this.
+
+---
+
+## Local web UI (optional)
+
+`webapp.py` is a small, **dependency-free** (Python stdlib only) browser form for people
+who'd rather not type CLI flags. It is **localhost-only** (`127.0.0.1`) — birth data never
+leaves the machine — and is a thin front-end that subprocesses the same engine, distinct
+from the production FastAPI `server.py`.
+
+```bash
+python webapp.py            # or ./start-web.ps1 on Windows → http://127.0.0.1:8765
+```
+
+It renders all three systems on one page and adds three conveniences:
+
+- **Export** — one-click **JSON / Markdown / PDF**. Markdown is the engine's native report;
+  PDF is printed via headless Edge/Chrome (full CJK fonts, no extra Python deps).
+- **Boundary comparison (±30 min)** — recomputes the entered time at −30/−15/0/+15/+30
+  minutes and highlights which fields change, making birth-time sensitivity visible at a
+  glance (紫微 flips across 2-hour 時辰 boundaries; Western/HD stay stable).
+- **City quick-fill** for a few common coordinates (with a reminder to verify historical DST).
+
+---
+
 ## CLI flags reference
 
 There are **no `required=True` flags** — argparse never errors on a missing one. Omitting `--date`/`--time`/`--tz`/`--lat`/`--lon` silently falls back to a built-in example person (`範例`, born `2000-01-01 12:00`, UTC+8, Taipei 101). So for a correct chart, supply them all.
