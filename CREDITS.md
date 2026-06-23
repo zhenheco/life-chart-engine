@@ -16,14 +16,13 @@
   external `.se1` data files are required, but minor bodies (e.g. Chiron) are
   not available.
 
-## py-iztro
+## iztro
 
 - Zi Wei Dou Shu (紫微斗數) computation.
-- Python port: <https://github.com/x-haose/py-iztro> — MIT
-- Original `iztro` (TypeScript): <https://github.com/SylarLong/iztro> — MIT
+- TypeScript library: <https://github.com/SylarLong/iztro> — MIT
 - Star-brightness output has been cross-checked against 文墨天機.
 
 ## Other libraries
 
-`pythonmonkey` (MPL-2.0), `pydantic` (MIT), `aiohttp` (Apache-2.0 / MIT) and
-their transitive dependencies. See each package's distribution for full terms.
+FastAPI, Uvicorn, HTTPX, esbuild, and their transitive dependencies. See each
+package's distribution for full terms.

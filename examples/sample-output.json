@@ -791,9 +791,9 @@
       "decadal": {
         "index": 9,
         "name": "大限",
-        "heavenly_stem": "丁",
-        "earthly_branch": "亥",
-        "palace_names": [
+        "heavenlyStem": "丁",
+        "earthlyBranch": "亥",
+        "palaceNames": [
           "田宅",
           "官祿",
           "僕役",
@@ -820,50 +820,38 @@
             {
               "name": "運鸞",
               "type": "flower",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             }
           ],
           [
             {
               "name": "運曲",
               "type": "soft",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             },
             {
               "name": "運陀",
               "type": "tough",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             },
             {
               "name": "運馬",
               "type": "tianma",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             }
           ],
           [
             {
               "name": "運祿",
               "type": "lucun",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             }
           ],
           [
             {
               "name": "運羊",
               "type": "tough",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             }
           ],
           [],
@@ -871,34 +859,26 @@
             {
               "name": "運鉞",
               "type": "soft",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             },
             {
               "name": "運昌",
               "type": "soft",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             }
           ],
           [
             {
               "name": "運喜",
               "type": "flower",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             }
           ],
           [
             {
               "name": "運魁",
               "type": "soft",
-              "scope": "decadal",
-              "brightness": null,
-              "mutagen": null
+              "scope": "decadal"
             }
           ],
           [],
@@ -908,9 +888,9 @@
       "yearly": {
         "index": 2,
         "name": "流年",
-        "heavenly_stem": "甲",
-        "earthly_branch": "辰",
-        "palace_names": [
+        "heavenlyStem": "甲",
+        "earthlyBranch": "辰",
+        "palaceNames": [
           "夫妻",
           "兄弟",
           "命宮",
@@ -930,120 +910,7 @@
           "武曲",
           "太陽"
         ],
-        "stars": [
-          [
-            {
-              "name": "流祿",
-              "type": "lucun",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            },
-            {
-              "name": "流馬",
-              "type": "tianma",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ],
-          [
-            {
-              "name": "流羊",
-              "type": "tough",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ],
-          [],
-          [
-            {
-              "name": "流昌",
-              "type": "soft",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            },
-            {
-              "name": "流喜",
-              "type": "flower",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ],
-          [
-            {
-              "name": "年解",
-              "type": "helper",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ],
-          [
-            {
-              "name": "流鉞",
-              "type": "soft",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ],
-          [],
-          [
-            {
-              "name": "流曲",
-              "type": "soft",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ],
-          [],
-          [
-            {
-              "name": "流鸞",
-              "type": "flower",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ],
-          [],
-          [
-            {
-              "name": "流魁",
-              "type": "soft",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            },
-            {
-              "name": "流陀",
-              "type": "tough",
-              "scope": "yearly",
-              "brightness": null,
-              "mutagen": null
-            }
-          ]
-        ],
-        "yearly_dec_star": {
-          "jiangqian12": [
-            "歲驛",
-            "息神",
-            "華蓋",
-            "劫煞",
-            "災煞",
-            "天煞",
-            "指背",
-            "咸池",
-            "月煞",
-            "亡神",
-            "將星",
-            "攀鞍"
-          ],
+        "yearlyDecStar": {
           "suiqian12": [
             "弔客",
             "病符",
@@ -1057,8 +924,99 @@
             "龍德",
             "白虎",
             "天德"
+          ],
+          "jiangqian12": [
+            "歲驛",
+            "息神",
+            "華蓋",
+            "劫煞",
+            "災煞",
+            "天煞",
+            "指背",
+            "咸池",
+            "月煞",
+            "亡神",
+            "將星",
+            "攀鞍"
           ]
-        }
+        },
+        "stars": [
+          [
+            {
+              "name": "流祿",
+              "type": "lucun",
+              "scope": "yearly"
+            },
+            {
+              "name": "流馬",
+              "type": "tianma",
+              "scope": "yearly"
+            }
+          ],
+          [
+            {
+              "name": "流羊",
+              "type": "tough",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流昌",
+              "type": "soft",
+              "scope": "yearly"
+            },
+            {
+              "name": "流喜",
+              "type": "flower",
+              "scope": "yearly"
+            }
+          ],
+          [
+            {
+              "name": "年解",
+              "type": "helper",
+              "scope": "yearly"
+            }
+          ],
+          [
+            {
+              "name": "流鉞",
+              "type": "soft",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流曲",
+              "type": "soft",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流鸞",
+              "type": "flower",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流魁",
+              "type": "soft",
+              "scope": "yearly"
+            },
+            {
+              "name": "流陀",
+              "type": "tough",
+              "scope": "yearly"
+            }
+          ]
+        ]
       }
     }
   },

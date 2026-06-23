@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 """
 三系統完整盤面引擎 v1
-西洋星盤(Swiss Ephemeris) + 人類圖 + 紫微斗數(py-iztro)
+西洋星盤(Swiss Ephemeris) + 人類圖 + 紫微斗數(iztro)
 改 INPUT 區塊即可為任何人計算。
 """
 import json
+import subprocess
 import sys
+from pathlib import Path
 
 import swisseph as swe
 
@@ -187,29 +189,36 @@ def human_design(inp, sun_lon):
 
 # ---------- 紫微斗數 ----------
 def ziwei(inp):
-    from py_iztro import Astro
     # 時辰 index: 子0,丑1,寅2,卯3,辰4,巳5,午6,未7,申8,酉9,戌10,亥11,晚子12
     h=inp["time"][0]
     ti = ((h+1)//2)%12 if h!=23 else 12
     # 早子(0-1)算0; 23點為晚子12
     ds=f'{inp["date"][0]}-{inp["date"][1]}-{inp["date"][2]}'
-    r=Astro().by_solar(ds, ti, inp["gender"], True, 'zh-TW')
+    req=dict(date=ds,timeIndex=ti,gender=inp["gender"],fixLeap=True,language='zh-TW',target=inp["target"])
+    sidecar=Path(__file__).resolve().with_name("ziwei_iztro.cjs")
+    proc=subprocess.run(["node", str(sidecar)], input=json.dumps(req, ensure_ascii=False),
+                        capture_output=True, text=True, encoding="utf-8", timeout=15)
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or proc.stdout.strip() or "ziwei iztro sidecar failed")
+    r=json.loads(proc.stdout)
     palaces=[]
-    for p in r.palaces:
-        def star_str(lst):
-            o=[]
-            for s in (lst or []):
-                m=getattr(s,'mutagen',None); br=getattr(s,'brightness','') or ''
-                o.append(f"{s.name}({br}){'['+m+']' if m else ''}" if br else f"{s.name}{'['+m+']' if m else ''}")
-            return o
-        flag=('命' if p.is_original_palace else '')+('身' if p.is_body_palace else '')
-        palaces.append(dict(name=p.name,gz=f"{p.heavenly_stem}{p.earthly_branch}",flag=flag,
-            major=star_str(p.major_stars),minor=star_str(p.minor_stars),
-            adj=[s.name for s in (p.adjective_stars or [])],
-            decadal=f"{p.decadal.range[0]}-{p.decadal.range[1]}"))
-    h2=r.horoscope(inp["target"])
-    return dict(five=r.five_elements_class,soul=r.soul,body=r.body,palaces=palaces,
-                dec=h2.decadal,yr=h2.yearly,ti=ti)
+    def star_str(lst):
+        o=[]
+        for s in (lst or []):
+            m=s.get('mutagen') or None; br=s.get('brightness','') or ''
+            name=s['name']
+            o.append(f"{name}({br}){'['+m+']' if m else ''}" if br else f"{name}{'['+m+']' if m else ''}")
+        return o
+    for p in r["palaces"]:
+        flag=('命' if p['isOriginalPalace'] else '')+('身' if p['isBodyPalace'] else '')
+        decadal_range=p['decadal']['range']
+        palaces.append(dict(name=p['name'],gz=f"{p['heavenlyStem']}{p['earthlyBranch']}",flag=flag,
+            major=star_str(p['majorStars']),minor=star_str(p['minorStars']),
+            adj=[s['name'] for s in (p['adjectiveStars'] or [])],
+            decadal=f"{decadal_range[0]}-{decadal_range[1]}"))
+    h2=r.get("horoscope") or {}
+    return dict(five=r["fiveElementsClass"],soul=r["soul"],body=r["body"],palaces=palaces,
+                dec=h2.get("decadal"),yr=h2.get("yearly"),ti=ti)
 
 # ====================== 執行與輸出 ======================
 def run(inp):
@@ -235,7 +244,7 @@ def run(inp):
     for n,gp,lp,gd,ld in hd['rows']:
         print(f"    {n}  {gp}.{lp}  |  {gd}.{ld}")
 
-    print("\n【紫微斗數 py-iztro】")
+    print("\n【紫微斗數 iztro】")
     zw=ziwei(inp)
     print(f"五行局 {zw['five']} ｜ 命主 {zw['soul']} ｜ 身主 {zw['body']}")
     for p in zw['palaces']:

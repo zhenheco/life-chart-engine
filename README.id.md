@@ -10,7 +10,7 @@
 
 `life-chart-engine` adalah alat baris perintah kecil dan luring. Anda memberikannya data kelahiran satu orang — tanggal, waktu, zona waktu, dan koordinat tempat — dan alat ini menghitung tiga sistem bagan independen dalam satu lintasan, lalu mengeluarkan laporan Markdown yang mudah dibaca atau objek JSON terstruktur untuk dikonsumsi oleh program dan agen AI.
 
-Ini dibangun untuk orang-orang yang menginginkan **komputasi bagan yang dapat direproduksi dan dapat diverifikasi** daripada aplikasi web kotak hitam: praktisi, pengembang yang membangun alat kesadaran diri, dan agen AI yang membutuhkan langkah komputasi murni. Setiap angka berasal dari komputasi astronomi nyata (Swiss Ephemeris) dan perpustakaan 紫微斗數 nyata (py-iztro) — bukan dari layanan jarak jauh, bukan dari pencarian cache, dan tidak pernah melalui jaringan.
+Ini dibangun untuk orang-orang yang menginginkan **komputasi bagan yang dapat direproduksi dan dapat diverifikasi** daripada aplikasi web kotak hitam: praktisi, pengembang yang membangun alat kesadaran diri, dan agen AI yang membutuhkan langkah komputasi murni. Setiap angka berasal dari komputasi astronomi nyata (Swiss Ephemeris) dan perpustakaan 紫微斗數 nyata (iztro) — bukan dari layanan jarak jauh, bukan dari pencarian cache, dan tidak pernah melalui jaringan.
 
 ---
 
@@ -33,7 +33,7 @@ Tipe, Otoritas, dan Definisi dalam Human Design **bukan hardcoded** — mereka d
 Mesin ini melakukan matematika nyata daripada mendekati atau memanggil layanan. Pilihan itu menghadirkan tiga properti yang penting untuk alat bagan serius apa pun:
 
 - **Deterministik.** Input kelahiran yang sama selalu menghasilkan keluaran yang sama, byte demi byte. Tidak ada keacakan, tidak ada model, tidak ada hanyutan pembulatan antar lintasan.
-- **Dapat direproduksi.** Siapa pun dengan repo dan input yang sama dapat meregenerasi bagan Anda yang tepat. Perhitungan menggunakan Swiss Ephemeris (model Moshier) untuk langit dan py-iztro untuk 紫微斗數 — keduanya deterministik.
+- **Dapat direproduksi.** Siapa pun dengan repo dan input yang sama dapat meregenerasi bagan Anda yang tepat. Perhitungan menggunakan Swiss Ephemeris (model Moshier) untuk langit dan iztro untuk 紫微斗數 — keduanya deterministik.
 - **Dapat diverifikasi lintas-silang.** Karena tiga sistem independen dihitung dari satu momen kelahiran, Anda dapat triangulasi. **Ketika ketiga sistem menunjuk pada sinyal yang sama, perlakukan sebagai kepercayaan tinggi. Ketika hanya satu sistem menunjukkan detail, perlakukan sebagai titik referensi, bukan kesimpulan.** Ini adalah prinsip desain inti mesin — ia menghasilkan fakta untuk dibaca silang, bukan satu vonis.
 
 ---
@@ -46,7 +46,7 @@ Mesin ini melakukan matematika nyata daripada mendekati atau memanggil layanan. 
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Memasang ke `~/.life-chart-engine` (ganti dengan `LIFE_CHART_DIR`). Tidak ada `sudo`, tidak ada perubahan seluruh sistem — hanya mengkloning repo dan membangun venv CPython 3.12 terisolasi. Memerlukan `git` dan [`uv`](https://docs.astral.sh/uv/). Jalankan kembali kapan saja untuk memperbarui ke versi terbaru.
+Menginstal ke `~/.life-chart-engine` (timpa dengan `LIFE_CHART_DIR`). Tanpa `sudo`, tanpa perubahan seluruh sistem — hanya mengkloning repo, membangun venv CPython 3.12 terisolasi, dan menghasilkan bundle Node iztro yang dipatok. Membutuhkan `git`, [`uv`](https://docs.astral.sh/uv/), dan Node.js/npm. Jalankan ulang kapan saja untuk memperbarui ke versi terbaru.
 
 ### Dari sumber
 
@@ -58,7 +58,7 @@ bash setup.sh
 
 ### Apa yang dilakukan `setup.sh`
 
-Berjalan di bawah `set -euo pipefail` dan melakukan lima langkah:
+Ini berjalan di bawah `set -euo pipefail` dan melakukan enam langkah:
 
 1. **Menyelesaikan lokasi venv** — `${LIFE_VENV:-<repo>/.venv}`. Atur variabel lingkungan `LIFE_VENV` untuk mengganti; default `.venv/` diabaikan git.
 2. **Preflight: memerlukan [`uv`](https://docs.astral.sh/uv/)** — jika `uv` tidak ada di `PATH` keluar `1` dan cetak petunjuk instalasi:
@@ -67,7 +67,8 @@ Berjalan di bawah `set -euo pipefail` dan melakukan lima langkah:
    ```
 3. **Membuat venv CPython 3.12** — `uv venv --python 3.12 "$VENV"` (lihat [Mengapa CPython 3.12](#why-cpython-312-specifically)).
 4. **Memasang dependensi terpasak** — `uv pip install --python "$VENV/bin/python" -r requirements.txt`.
-5. **Menjalankan uji asap** — mengeksekusi mesin sekali dengan input sampel tetap (membuang stdout) dan mencetak `OK — engine runs.` pada kesuksesan. Ini juga mencetak petunjuk penggunaan untuk kedua mode.
+5. **Membangun bundle iztro yang dipatok** — menjalankan `scripts/build-iztro-bundle.sh`, yang memasang `iztro@2.5.8` ke direktori build sementara dan menghasilkan `vendor/iztro.cjs`.
+6. **Menjalankan smoke test** — menjalankan mesin sekali dengan input contoh tetap (membuang stdout) dan mencetak `OK — engine runs.` saat berhasil. Ini juga mencetak petunjuk penggunaan untuk kedua mode.
 
 ### Langkah `uv` manual (tanpa `setup.sh`)
 
@@ -78,28 +79,39 @@ uv venv --python 3.12 .venv
 # 2. Pasang deps terpasak
 uv pip install --python .venv/bin/python -r requirements.txt
 
-# 3. (Opsional) uji asap
+# 3. Bangun bundle iztro yang dipatok
+bash scripts/build-iztro-bundle.sh
+
+# 4. (Opsional) smoke test
 .venv/bin/python scripts/chart_engine.py --json \
   --name "Setup Test" --gender 女 --date 1990-06-15 --time 08:30 \
   --tz 8 --lat 25.0 --lon 121.5 --target 2025-01-01 >/dev/null
 ```
 
-Dua dependensi langsung saja yang terpasak di `requirements.txt`:
+Dependensi langsung Python dipatok di `requirements.txt`:
 
 ```
 pyswisseph==2.10.3.2
-py-iztro==0.1.5
+fastapi==0.128.8
+uvicorn==0.39.0
+httpx==0.28.1
+```
+
+Zi Wei menggunakan bundle Node yang dihasilkan dan dipatok oleh `scripts/build-iztro-bundle.sh`:
+
+```
+iztro@2.5.8
 ```
 
 ---
 
 ## Mengapa CPython 3.12 spesifik
 
-Anda harus menjalankan mesin di **CPython 3.12** — bukan 3.13, bukan 3.14. Alasannya dinyatakan identik di `requirements.txt` dan `setup.sh`:
+Mesin saat ini berjalan pada runtime **CPython 3.12** yang sudah diverifikasi. Alasannya dinyatakan sama di `requirements.txt` dan `setup.sh`:
 
-> Dep asli py-iztro (**pythonmonkey / pydantic-core**) **tidak memiliki wheel untuk 3.13+/3.14 dan gagal membangun dari sumber**. Pasak ke 3.12.
+> CPython 3.12 tetap dikunci untuk perubahan ini. Batasan dependensi native Python Zi Wei lama sudah hilang, jadi ini dapat ditinjau lagi setelah memeriksa dependensi yang tersisa dan image deployment.
 
-Singkatnya: `py-iztro` bergantung pada ekstensi asli (`pythonmonkey`, `pydantic-core`) yang prebuilt wheel berhenti di 3.12. Di 3.13/3.14 tidak ada wheel dan pembangunan sumber gagal. Itulah mengapa `setup.sh` memanggil `uv venv --python 3.12`, dan mengapa Anda harus selalu menjalankan mesin dengan Python venv proyek (`<repo>/.venv/bin/python`), tidak pernah sistem `python3`.
+Singkatnya: 3.12 masih runtime yang diuji untuk rilis ini. Dependensi Zi Wei tidak lagi memaksa kunci tersebut, jadi kenaikan versi Python adalah pemeriksaan kompatibilitas lanjutan, bukan bagian dari refactor ini.
 
 ---
 
@@ -138,7 +150,7 @@ Sampel nyata terpangkas (aspek terbatas pada top-10 dalam mode Markdown):
 設計日期 1990-03-16
 通道 ['13-33']
 
-【紫微斗數 py-iztro】
+【紫微斗數 iztro】
 五行局 土五局 ｜ 命主 祿存 ｜ 身主 火星
   命宮   戊寅  (5-14): 七殺(廟)｜天廚 蜚廉
   父母   己卯  (115-124): 天同(平)[忌]｜地劫 天喜 咸池 恩光 天德
@@ -271,7 +283,7 @@ Tidak setiap keluaran membawa kepercayaan yang sama. Baca setiap tingkat sesuai:
 |--------|----------------|------------|
 | **Tertinggi** | Bujur planet, tanda, retrograde, ditambah penempatan bintang 紫微 / 命宮·身宮 / 五行局 — matematika ephemeris dan kalender murni. | Astronomis/kalender tepat. |
 | **Tinggi, tergantung waktu** | Ascendant, Midheaven, semua 12 cusp rumah, rumah yang jatuh di setiap planet, garis Human Design, dan indeks 時辰 紫微. | Tepat *diberikan* waktu kelahiran yang akurat; sensitif terhadap menit. |
-| **Diverifikasi** | Terang bintang 紫微斗數 — selaras dengan keluaran pustaka py-iztro. | Diverifikasi terhadap pustaka. |
+| **Diverifikasi** | Terang bintang 紫微斗數 — selaras dengan keluaran pustaka iztro. | Diverifikasi terhadap pustaka. |
 | **Flag batas ±0,3°** | Planet apa pun / gerbang / garis duduk dalam ±0,3° batas. | Perlakukan sebagai sementara dan catat dampaknya — ±0,3° dapat membaliknya lintas garis. |
 
 ---
@@ -279,7 +291,7 @@ Tidak setiap keluaran membawa kepercayaan yang sama. Baca setiap tingkat sesuai:
 ## Batasan yang diketahui
 
 - **Tidak ada Chiron / badan minor.** Pembangunan menggunakan ephemeris Moshier (`swe.FLG_MOSEPH`, tidak ada file data), yang tidak menyediakan Chiron atau badan minor lainnya. Hanya 10 planet klasik ditambah node lunar yang dihitung.
-- **紫微斗數 menggunakan satu sekolah default.** py-iztro dipanggil dengan opsi tetap (`by_solar(..., True, 'zh-TW')`); sekolah penempatan bintang dan 四化 adalah default py-iztro apa pun. Jika Anda biasanya menggunakan 飛星 atau sekolah lain, struktur utama tidak berubah tetapi beberapa detail mungkin berbeda.
+- **紫微斗數 menggunakan satu sekolah default.** iztro dipanggil dengan opsi tetap (`bySolar(..., True, 'zh-TW')`); sekolah penempatan bintang dan 四化 adalah default iztro apa pun. Jika Anda biasanya menggunakan 飛星 atau sekolah lain, struktur utama tidak berubah tetapi beberapa detail mungkin berbeda.
 - **Waktu lahir perkiraan merendahkan tingkat tergantung waktu.** Jika waktu kelahiran tidak pasti, penugasan Ascendant/MC/rumah, garis Human Design, dan 時辰 — dan apa pun yang diturunkan darinya — menjadi tidak dapat diandalkan. Dalam hal itu, **perlakukan bidang tergantung waktu sebagai sementara** dan pertimbangkan **rektifikasi berbasis peristiwa** (mencocokkan peristiwa kehidupan yang diketahui dengan waktu bagan) sebelum mengandalkannya.
 
 ---
@@ -302,7 +314,7 @@ Tempel blok ini langsung ke Claude Code, ChatGPT, atau agen coding apa pun — i
 Siapkan dan gunakan "life-chart-engine" — CLI yang menghitung bagan natal Barat +
 Human Design + Zi Wei Dou Shu (紫微斗數) dari data kelahiran.
 
-1. Pasang (butuh `git` dan `uv`; jika uv hilang: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Hitung bagan dan baca stdout sebagai JSON:
@@ -329,7 +341,7 @@ Repositori ini dilisensikan di bawah **[AGPL-3.0](./LICENSE)**.
 
 **AGPL-3.0 dalam bahasa Inggris sederhana.** Ini adalah GNU GPL-3.0 (lisensi copyleft kuat: jika Anda mendistribusikan perangkat lunak, Anda harus merilis sumber lengkap yang sesuai di bawah lisensi yang sama) **ditambah satu klausul ekstra, Bagian 13**. §13 menutup "celah SaaS": melampaui pemicu GPL *distribusi*, ini menambahkan bahwa jika Anda *memodifikasi* program dan membiarkan pengguna berinteraksi dengan versi termodifikasi Anda melalui jaringan, Anda harus menawarkan pengguna jarak jauh sumber yang sesuai dengan versi Anda. (Menjalankan yang tidak dimodifikasi di hulu sebagai layanan jaringan tidak memicu §13 dengan sendirinya.) AGPL bersifat timbal balik tetapi bukan tanpa batas viral — ia hanya menjangkau kode yang merupakan turunan dari, atau ditautkan dengan, kode AGPL.
 
-**Mengapa repo ini AGPL.** Mesin menghubungkan **Swiss Ephemeris** (via `pyswisseph`) untuk posisi planet dan cusp rumah. Astrodienst **dual-lisensi** Swiss Ephemeris sebagai **AGPL-3.0 ATAU lisensi komersial**, dan kodenya tidak dapat dilisensikan ulang sebagai apa pun yang lebih permisif. Karena AGPL adalah copyleft dan proyek ini menghubungkannya, seluruh karya gabungan harus AGPL. (`py-iztro` adalah MIT dan tidak memberlakukan copyleft; Swiss Ephemeris adalah satu-satunya komponen yang memaksa AGPL di sini.)
+**Mengapa repo ini AGPL.** Mesin menghubungkan **Swiss Ephemeris** (via `pyswisseph`) untuk posisi planet dan cusp rumah. Astrodienst **dual-lisensi** Swiss Ephemeris sebagai **AGPL-3.0 ATAU lisensi komersial**, dan kodenya tidak dapat dilisensikan ulang sebagai apa pun yang lebih permisif. Karena AGPL adalah copyleft dan proyek ini menghubungkannya, seluruh karya gabungan harus AGPL. (`iztro` adalah MIT dan tidak memberlakukan copyleft; Swiss Ephemeris adalah satu-satunya komponen yang memaksa AGPL di sini.)
 
 **Apa artinya dalam praktik.**
 
@@ -342,7 +354,7 @@ Repositori ini dilisensikan di bawah **[AGPL-3.0](./LICENSE)**.
 
 1. **Tetap AGPL** — publikasikan sumber lengkap yang sesuai (termasuk modifikasi) kepada siapa pun yang menggunakannya, termasuk melalui jaringan per §13. Gratis, tidak ada negosiasi.
 2. **Beli lisensi komersial Swiss Ephemeris dari [Astrodienst](https://www.astro.com/swisseph/)** — ini mengangkat kewajiban AGPL untuk bagian Swiss Ephemeris, memungkinkan Anda melisensikan ulang kode Anda sendiri dan mengirim/host build tertutup. (Ini adalah model dual-licensing Astrodienst.)
-3. **Tukar ephemeris** — ganti `pyswisseph` dengan sumber astronomi berlisensi permisif (misalnya **Skyfield (MIT)** ditambah **JPL DE440** ephemeris domain publik — alternatif ilustratif, bukan satu-satunya opsi). Dengan Swiss Ephemeris hilang, sisa stack (py-iztro MIT, ditambah MPL-2.0/MIT/Apache deps) tidak lagi memaksa AGPL dan seluruh repo dapat MIT. Ini adalah usaha teknik nyata: Anda harus menerapkan ulang semuanya yang saat ini bersumber dari Swiss Ephemeris — bujur planet, bendera retrograde, Asc/MC, cusp rumah Placidus, dan input ke pemecah desain 88° Human Design.
+3. **Tukar ephemeris** — ganti `pyswisseph` dengan sumber astronomi berlisensi permisif (misalnya **Skyfield (MIT)** ditambah **JPL DE440** ephemeris domain publik — alternatif ilustratif, bukan satu-satunya opsi). Dengan Swiss Ephemeris hilang, sisa stack (iztro MIT, ditambah MPL-2.0/MIT/Apache deps) tidak lagi memaksa AGPL dan seluruh repo dapat MIT. Ini adalah usaha teknik nyata: Anda harus menerapkan ulang semuanya yang saat ini bersumber dari Swiss Ephemeris — bujur planet, bendera retrograde, Asc/MC, cusp rumah Placidus, dan input ke pemecah desain 88° Human Design.
 
 Lihat **[CREDITS.md](./CREDITS.md)** untuk atribusi lengkap dan lisensi per-dependensi.
 
@@ -351,7 +363,7 @@ Lihat **[CREDITS.md](./CREDITS.md)** untuk atribusi lengkap dan lisensi per-depe
 ## FAQ
 
 **Bisakah saya memasukkan tanggal lunar?**
-Tidak. Input adalah tanggal matahari Gregorian (`--date YYYY-MM-DD`) dan waktu jam (`--time HH:MM`). Jika Anda hanya memiliki tanggal lunar, konversi terlebih dahulu. 紫微斗數 dihitung melalui titik masuk matahari py-iztro (`by_solar`).
+Tidak. Input adalah tanggal matahari Gregorian (`--date YYYY-MM-DD`) dan waktu jam (`--time HH:MM`). Jika Anda hanya memiliki tanggal lunar, konversi terlebih dahulu. 紫微斗數 dihitung melalui titik masuk matahari iztro (`bySolar`).
 
 **Waktu kelahiran saya hanya perkiraan — apakah itu masalah?**
 Posisi planet-planet baik-baik saja, tetapi Ascendant, Midheaven, cusp rumah, rumah tempat setiap planet duduk, garis Human Design, dan 時辰 semuanya sensitif waktu. Perlakukan ini sebagai sementara dan pertimbangkan rektifikasi berbasis peristiwa sebelum mengandalkannya.
@@ -360,7 +372,7 @@ Posisi planet-planet baik-baik saja, tetapi Ascendant, Midheaven, cusp rumah, ru
 Tidak termasuk. Ephemeris Moshier yang digunakan di sini tidak menyediakannya; hanya 10 planet klasik dan node lunar yang dihitung.
 
 **Sekolah 紫微斗數 mana yang digunakan?**
-Sekolah default seperti yang diimplementasikan oleh py-iztro (`by_solar(..., True, 'zh-TW')`). Sekolah tidak dapat dipilih pengguna.
+Sekolah default seperti yang diimplementasikan oleh iztro (`bySolar(..., True, 'zh-TW')`). Sekolah tidak dapat dipilih pengguna.
 
 **Apakah itu pulang telepon / gunakan jaringan?**
 Tidak. Mesin sepenuhnya offline — tidak ada telemetri, tidak ada panggilan jaringan, tidak ada efek samping. Ini adalah subprocess stateless, deterministik, satu kali.
@@ -379,7 +391,7 @@ Di bawah AGPL-3.0, ya untuk penggunaan pribadi/lokal. Mendistribusikan build mem
 ## Kredit & Lisensi
 
 - **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, dual-licensed AGPL-3.0 / komersial (<https://www.astro.com/swisseph/>).
-- **py-iztro** (dan upstream `iztro`) — MIT, untuk 紫微斗數.
+- **iztro** — MIT, untuk 紫微斗數.
 - Atribusi lengkap: **[CREDITS.md](./CREDITS.md)**.
 - **Lisensi:** [AGPL-3.0](./LICENSE).
 - **Kontrak agen / JSON:** [AGENTS.md](./AGENTS.md).

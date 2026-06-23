@@ -1,5 +1,5 @@
-# Pin amd64: Hetzner is x86, and py-iztro's native deps (pythonmonkey, pydantic-core)
-# only ship manylinux wheels for amd64 — on arm64 pip compiles from source.
+# Pin amd64: Hetzner is x86. Python 3.12 remains the verified runtime for this
+# change; the old Python Zi Wei native dependency constraint can be revisited.
 FROM --platform=linux/amd64 python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -8,21 +8,23 @@ ENV PORT=8000
 
 WORKDIR /app
 
-# build-essential: compile pyswisseph. nodejs+npm: py-iztro's pythonmonkey dep
-# builds `pminit`, whose post-install hook shells out to npm (fails without it).
-# libstdc++6/libffi8: runtime libs the SpiderMonkey .so dynamically links.
+# build-essential: compile pyswisseph. nodejs: run the Zi Wei sidecar at runtime.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential libstdc++6 libffi8 ca-certificates nodejs npm \
+      build-essential ca-certificates nodejs \
  && rm -rf /var/lib/apt/lists/*
+RUN node --version
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Verify the native deps actually import in THIS image — turns a runtime 500 on
-# the first /chart call into a build failure.
+# Verify the engine imports and runs in THIS image — turns a runtime 500 on the
+# first /chart call into a build failure.
 RUN python -c "from scripts.chart_engine import build_json; print('import OK')"
+RUN python scripts/chart_engine.py --json \
+      --name "Docker Test" --gender 女 --date 1990-06-15 --time 08:30 \
+      --tz 8 --lat 25.0 --lon 121.5 --target 2025-01-01 >/dev/null
 
 EXPOSE 8000
 

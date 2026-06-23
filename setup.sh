@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # life-chart-engine setup — create a CPython 3.12 venv and install dependencies.
 #
-# WHY 3.12: py-iztro's native deps (pythonmonkey / pydantic-core) have no wheels
-# for newer Pythons (3.13+/3.14) and fail to build from source. Pin to 3.12.
+# WHY 3.12: kept as the verified runtime for this change. The old Python Zi Wei
+# native dependency lock is gone and can be revisited after remaining deps are checked.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,6 +20,17 @@ uv venv --python 3.12 "$VENV"
 
 echo "==> Installing dependencies"
 uv pip install --python "$VENV/bin/python" -r "$HERE/requirements.txt"
+
+echo "==> Checking Zi Wei Node sidecar bundle"
+if ! command -v node >/dev/null 2>&1; then
+  echo "error: 'node' not found; install Node.js to run the Zi Wei sidecar." >&2
+  exit 1
+fi
+if [ ! -f "$HERE/vendor/iztro.cjs" ]; then
+  echo "error: vendor/iztro.cjs missing; use the checked-in bundle or run scripts/build-iztro-bundle.sh as a maintainer." >&2
+  exit 1
+fi
+node --version >/dev/null
 
 echo "==> Smoke test"
 "$VENV/bin/python" "$HERE/scripts/chart_engine.py" --json \

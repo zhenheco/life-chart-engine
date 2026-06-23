@@ -10,7 +10,7 @@
 
 `life-chart-engine` é uma pequena ferramenta de linha de comando offline. Você fornece os dados de nascimento de uma pessoa — data, hora, fuso horário e coordenadas do local — e ela calcula três sistemas de carta independentes em uma única passagem, emitindo um relatório legível em Markdown ou um objeto JSON estruturado para programas e agentes de IA consumirem.
 
-É construída para pessoas que desejam cálculos de carta **reproduzíveis e verificáveis** em vez de um aplicativo web em caixa preta: praticantes, desenvolvedores criando ferramentas de autoconhecimento e agentes de IA que precisam de uma etapa pura de computação. Cada número vem do cálculo astronômico real (Swiss Ephemeris) e de uma biblioteca real de 紫微斗數 (py-iztro) — não de um serviço remoto, não de buscas em cache e nunca pela rede.
+É construída para pessoas que desejam cálculos de carta **reproduzíveis e verificáveis** em vez de um aplicativo web em caixa preta: praticantes, desenvolvedores criando ferramentas de autoconhecimento e agentes de IA que precisam de uma etapa pura de computação. Cada número vem do cálculo astronômico real (Swiss Ephemeris) e de uma biblioteca real de 紫微斗數 (iztro) — não de um serviço remoto, não de buscas em cache e nunca pela rede.
 
 ---
 
@@ -33,7 +33,7 @@ Type, Authority e Definition em Human Design **não são codificados** — são 
 Este motor faz a matemática real em vez de aproximar ou chamar um serviço. Essa escolha oferece três propriedades que importam para qualquer ferramenta de carta séria:
 
 - **Determinístico.** A mesma entrada de nascimento sempre produz a mesma saída, byte por byte. Não há aleatoriedade, nenhum modelo, nenhuma oscilação de arredondamento entre execuções.
-- **Reproduzível.** Qualquer pessoa com o repositório e as mesmas entradas pode regenerar sua carta exata. Os cálculos usam Swiss Ephemeris (modelo Moshier) para o céu e py-iztro para 紫微斗數 — ambos determinísticos.
+- **Reproduzível.** Qualquer pessoa com o repositório e as mesmas entradas pode regenerar sua carta exata. Os cálculos usam Swiss Ephemeris (modelo Moshier) para o céu e iztro para 紫微斗數 — ambos determinísticos.
 - **Verificável cruzadamente.** Como três sistemas independentes são calculados a partir de um único momento de nascimento, você pode triangular. **Quando todos os três sistemas apontam para o mesmo sinal, trate como alta confiança. Quando apenas um sistema mostra um detalhe, trate como um ponto de referência, não uma conclusão.** Este é o princípio central de design do motor — produz fatos para ler cruzadamente, não um único veredicto.
 
 ---
@@ -46,7 +46,7 @@ Este motor faz a matemática real em vez de aproximar ou chamar um serviço. Ess
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Instala em `~/.life-chart-engine` (substitua com `LIFE_CHART_DIR`). Sem `sudo`, sem alterações em todo o sistema — apenas clona o repositório e constrói um venv CPython 3.12 isolado. Requer `git` e [`uv`](https://docs.astral.sh/uv/). Execute novamente a qualquer momento para atualizar para a versão mais recente.
+Instala em `~/.life-chart-engine` (substitua com `LIFE_CHART_DIR`). Sem `sudo`, sem mudanças no sistema todo — apenas clona o repositório, cria um venv CPython 3.12 isolado e gera o bundle Node iztro fixado. Requer `git`, [`uv`](https://docs.astral.sh/uv/) e Node.js/npm. Execute novamente a qualquer momento para atualizar para a versão mais recente.
 
 ### Do source
 
@@ -58,7 +58,7 @@ bash setup.sh
 
 ### O que `setup.sh` faz
 
-Ele é executado sob `set -euo pipefail` e realiza cinco etapas:
+Ele roda sob `set -euo pipefail` e executa seis etapas:
 
 1. **Resolve a localização do venv** — `${LIFE_VENV:-<repo>/.venv}`. Defina a variável de ambiente `LIFE_VENV` para substituir; o padrão `.venv/` é ignorado pelo git.
 2. **Verificação preliminar: requer [`uv`](https://docs.astral.sh/uv/)** — se `uv` não estiver em `PATH` ele sai com `1` e imprime a dica de instalação:
@@ -67,7 +67,8 @@ Ele é executado sob `set -euo pipefail` e realiza cinco etapas:
    ```
 3. **Cria um venv CPython 3.12** — `uv venv --python 3.12 "$VENV"` (veja [Por que CPython 3.12](#why-cpython-312-specifically)).
 4. **Instala dependências fixas** — `uv pip install --python "$VENV/bin/python" -r requirements.txt`.
-5. **Executa um teste de smoke** — executa o motor uma vez com entradas de amostra fixas (descartando stdout) e imprime `OK — engine runs.` no sucesso. Também imprime dicas de uso para ambos os modos.
+5. **Constrói o bundle iztro fixado** — executa `scripts/build-iztro-bundle.sh`, que instala `iztro@2.5.8` em um diretório temporário de build e emite `vendor/iztro.cjs`.
+6. **Executa um teste de fumaça** — executa o motor uma vez com entradas de amostra fixas (descartando stdout) e imprime `OK — engine runs.` em caso de sucesso. Também imprime dicas de uso para ambos os modos.
 
 ### Etapas manuais do `uv` (sem `setup.sh`)
 
@@ -78,28 +79,39 @@ uv venv --python 3.12 .venv
 # 2. Instalar deps fixos
 uv pip install --python .venv/bin/python -r requirements.txt
 
-# 3. (Opcional) teste de smoke
+# 3. Construir o bundle iztro fixado
+bash scripts/build-iztro-bundle.sh
+
+# 4. (Opcional) teste de fumaça
 .venv/bin/python scripts/chart_engine.py --json \
   --name "Setup Test" --gender 女 --date 1990-06-15 --time 08:30 \
   --tz 8 --lat 25.0 --lon 121.5 --target 2025-01-01 >/dev/null
 ```
 
-As únicas duas dependências diretas estão fixadas em `requirements.txt`:
+As dependências diretas de Python estão fixadas em `requirements.txt`:
 
 ```
 pyswisseph==2.10.3.2
-py-iztro==0.1.5
+fastapi==0.128.8
+uvicorn==0.39.0
+httpx==0.28.1
+```
+
+Zi Wei usa um bundle Node gerado e fixado por `scripts/build-iztro-bundle.sh`:
+
+```
+iztro@2.5.8
 ```
 
 ---
 
 ## Por que CPython 3.12 especificamente
 
-Você deve executar o motor em **CPython 3.12** — não 3.13, não 3.14. A razão é declarada de forma idêntica em `requirements.txt` e `setup.sh`:
+O motor atualmente roda no runtime verificado **CPython 3.12**. O motivo está declarado de forma idêntica em `requirements.txt` e `setup.sh`:
 
-> As dependências nativas do py-iztro (**pythonmonkey / pydantic-core**) **não têm wheels para 3.13+/3.14 e falham ao construir a partir do source**. Fixe em 3.12.
+> CPython 3.12 permanece travado para esta mudança. A antiga restrição de dependência nativa Python do Zi Wei desapareceu, então isso pode ser revisitado após verificar as dependências restantes e a imagem de deploy.
 
-Em resumo: `py-iztro` depende de extensões nativas (`pythonmonkey`, `pydantic-core`) cujos wheels pré-construídos param em 3.12. Em 3.13/3.14 não há wheels e a construção do source falha. É exatamente por isso que `setup.sh` chama `uv venv --python 3.12`, e por isso você deve sempre invocar o motor com o Python do venv do projeto (`<repo>/.venv/bin/python`), nunca o `python3` do sistema.
+Em resumo: 3.12 ainda é o runtime testado para esta versão. A dependência Zi Wei não força mais esse travamento, então elevar a versão do Python é uma verificação de compatibilidade posterior, não parte deste refactor.
 
 ---
 
@@ -138,7 +150,7 @@ Amostra real aparada (aspectos são limitados aos 10 principais no modo Markdown
 設計日期 1990-03-16
 通道 ['13-33']
 
-【紫微斗數 py-iztro】
+【紫微斗數 iztro】
 五行局 土五局 ｜ 命主 祿存 ｜ 身主 火星
   命宮   戊寅  (5-14): 七殺(廟)｜天廚 蜚廉
   父母   己卯  (115-124): 天同(平)[忌]｜地劫 天喜 咸池 恩光 天德
@@ -271,7 +283,7 @@ Nem toda saída carrega a mesma confiança. Leia cada nível de acordo:
 |-------|-------------|-----------|
 | **Mais alta** | Longitudes planetárias, signos, retrógrado, mais colocação de estrela 紫微 / 命宮·身宮 / 五行局 — matemática pura de efemérides e calendário. | Astronomicamente/calendricamente exata. |
 | **Alta, dependente de tempo** | Ascendente, Meio do Céu, todas as 12 cúspides das casas, a casa em que cada planeta cai, linhas de Human Design e o índice de hora 時辰 de 紫微. | Exata *dada* uma hora de nascimento precisa; sensível a minutos. |
-| **Verificada** | Brilho de estrela 紫微斗數 — alinhado com as saídas da biblioteca py-iztro. | Verificada contra a biblioteca. |
+| **Verificada** | Brilho de estrela 紫微斗數 — alinhado com as saídas da biblioteca iztro. | Verificada contra a biblioteca. |
 | **Flag de limite ±0.3°** | Qualquer planeta / portão / linha sentado dentro de ±0.3° de um limite. | Trate como provisório e note o impacto — ±0.3° pode inverter através da linha. |
 
 ---
@@ -279,7 +291,7 @@ Nem toda saída carrega a mesma confiança. Leia cada nível de acordo:
 ## Limitações conhecidas
 
 - **Sem Quíron / corpos menores.** A compilação usa a efeméride Moshier (`swe.FLG_MOSEPH`, sem arquivos de dados), que não fornece Quíron ou outros corpos menores. Apenas os 10 planetas clássicos mais os nós lunares são computados.
-- **紫微斗數 usa uma escola padrão.** py-iztro é chamado com opções fixas (`by_solar(..., True, 'zh-TW')`); a escola de colocação de estrela e 四化 são o que py-iztro padrão é. Se você normalmente usa 飛星 ou outra escola, a estrutura principal é inalterada mas alguns detalhes podem diferir.
+- **紫微斗數 usa uma escola padrão.** iztro é chamado com opções fixas (`bySolar(..., True, 'zh-TW')`); a escola de colocação de estrela e 四化 são o que iztro padrão é. Se você normalmente usa 飛星 ou outra escola, a estrutura principal é inalterada mas alguns detalhes podem diferir.
 - **Hora de nascimento aproximada degrada o nível dependente de tempo.** Se a hora de nascimento é incerta, as atribuições de Ascendente/MC/casa, linhas de Human Design e 時辰 — e qualquer coisa derivada delas — tornam-se não confiáveis. Nesse caso, **trate os campos dependentes de tempo como provisórios** e considere **retificação baseada em eventos** (combinando eventos de vida conhecidos com tempo de carta) antes de confiar neles.
 
 ---
@@ -302,7 +314,7 @@ Cole este bloco direto em Claude Code, ChatGPT ou qualquer agente de codificaç�
 Configurar e usar "life-chart-engine" — uma CLI que calcula uma carta natal ocidental +
 Human Design + Zi Wei Dou Shu (紫微斗數) a partir de dados de nascimento.
 
-1. Instalar (precisa de `git` e `uv`; se uv estiver faltando: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Calcular uma carta e ler stdout como JSON:
@@ -329,7 +341,7 @@ Este repositório é licenciado sob **[AGPL-3.0](./LICENSE)**.
 
 **AGPL-3.0 em inglês simples.** É o GNU GPL-3.0 (uma licença copyleft forte: se você distribui o software, deve liberar seu código fonte completo correspondente sob a mesma licença) **mais uma cláusula extra, Seção 13**. §13 fecha a "brecha do SaaS": além do gatilho de *distribuição* do GPL, adiciona que se você *modifica* o programa e deixa usuários interagirem com sua versão modificada pela rede, você deve oferecer àqueles usuários remotos seu código fonte correspondente. (Executar um upstream não modificado como um serviço de rede não dispara §13 por si só.) AGPL é recíproco mas não infinitamente viral — apenas alcança código que é um derivado de, ou vinculado com, o código AGPL.
 
-**Por que este repositório é AGPL.** O motor vincula **Swiss Ephemeris** (via `pyswisseph`) para posições planetárias e cúspides de casas. Astrodienst **dual-licencia** Swiss Ephemeris como **AGPL-3.0 OR uma licença comercial**, e seu código não pode ser relicenciado como algo mais permissivo. Como AGPL é copyleft e este projeto o vincula, a obra combinada inteira deve ser AGPL. (`py-iztro` é MIT e não impõe copyleft; Swiss Ephemeris é o único componente forçando AGPL aqui.)
+**Por que este repositório é AGPL.** O motor vincula **Swiss Ephemeris** (via `pyswisseph`) para posições planetárias e cúspides de casas. Astrodienst **dual-licencia** Swiss Ephemeris como **AGPL-3.0 OR uma licença comercial**, e seu código não pode ser relicenciado como algo mais permissivo. Como AGPL é copyleft e este projeto o vincula, a obra combinada inteira deve ser AGPL. (`iztro` é MIT e não impõe copyleft; Swiss Ephemeris é o único componente forçando AGPL aqui.)
 
 **O que significa na prática.**
 
@@ -342,7 +354,7 @@ Este repositório é licenciado sob **[AGPL-3.0](./LICENSE)**.
 
 1. **Manter AGPL** — publique seu código fonte correspondente completo (incluindo modificações) para qualquer pessoa que o use, incluindo pela rede por §13. Grátis, sem negociação.
 2. **Compre uma licença comercial de Swiss Ephemeris de [Astrodienst](https://www.astro.com/swisseph/)** — isso levanta a obrigação AGPL para a porção Swiss Ephemeris, deixando você relicenciar seu próprio código e enviar/hospedar um build fechado. (Este é o modelo dual-license de Astrodienst.)
-3. **Troque a efeméride** — substitua `pyswisseph` por uma fonte de astronomia licenciada permissivamente (por exemplo **Skyfield (MIT)** mais a efeméride de domínio público **JPL DE440** — alternativas ilustrativas, não a única opção). Com Swiss Ephemeris fora, a pilha restante (py-iztro MIT, mais deps MPL-2.0/MIT/Apache) não força mais AGPL e todo o repositório poderia ser MIT. Este é esforço de engenharia real: você deve reimplementar tudo atualmente fornecido por Swiss Ephemeris — longitudes planetárias, sinalizadores retrógrados, Asc/MC, cúspides de casa Placidus e as entradas para o solucionador de design 88° de Human Design.
+3. **Troque a efeméride** — substitua `pyswisseph` por uma fonte de astronomia licenciada permissivamente (por exemplo **Skyfield (MIT)** mais a efeméride de domínio público **JPL DE440** — alternativas ilustrativas, não a única opção). Com Swiss Ephemeris fora, a pilha restante (iztro MIT, mais deps MPL-2.0/MIT/Apache) não força mais AGPL e todo o repositório poderia ser MIT. Este é esforço de engenharia real: você deve reimplementar tudo atualmente fornecido por Swiss Ephemeris — longitudes planetárias, sinalizadores retrógrados, Asc/MC, cúspides de casa Placidus e as entradas para o solucionador de design 88° de Human Design.
 
 Veja **[CREDITS.md](./CREDITS.md)** para atribuição completa e licenças por dependência.
 
@@ -351,7 +363,7 @@ Veja **[CREDITS.md](./CREDITS.md)** para atribuição completa e licenças por d
 ## FAQ
 
 **Posso inserir uma data lunar?**
-Não. As entradas são uma data solar Gregoriana (`--date YYYY-MM-DD`) e hora do relógio (`--time HH:MM`). Se você só tem uma data lunar, converta-a primeiro. 紫微斗數 é calculado via ponto de entrada solar de py-iztro (`by_solar`).
+Não. As entradas são uma data solar Gregoriana (`--date YYYY-MM-DD`) e hora do relógio (`--time HH:MM`). Se você só tem uma data lunar, converta-a primeiro. 紫微斗數 é calculado via ponto de entrada solar de iztro (`bySolar`).
 
 **Minha hora de nascimento é apenas aproximada — isto é um problema?**
 As posições planetárias ficam bem, mas o Ascendente, Meio do Céu, cúspides de casas, a casa em que cada planeta se senta, linhas de Human Design e 時辰 são todos sensíveis ao tempo. Trate-os como provisórios e considere retificação baseada em eventos antes de confiar neles.
@@ -360,7 +372,7 @@ As posições planetárias ficam bem, mas o Ascendente, Meio do Céu, cúspides 
 Não incluído. A efeméride Moshier usada aqui não fornece eles; apenas os 10 planetas clássicos e os nós lunares são computados.
 
 **Qual escola de 紫微斗數 ela usa?**
-A escola padrão conforme implementada por py-iztro (`by_solar(..., True, 'zh-TW')`). A escola não é selecionável pelo usuário.
+A escola padrão conforme implementada por iztro (`bySolar(..., True, 'zh-TW')`). A escola não é selecionável pelo usuário.
 
 **Ela telefona para casa / usa a rede?**
 Não. O motor é totalmente offline — sem telemetria, sem chamadas de rede, sem efeitos colaterais. É um subprocess estateless, determinístico e único.
@@ -379,7 +391,7 @@ Sob AGPL-3.0, sim para uso privado/local. Distribuir um build dispara as obriga�
 ## Créditos e Licença
 
 - **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, dual-licenciado AGPL-3.0 / comercial (<https://www.astro.com/swisseph/>).
-- **py-iztro** (e upstream `iztro`) — MIT, para 紫微斗數.
+- **iztro** — MIT, para 紫微斗數.
 - Atribuição completa: **[CREDITS.md](./CREDITS.md)**.
 - **Licença:** [AGPL-3.0](./LICENSE).
 - **Contrato agente / JSON:** [AGENTS.md](./AGENTS.md).
