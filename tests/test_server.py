@@ -22,7 +22,7 @@ def server_client(monkeypatch):
 
     def build_json(inp):
         calls.append(inp)
-        return {"ok": True, "schema_version": "1.0", "mock": True}
+        return {"ok": True, "schema_version": "1.1", "mock": True}
 
     fake_engine.build_json = build_json
     monkeypatch.setitem(sys.modules, "scripts.chart_engine", fake_engine)
@@ -53,7 +53,7 @@ def test_post_chart_forwards_engine_input(server_client):
     response = client.post("/chart", json=BODY)
 
     assert response.status_code == 200
-    assert response.json() == {"ok": True, "schema_version": "1.0", "mock": True}
+    assert response.json() == {"ok": True, "schema_version": "1.1", "mock": True}
     assert calls == [
         {
             "name": "範例",

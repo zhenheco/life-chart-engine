@@ -22,7 +22,7 @@ The engine runs three systems against the **same birth moment**, so their output
 |--------|----------------------------|------------------------|
 | **Western natal** (Tropical / Placidus) | Classical Western astrology — where the planets sat against the zodiac at your birth, divided into 12 houses. | Ascendant + Midheaven, 12 planets/points (太陽 → 南交點) with sign, degree, house and retrograde flag, all 12 house cusps, and every detected aspect (合相/六分/四分/三分/對分) sorted by tightness. |
 | **人類圖 Human Design** | A modern synthesis of astrology, the I-Ching, and the chakra system. Describes how your energy is "wired" via gates, channels, and centers. | Type, Authority, Profile, Definition, Incarnation Cross, the 88°-earlier Design date, defined/open centers, defined channels, and per-planet gate.line activations for both the Personality and Design charts. |
-| **紫微斗數 Zi Wei Dou Shu** | A traditional Chinese astrology system that maps fate onto a 12-palace board, populated by named stars. | 五行局 (Five Elements Class), 命主 (soul) / 身主 (body), the 時辰 hour index, and per-palace data — ganzhi, 命/身 flags, decadal age range, and major/minor/adjective stars (with brightness and 四化). Optionally a best-effort 大限/流年 horoscope. |
+| **紫微斗數 Zi Wei Dou Shu** | A traditional Chinese astrology system that maps fate onto a 12-palace board, populated by named stars. | 五行局 (Five Elements Class), 命主 (soul) / 身主 (body), the 時辰 hour index, and per-palace data — ganzhi, 命/身 flags, decadal age range, and major/minor/adjective stars (with brightness and 四化). Optionally a best-effort 大限/流年/小限 horoscope — its 四化 are a bare star-name array (`mutagen`) plus an additive typed `{star, type}` view (`mutagenTyped`), and the 大限 carries an age range. |
 
 Type, Authority, and Definition in Human Design are **not hardcoded** — they are derived from the connectivity graph of the defined centers.
 
@@ -192,7 +192,7 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
 ```json
 {
   "ok": true,
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -239,7 +239,28 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
         "major_stars": ["七殺(廟)"], "minor_stars": [], "adjective_stars": ["天廚", "蜚廉"]
       }
     ],
-    "horoscope": { "decadal": { "...": "best-effort, may be null" } }
+    "horoscope": {
+      "decadal": {
+        "name": "大限", "heavenlyStem": "丁", "earthlyBranch": "亥",
+        "ageRange": [33, 42],
+        "palaceNames": ["...12..."],
+        "mutagen": ["太陰", "天同", "天機", "巨門"],
+        "mutagenTyped": [
+          { "star": "太陰", "type": "祿" }, { "star": "天同", "type": "權" },
+          { "star": "天機", "type": "科" }, { "star": "巨門", "type": "忌" }
+        ]
+      },
+      "yearly": {
+        "name": "流年",
+        "mutagen": ["...4, fixed 祿/權/科/忌 order..."],
+        "mutagenTyped": [{ "star": "...", "type": "祿|權|科|忌" }, "...4..."]
+      },
+      "age": {
+        "name": "小限", "nominalAge": 26,
+        "mutagen": ["...4..."],
+        "mutagenTyped": [{ "star": "...", "type": "祿|權|科|忌" }, "...4..."]
+      }
+    }
   },
   "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
 }
@@ -342,11 +363,11 @@ The `--json` envelope has seven top-level keys, in this order:
 | Block | Summary |
 |-------|---------|
 | `ok` | `true` on success (`false` in the error envelope). |
-| `schema_version` | `"1.0"`. |
+| `schema_version` | `"1.1"`. |
 | `input` | Echo of normalized inputs: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (note `tz_offset`, not `tz`). |
 | `western` | `system` string, `ascendant`/`midheaven` position objects, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
-| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object or `null`). |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object or `null`; when present `{ decadal, yearly, age }`). |
 | `meta` | `{ engine, version, ephemeris }` — all literals (`ephemeris: "Moshier"`). |
 
 For the full field contract — every key, type, and the agent invocation protocol — see **[AGENTS.md](./AGENTS.md)**.
@@ -354,7 +375,7 @@ For the full field contract — every key, type, and the agent invocation protoc
 ### Field quirks worth knowing
 
 - **`aspects` are NOT capped in JSON.** The JSON path returns *every* detected aspect, sorted ascending by orb (tightest first). The 10-item cap exists only in the Markdown report.
-- **`ziwei.horoscope` is best-effort and may be `null`.** It is wrapped in `try/except`; on any exception it serializes as `null`. When present it is `{ decadal, yearly }`. (Those sub-objects expose extra internal structure — `index`, `mutagen[]`, `stars[][]`, `yearly_dec_star`, etc. — beyond the documented placeholder.)
+- **`ziwei.horoscope` is best-effort and may be `null`.** It is wrapped in `try/except`; on any exception it serializes as `null`. When present it is `{ decadal, yearly, age }`. `mutagen` is a bare star-name array `[str, …4]` in fixed 祿/權/科/忌 order — **unchanged since `schema_version` `1.0`**. `schema_version` `1.1` is an additive, backward-compatible bump: alongside the unchanged `mutagen` it adds `mutagenTyped` (a typed view `[{ "star", "type" }, …4]` in the same order) on `decadal`/`yearly`/`age`, `decadal.ageRange` `[startAge, endAge]`, and the `age` sub-object (the 小限 / annual minor limit, may be `null`). The positional 祿/權/科/忌 mapping in `mutagenTyped` is invariant across all 10 天干. (Those sub-objects also expose extra internal structure — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch`, etc. — beyond the documented placeholder.)
 - **Star strings encode brightness + 四化.** Format is `name(brightness)[mutagen]`, with each part optional — e.g. `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, or plain `天機`. `adjective_stars` are plain names only (no brightness/mutagen).
 
 ---

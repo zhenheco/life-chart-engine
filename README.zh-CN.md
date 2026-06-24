@@ -174,7 +174,7 @@ iztro@2.5.8
 ```json
 {
   "ok": true,
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -221,7 +221,29 @@ iztro@2.5.8
         "major_stars": ["七殺(廟)"], "minor_stars": [], "adjective_stars": ["天廚", "蜚廉"]
       }
     ],
-    "horoscope": { "decadal": { "...": "best-effort, may be null" } }
+    "horoscope": {
+      "decadal": {
+        "name": "大限", "heavenlyStem": "丁", "earthlyBranch": "亥",
+        "ageRange": [33, 42],
+        "palaceNames": ["...12..."],
+        "mutagen": ["太陰", "天同", "天機", "巨門"],
+        "mutagenTyped": [
+          { "star": "太陰", "type": "祿" }, { "star": "天同", "type": "權" },
+          { "star": "天機", "type": "科" }, { "star": "巨門", "type": "忌" }
+        ]
+      },
+      "yearly": {
+        "name": "流年",
+        "mutagen": ["...4, fixed 祿/權/科/忌 order..."],
+        "mutagenTyped": [{ "star": "...", "type": "祿|權|科|忌" }, "...4..."]
+      },
+      "age": {
+        "name": "小限", "nominalAge": 26,
+        "mutagen": ["...4..."],
+        "mutagenTyped": [{ "star": "...", "type": "祿|權|科|忌" }, "...4..."]
+      }
+    }
+
   },
   "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
 }
@@ -258,7 +280,7 @@ iztro@2.5.8
 | 块 | 摘要 |
 |-------|---------|
 | `ok` | 成功时 `true`（错误包装时 `false`）。 |
-| `schema_version` | `"1.0"`。 |
+| `schema_version` | `"1.1"`。 |
 | `input` | 规范化输入的回显：`name`、`gender`、`date`、`time`、`tz_offset`、`lat`、`lon`、`target`（注意 `tz_offset`，不是 `tz`）。 |
 | `western` | `system` 字符串、`ascendant`/`midheaven` 位置对象、`planets[]`、`houses[]`（×12）、`aspects[]`。 |
 | `human_design` | `type`、`authority`、`profile`、`definition`、`incarnation_cross`、`design_date`、`defined_centers[]`、`open_centers[]`、`channels[]`、`gates[]`。 |

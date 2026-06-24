@@ -19,7 +19,7 @@ parallel and to sandbox read-only.
 | **kind** | CLI, stdin-free, args-in / JSON-out |
 | **deterministic** | yes |
 | **side effects** | none |
-| **schema_version** | `1.0` |
+| **schema_version** | `1.1` |
 
 ---
 
@@ -55,7 +55,7 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 
 - `GET /health` returns `200`.
 - `POST /chart` accepts the same input fields as the CLI flags, with `tz`
-  mapped to `tz_offset` internally, and returns the same `schema_version: "1.0"`
+  mapped to `tz_offset` internally, and returns the same `schema_version: "1.1"`
   JSON object.
 - If `ENGINE_API_KEY` is set, callers must send `X-Engine-Key`.
 - Hetzner Docker+Caddy deployment notes live in [`DEPLOY-HETZNER.md`](./DEPLOY-HETZNER.md).
@@ -95,7 +95,7 @@ On success, stdout is one JSON object:
 ```jsonc
 {
   "ok": true,
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -145,7 +145,36 @@ On success, stdout is one JSON object:
         "adjective_stars": ["天廚"] }
       // 12 palaces
     ],
-    "horoscope": { "decadal": { /* best-effort */ }, "yearly": { /* best-effort */ } }
+    "horoscope": {
+      // best-effort; whole object is null on failure. `mutagen` (unchanged
+      // since 1.0) is a bare star-name array in iztro's fixed 祿/權/科/忌
+      // (化祿,化權,化科,化忌) order. `mutagenTyped`, `decadal.ageRange`, and the
+      // `age` sub-object are additive in schema_version 1.1.
+      "decadal": {
+        "index": 9, "name": "大限",
+        "heavenlyStem": "丁", "earthlyBranch": "亥",
+        "ageRange": [33, 42],                       // 1.1: current 大限 age span
+        "palaceNames": [ /* 12 strings */ ],
+        "mutagen": ["太陰", "天同", "天機", "巨門"],   // 1.0-unchanged bare strings, 祿/權/科/忌 order
+        "mutagenTyped": [ { "star": "太陰", "type": "祿" }, { "star": "天同", "type": "權" },
+                          { "star": "天機", "type": "科" }, { "star": "巨門", "type": "忌" } ] // 1.1: typed view, same order
+      },
+      "yearly": {
+        "index": 4, "name": "流年",
+        "heavenlyStem": "甲", "earthlyBranch": "辰",
+        "palaceNames": [ /* 12 strings */ ],
+        "mutagen": ["廉貞", "破軍", "武曲", "太陽"],   // bare strings, 祿/權/科/忌 order
+        "mutagenTyped": [ { "star": str, "type": "祿|權|科|忌" } /* …4, same order */ ] // 1.1
+      },
+      // 小限 (annual age-based minor limit); 1.1 addition, may be null
+      "age": {
+        "index": 4, "nominalAge": 26, "name": "小限",
+        "heavenlyStem": "甲", "earthlyBranch": "辰",
+        "palaceNames": [ /* 12 strings */ ],
+        "mutagen": [ str /* …4, bare strings, 祿/權/科/忌 order */ ],
+        "mutagenTyped": [ { "star": str, "type": "祿|權|科|忌" } /* …4, same order */ ] // 1.1
+      }
+    }
   },
   "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
 }
@@ -156,7 +185,18 @@ On success, stdout is one JSON object:
 - `western.aspects` is **not capped** (Markdown mode shows top 10). Cap downstream
   if needed.
 - `ziwei.horoscope` is serialized **best-effort** from iztro sidecar objects.
-  Treat it as optional.
+  Treat it as optional. When present it is `{ decadal, yearly, age }`. Each
+  `mutagen` is a **bare star-name array** `[str, …4]` in iztro's fixed
+  祿/權/科/忌 order — **unchanged since `schema_version` `1.0`**, so 1.0
+  consumers reading `mutagen` as strings keep working. `schema_version` `1.1` is
+  an **additive, backward-compatible** bump that adds, alongside the unchanged
+  `mutagen`: `mutagenTyped` (a typed view `[{ "star", "type" }, …4]` in the same
+  positional order) on `decadal`/`yearly`/`age`; `decadal.ageRange:
+  [startAge, endAge]` for the current 大限; and the `age` sub-object — the 小限
+  (annual age-based minor limit), which may be `null`.
+- The positional 祿/權/科/忌 mapping in `mutagenTyped` is **invariant across all
+  10 天干** — index 0 → 祿, 1 → 權, 2 → 科, 3 → 忌. (庚's four-化 *star set*
+  differs by school, but the position→type mapping does not.)
 - `*_stars` strings encode brightness and 四化, e.g. `紫微(廟)[祿]` =
   star(brightness)[mutagen].
 - All ecliptic longitudes are degrees `[0,360)`. `deg`/`min` are the
@@ -169,7 +209,7 @@ On success, stdout is one JSON object:
 | exit | meaning | stdout |
 |:---:|---|---|
 | `0` | success | the JSON object with `"ok": true` |
-| `1` | runtime error (with `--json`) | `{ "ok": false, "error": "<message>", "schema_version": "1.0" }` |
+| `1` | runtime error (with `--json`) | `{ "ok": false, "error": "<message>", "schema_version": "1.1" }` |
 | `2` | argument error (argparse) | usage text on stderr |
 
 Agents should branch on `ok` (and on exit code) before reading chart fields.

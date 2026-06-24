@@ -218,7 +218,7 @@ def ziwei(inp):
             decadal=f"{decadal_range[0]}-{decadal_range[1]}"))
     h2=r.get("horoscope") or {}
     return dict(five=r["fiveElementsClass"],soul=r["soul"],body=r["body"],palaces=palaces,
-                dec=h2.get("decadal"),yr=h2.get("yearly"),ti=ti)
+                dec=h2.get("decadal"),yr=h2.get("yearly"),age=h2.get("age"),ti=ti)
 
 # ====================== 執行與輸出 ======================
 def run(inp):
@@ -251,6 +251,15 @@ def run(inp):
         stars=" ".join(p['major']) if p['major'] else "空宮"
         extra=("｜"+" ".join(p['minor']+p['adj'])) if (p['minor'] or p['adj']) else ""
         print(f"  {p['name']:4s} {p['gz']}{p['flag']:2s}({p['decadal']}): {stars}{extra}")
+    def _sihua(sec):
+        return " ".join(f"{m['star']}化{m['type']}" for m in (sec.get('mutagenTyped') or []))
+    if zw.get('dec'):
+        d=zw['dec']; ar=d.get('ageRange')
+        span=f"（{ar[0]}-{ar[1]}歲）" if ar else ""
+        print(f"  ── 大限 {d.get('heavenlyStem','')}{d.get('earthlyBranch','')}{span} 四化：{_sihua(d)}")
+    if zw.get('yr'):
+        y=zw['yr']
+        print(f"  ── 流年 {y.get('heavenlyStem','')}{y.get('earthlyBranch','')}（{inp['target']}）四化：{_sihua(y)}")
 
 def build_json(inp):
     jd,pos,retro,cusps,asc,mc,house_of = western(inp)
@@ -259,12 +268,12 @@ def build_json(inp):
     zw=ziwei(inp)
     order=['太陽','月亮','水星','金星','火星','木星','土星','天王星','海王星','冥王星','北交點','南交點']
     try:
-        horoscope=dict(decadal=_safe(zw['dec']), yearly=_safe(zw['yr']))
+        horoscope=dict(decadal=_safe(zw['dec']), yearly=_safe(zw['yr']), age=_safe(zw['age']))
     except Exception:
         horoscope=None
     return {
         "ok": True,
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "input": {
             "name": inp["name"],
             "gender": inp["gender"],
@@ -361,7 +370,7 @@ if __name__=='__main__':
         try:
             print(json.dumps(build_json(inp), ensure_ascii=False, indent=2))
         except Exception as e:
-            print(json.dumps({"ok": False, "error": str(e), "schema_version": "1.0"}, ensure_ascii=False))
+            print(json.dumps({"ok": False, "error": str(e), "schema_version": "1.1"}, ensure_ascii=False))
             sys.exit(1)
     else:
         run(inp)

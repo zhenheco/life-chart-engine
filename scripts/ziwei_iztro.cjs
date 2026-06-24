@@ -39,6 +39,17 @@ function horoscopeStar(starObj) {
   return out;
 }
 
+// iztro returns the four 四化 stars positionally ordered [化祿, 化權, 化科, 化忌]
+// (vendor/iztro.cjs MUTAGEN = ["sihuaLu","sihuaQuan","sihuaKe","sihuaJi"]; the
+// position->type mapping is invariant across all 10 天干). The bare star-name array
+// forced LLM consumers to re-derive the type from 天干, so we expose a typed view —
+// additively, leaving the original `mutagen` string array intact for 1.0 consumers.
+function labeledMutagen(names) {
+  const TYPES = ['祿', '權', '科', '忌'];
+  if (!Array.isArray(names) || names.length !== TYPES.length) return names;
+  return names.map((star, i) => ({ star, type: TYPES[i] }));
+}
+
 function horoscopeSection(section) {
   if (!section) return null;
   const out = {};
@@ -52,6 +63,9 @@ function horoscopeSection(section) {
     'yearlyDecStar',
   ]) {
     if (Object.prototype.hasOwnProperty.call(section, key)) out[key] = section[key];
+  }
+  if (Array.isArray(section.mutagen)) {
+    out.mutagenTyped = labeledMutagen(section.mutagen);
   }
   out.stars = Array.isArray(section.stars)
     ? section.stars.map((group) => (Array.isArray(group) ? group.map(horoscopeStar) : []))
@@ -89,14 +103,36 @@ async function main() {
     process.exit(1);
   }
   const horoscope = result.horoscope(req.target);
+  const decadal = horoscopeSection(horoscope.decadal);
+  // Surface the current 大限 age range so consumers don't re-derive the decade
+  // (which an LLM got wrong: 虛歲 41 → 33-42, mislabelled 43-52). The range lives on
+  // the palace that is the 大限命宮, addressed by horoscope.decadal.index.
+  if (decadal && typeof decadal.index === 'number') {
+    const dp = result.palaces[decadal.index];
+    const range = dp && dp.decadal ? dp.decadal.range : null;
+    if (Array.isArray(range) && range.length === 2) decadal.ageRange = range;
+  }
+  const age = horoscope.age
+    ? {
+        index: horoscope.age.index,
+        nominalAge: horoscope.age.nominalAge,
+        name: horoscope.age.name,
+        heavenlyStem: horoscope.age.heavenlyStem,
+        earthlyBranch: horoscope.age.earthlyBranch,
+        palaceNames: horoscope.age.palaceNames,
+        mutagen: horoscope.age.mutagen,
+        mutagenTyped: labeledMutagen(horoscope.age.mutagen),
+      }
+    : null;
   const out = {
     fiveElementsClass: result.fiveElementsClass,
     soul: result.soul,
     body: result.body,
     palaces: result.palaces.map(palace),
     horoscope: {
-      decadal: horoscopeSection(horoscope.decadal),
+      decadal,
       yearly: horoscopeSection(horoscope.yearly),
+      age,
     },
   };
   process.stdout.write(`${JSON.stringify(out)}\n`);

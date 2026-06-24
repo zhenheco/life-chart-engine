@@ -174,7 +174,7 @@ Engine अभी verified **CPython 3.12** runtime पर चलता है।
 ```json
 {
   "ok": true,
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -221,7 +221,29 @@ Engine अभी verified **CPython 3.12** runtime पर चलता है।
         "major_stars": ["七殺(廟)"], "minor_stars": [], "adjective_stars": ["天廚", "蜚廉"]
       }
     ],
-    "horoscope": { "decadal": { "...": "best-effort, may be null" } }
+    "horoscope": {
+      "decadal": {
+        "name": "大限", "heavenlyStem": "丁", "earthlyBranch": "亥",
+        "ageRange": [33, 42],
+        "palaceNames": ["...12..."],
+        "mutagen": ["太陰", "天同", "天機", "巨門"],
+        "mutagenTyped": [
+          { "star": "太陰", "type": "祿" }, { "star": "天同", "type": "權" },
+          { "star": "天機", "type": "科" }, { "star": "巨門", "type": "忌" }
+        ]
+      },
+      "yearly": {
+        "name": "流年",
+        "mutagen": ["...4, fixed 祿/權/科/忌 order..."],
+        "mutagenTyped": [{ "star": "...", "type": "祿|權|科|忌" }, "...4..."]
+      },
+      "age": {
+        "name": "小限", "nominalAge": 26,
+        "mutagen": ["...4..."],
+        "mutagenTyped": [{ "star": "...", "type": "祿|權|科|忌" }, "...4..."]
+      }
+    }
+
   },
   "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
 }
@@ -258,7 +280,7 @@ Engine अभी verified **CPython 3.12** runtime पर चलता है।
 | ब्लॉक | सारांश |
 |-------|---------|
 | `ok` | सफलता पर `true` (`false` error envelope में)। |
-| `schema_version` | `"1.0"`। |
+| `schema_version` | `"1.1"`। |
 | `input` | सामान्यीकृत इनपुट की प्रतिध्वनि: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (ध्यान दें `tz_offset`, `tz` नहीं)। |
 | `western` | `system` string, `ascendant`/`midheaven` position objects, `planets[]`, `houses[]` (×12), `aspects[]`। |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`। |

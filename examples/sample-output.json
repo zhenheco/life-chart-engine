@@ -1,6 +1,6 @@
 {
   "ok": true,
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "input": {
     "name": "小明",
     "gender": "女",
@@ -813,6 +813,24 @@
           "天機",
           "巨門"
         ],
+        "mutagenTyped": [
+          {
+            "star": "太陰",
+            "type": "祿"
+          },
+          {
+            "star": "天同",
+            "type": "權"
+          },
+          {
+            "star": "天機",
+            "type": "科"
+          },
+          {
+            "star": "巨門",
+            "type": "忌"
+          }
+        ],
         "stars": [
           [],
           [],
@@ -883,6 +901,10 @@
           ],
           [],
           []
+        ],
+        "ageRange": [
+          35,
+          44
         ]
       },
       "yearly": {
@@ -940,6 +962,24 @@
             "攀鞍"
           ]
         },
+        "mutagenTyped": [
+          {
+            "star": "廉貞",
+            "type": "祿"
+          },
+          {
+            "star": "破軍",
+            "type": "權"
+          },
+          {
+            "star": "武曲",
+            "type": "科"
+          },
+          {
+            "star": "太陽",
+            "type": "忌"
+          }
+        ],
         "stars": [
           [
             {
@@ -1016,6 +1056,51 @@
               "scope": "yearly"
             }
           ]
+        ]
+      },
+      "age": {
+        "index": 4,
+        "nominalAge": 35,
+        "name": "小限",
+        "heavenlyStem": "壬",
+        "earthlyBranch": "午",
+        "palaceNames": [
+          "財帛",
+          "子女",
+          "夫妻",
+          "兄弟",
+          "命宮",
+          "父母",
+          "福德",
+          "田宅",
+          "官祿",
+          "僕役",
+          "遷移",
+          "疾厄"
+        ],
+        "mutagen": [
+          "天梁",
+          "紫微",
+          "左輔",
+          "武曲"
+        ],
+        "mutagenTyped": [
+          {
+            "star": "天梁",
+            "type": "祿"
+          },
+          {
+            "star": "紫微",
+            "type": "權"
+          },
+          {
+            "star": "左輔",
+            "type": "科"
+          },
+          {
+            "star": "武曲",
+            "type": "忌"
+          }
         ]
       }
     }

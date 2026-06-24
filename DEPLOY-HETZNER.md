@@ -71,4 +71,6 @@ The Worker request must include:
 X-Engine-Key: replace-with-long-random-key
 ```
 
-The HTTP response schema is the same `schema_version: "1.0"` JSON object documented in `AGENTS.md`.
+The HTTP response schema is the same `schema_version: "1.1"` JSON object documented in `AGENTS.md`.
+
+**Deploy order is web-first-safe.** The `life-web` client now accepts the whole `1.x` family, and `mutagen` stays string-compatible (the `1.1` additions — `mutagenTyped`, `decadal.ageRange`, the `age` sub-object — are additive only). So deploying the engine `1.1` will not break an already-running web; either order is safe, web-first preferred.

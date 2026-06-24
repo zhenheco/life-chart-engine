@@ -108,7 +108,14 @@ def test_node_sidecar_returns_plain_iztro_subset():
         "palaces",
         "horoscope",
     }
-    assert set(data["horoscope"]) == {"decadal", "yearly"}
+    assert set(data["horoscope"]) == {"decadal", "yearly", "age"}
+    # mutagen stays a bare star-name array (1.0 contract); mutagenTyped adds 四化 type
+    for scope in ("decadal", "yearly"):
+        section = data["horoscope"][scope]
+        assert all(isinstance(s, str) and s for s in section["mutagen"])
+        typed = section["mutagenTyped"]
+        assert [m["type"] for m in typed] == ["祿", "權", "科", "忌"]
+        assert [m["star"] for m in typed] == section["mutagen"]
     assert data["fiveElementsClass"] == "水二局"
     assert data["body"] == "火星"
     assert len(data["palaces"]) == 12
@@ -129,6 +136,28 @@ def test_node_sidecar_returns_plain_iztro_subset():
         "adjectiveStars",
         "decadal",
     }
+
+
+def test_horoscope_mutagen_labeled_and_decadal_age_range():
+    # Avy: 虛歲 41 in 2026 (木三局) → current 大限 is 33-42, not 43-52.
+    # The bare iztro fields made an LLM consumer mislabel the decade and re-derive
+    # the 四化 type from 天干; the engine now surfaces both explicitly.
+    result = ziwei(_input("1986-08-19", time="19:58", gender="女", target="2026-06-24"))
+    dec, yr, age = result["dec"], result["yr"], result["age"]
+
+    # mutagen stays bare strings (non-breaking); mutagenTyped carries the 四化 type
+    assert all(isinstance(s, str) for s in dec["mutagen"])
+    assert [m["type"] for m in dec["mutagenTyped"]] == ["祿", "權", "科", "忌"]
+
+    # 大限 age range surfaced directly (the off-by-one fix: 43-52 -> 33-42)
+    assert dec["ageRange"] == [33, 42]
+
+    # 丙年流年四化: 廉貞化忌
+    assert yr["heavenlyStem"] == "丙"
+    assert {"star": "廉貞", "type": "忌"} in yr["mutagenTyped"]
+
+    # current 虛歲 exposed so the decade is unambiguous
+    assert isinstance(age["nominalAge"], int) and age["nominalAge"] >= 1
 
 
 def test_node_sidecar_rejects_missing_target():
