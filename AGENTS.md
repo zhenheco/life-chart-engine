@@ -155,9 +155,8 @@ On success, stdout is one JSON object:
 
 - `western.aspects` is **not capped** (Markdown mode shows top 10). Cap downstream
   if needed.
-- `ziwei.horoscope` is serialized **best-effort** from py-iztro objects. If
-  serialization fails it is `null` rather than crashing the run — treat it as
-  optional.
+- `ziwei.horoscope` is serialized **best-effort** from iztro sidecar objects.
+  Treat it as optional.
 - `*_stars` strings encode brightness and 四化, e.g. `紫微(廟)[祿]` =
   star(brightness)[mutagen].
 - All ecliptic longitudes are degrees `[0,360)`. `deg`/`min` are the

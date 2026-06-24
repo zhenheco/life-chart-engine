@@ -1,0 +1,12 @@
+{
+  "name": "life-chart-engine-iztro-vendor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "iztro": "2.5.8"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1"
+  }
+}

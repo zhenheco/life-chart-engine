@@ -1,12 +1,11 @@
 # life-chart-engine — direct dependencies.
-# Pinned to versions verified against py-iztro on CPython 3.12.
-# Transitive deps (pythonmonkey, pydantic, aiohttp, ...) resolve automatically.
+# Pinned to versions verified on CPython 3.12.
 #
-# NOTE: requires CPython 3.12. py-iztro's native deps (pythonmonkey /
-# pydantic-core) have no wheels for 3.13+/3.14 and fail to build. Use `setup.sh`.
+# NOTE: CPython 3.12 remains locked for this change. The old Python Zi Wei
+# native dependency constraint is gone, so this can be revisited after checking
+# the remaining dependencies and deployment image.
 
 pyswisseph==2.10.3.2
-py-iztro==0.1.5
 fastapi==0.128.8
 uvicorn==0.39.0
 httpx==0.28.1
