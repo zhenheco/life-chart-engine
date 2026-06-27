@@ -73,11 +73,73 @@ def body_lon_speed(jd, body_key):
 
 
 def houses_asc_mc(jd, lat, lon):
-    raise NotImplementedError("astronomy-engine houses are out of scope for issue 03")
+    time = _time(jd)
+    eps = _true_obliquity_rad(time)
+    ramc = math.radians((A.SiderealTime(time) * 15 + lon) % 360)
+    phi = math.radians(lat)
+
+    mc = _lon_from_ra(ramc, eps)
+    asc = (
+        math.degrees(
+            math.atan2(
+                -math.cos(ramc),
+                math.sin(eps) * math.tan(phi) + math.cos(eps) * math.sin(ramc),
+            )
+        )
+        + 180
+    ) % 360
+
+    cusp11 = _placidus_cusp(ramc, phi, eps, 1 / 3)
+    cusp12 = _placidus_cusp(ramc, phi, eps, 2 / 3)
+    cusp9 = _placidus_cusp(ramc, phi, eps, -1 / 3)
+    cusp8 = _placidus_cusp(ramc, phi, eps, -2 / 3)
+
+    cusps = [0.0] * 12
+    cusps[0] = asc
+    cusps[1] = (cusp8 + 180) % 360
+    cusps[2] = (cusp9 + 180) % 360
+    cusps[3] = (mc + 180) % 360
+    cusps[4] = (cusp11 + 180) % 360
+    cusps[5] = (cusp12 + 180) % 360
+    cusps[6] = (asc + 180) % 360
+    cusps[7] = cusp8
+    cusps[8] = cusp9
+    cusps[9] = mc
+    cusps[10] = cusp11
+    cusps[11] = cusp12
+    return cusps, asc, mc
 
 
 def _time(jd):
     return A.Time(jd - J2000)
+
+
+def _true_obliquity_rad(time):
+    rot = A.Rotation_EQD_ECT(time).rot
+    return math.atan2(rot[2][1], rot[1][1])
+
+
+def _lon_from_ra(ra, eps):
+    return math.degrees(math.atan2(math.sin(ra), math.cos(ra) * math.cos(eps))) % 360
+
+
+def _placidus_cusp(ramc, phi, eps, k):
+    ra = (ramc + k * math.pi / 2) % (2 * math.pi)
+    tan_phi = math.tan(phi)
+    tan_eps = math.tan(eps)
+    for _ in range(100):
+        arg = -math.sin(ra) * tan_phi * tan_eps
+        if abs(arg) > 1:
+            raise ValueError("placidus undefined at high latitude")
+        nxt = (ramc + k * math.acos(arg)) % (2 * math.pi)
+        if abs(_signed_rad_delta(nxt, ra)) < 1e-8:
+            return _lon_from_ra(nxt, eps)
+        ra = nxt
+    raise ValueError("placidus cusp iteration did not converge")
+
+
+def _signed_rad_delta(a, b):
+    return (a - b + math.pi) % (2 * math.pi) - math.pi
 
 
 def _lon(jd, body_key):

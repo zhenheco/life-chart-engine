@@ -13,6 +13,11 @@ BASELINE = ROOT / "tests" / "fixtures" / "ephemeris_baseline.json"
 DEFAULT_LON_TOL = 0.017
 LON_TOL = {"月亮": 0.05, "北交點": 0.05}
 SPEED_TOL = 0.005
+HOUSE_FIXTURE_TOLS = {
+    "taipei_standard": 0.05,
+    "london_solar_sign_cusp": 0.05,
+    "high_latitude_65_valid": 0.2,
+}
 
 
 def angular_delta(a, b):
@@ -22,6 +27,11 @@ def angular_delta(a, b):
 def baseline_fixtures():
     data = json.loads(BASELINE.read_text(encoding="utf-8"))
     return [item for item in data["fixtures"] if item["ephemeris"]["ok"]]
+
+
+def all_baseline_fixtures():
+    data = json.loads(BASELINE.read_text(encoding="utf-8"))
+    return data["fixtures"]
 
 
 def local_ut_hour(item):
@@ -100,3 +110,51 @@ def test_astronomy_hd_symbol_aliases_match_chinese_body_names():
         name_lon, name_speed = eph.body_lon_speed(jd, name)
         assert angular_delta(symbol_lon, name_lon) == 0
         assert symbol_speed == name_speed
+
+
+def test_astronomy_placidus_houses_match_baseline():
+    max_deltas = {}
+    for item in all_baseline_fixtures():
+        if item["id"] not in HOUSE_FIXTURE_TOLS:
+            continue
+        jd = item["ephemeris"]["julian_day_ut"]
+        inp = item["input"]
+        expected = item["ephemeris"]["houses"]
+        cusps, asc, mc = eph.houses_asc_mc(jd, inp["lat"], inp["lon"])
+        deltas = [
+            angular_delta(got, want)
+            for got, want in zip(cusps, expected["cusps"], strict=True)
+        ]
+        deltas.extend(
+            [
+                angular_delta(asc, expected["ascendant"]),
+                angular_delta(mc, expected["midheaven"]),
+            ]
+        )
+        max_delta = max(deltas)
+        max_deltas[item["id"]] = max_delta
+        print(
+            item["id"],
+            "house deltas",
+            " ".join(f"{i + 1}:{d:.6f}" for i, d in enumerate(deltas[:12])),
+            f"asc:{deltas[12]:.6f}",
+            f"mc:{deltas[13]:.6f}",
+            f"max:{max_delta:.6f}",
+        )
+        assert len(cusps) == 12
+        assert asc == cusps[0]
+        assert mc == cusps[9]
+        assert max_delta <= HOUSE_FIXTURE_TOLS[item["id"]]
+    print("houses max deltas", max_deltas)
+
+
+def test_astronomy_placidus_houses_raise_at_invalid_high_latitude():
+    item = next(i for i in all_baseline_fixtures() if i["id"] == "placidus_lat70_invalid")
+    y, mo, d = map(int, item["input"]["date"].split("-"))
+    jd = eph.julday(y, mo, d, local_ut_hour(item))
+    try:
+        eph.houses_asc_mc(jd, item["input"]["lat"], item["input"]["lon"])
+    except ValueError as exc:
+        assert "placidus undefined" in str(exc)
+    else:
+        raise AssertionError("expected Placidus high-latitude failure")
