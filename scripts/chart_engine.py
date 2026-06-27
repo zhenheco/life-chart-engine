@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 三系統完整盤面引擎 v1
-西洋星盤(Swiss Ephemeris) + 人類圖 + 紫微斗數(iztro)
+西洋星盤(astronomy-engine) + 人類圖 + 紫微斗數(iztro)
 改 INPUT 區塊即可為任何人計算。
 """
 import json
@@ -284,7 +284,7 @@ def build_json(inp):
             "target": inp["target"],
         },
         "western": {
-            "system": "Tropical / Placidus / Moshier",
+            "system": "Tropical / Placidus / astronomy-engine",
             "ascendant": _pos_obj(asc),
             "midheaven": _pos_obj(mc),
             "planets": [
@@ -338,7 +338,7 @@ def build_json(inp):
             ],
             "horoscope": horoscope,
         },
-        "meta": {"engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier"},
+        "meta": {"engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine"},
     }
 
 def _parse_args():

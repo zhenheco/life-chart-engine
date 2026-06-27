@@ -1,9 +1,7 @@
-# setup.ps1 — Windows setup for life-chart-engine (CPython 3.11 venv + deps)
+# setup.ps1 — Windows setup for life-chart-engine (CPython 3.12 venv + deps)
 #
-# WHY 3.11 (not 3.12): the pinned `pyswisseph==2.10.3.2` ships Windows wheels
-# only up to cp311. On 3.12 it would compile from C and need MSVC Build Tools.
-# On 3.11 every native dep (pyswisseph / pythonmonkey / pydantic-core) has a
-# wheel, so no compiler is required. py-iztro works the same on 3.11.
+# WHY 3.12: kept aligned with the Unix setup and CI-tested runtime. The
+# astronomy-engine ephemeris path does not require compiling Swiss Ephemeris.
 #
 # Usage:  ./setup.ps1     then    ./start-web.ps1   (web UI)  or  ./life-chart.ps1 --help
 $ErrorActionPreference = "Stop"
@@ -19,11 +17,11 @@ if (-not (Test-Path $uv)) {
   exit 1
 }
 
-Write-Host "==> Creating venv (CPython 3.11) at $venv"
-& $uv venv --python 3.11 $venv
+Write-Host "==> Creating venv (CPython 3.12) at $venv"
+& $uv venv --python 3.12 $venv
 # uv occasionally fails the first managed-Python download with a
 # "minor version link" error; a second attempt succeeds.
-if ($LASTEXITCODE -ne 0) { & $uv venv --python 3.11 $venv }
+if ($LASTEXITCODE -ne 0) { & $uv venv --python 3.12 $venv }
 
 Write-Host "==> Installing dependencies"
 & $uv pip install --python "$venv\Scripts\python.exe" -r (Join-Path $here "requirements.txt")

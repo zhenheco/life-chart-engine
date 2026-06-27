@@ -103,7 +103,7 @@ On success, stdout is one JSON object:
     "target": "2025-01-01"
   },
   "western": {
-    "system": "Tropical / Placidus / Moshier",
+    "system": "Tropical / Placidus / astronomy-engine",
     "ascendant": { "lon": 123.4, "sign": "獅子", "deg": 3, "min": 25, "label": "獅子 03°25'" },
     "midheaven": { "lon": 33.1,  "sign": "金牛", "deg": 3, "min": 6,  "label": "金牛 03°06'" },
     "planets": [
@@ -176,7 +176,7 @@ On success, stdout is one JSON object:
       }
     }
   },
-  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine" }
 }
 ```
 

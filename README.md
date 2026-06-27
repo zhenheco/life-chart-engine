@@ -10,7 +10,7 @@
 
 `life-chart-engine` is a small, offline command-line tool. You give it one person's birth data — date, time, timezone, and place coordinates — and it computes three independent chart systems in one pass, then emits either a human-readable Markdown report or a structured JSON object for programs and AI agents to consume.
 
-It is built for people who want **reproducible, verifiable** chart calculations rather than a black-box web app: practitioners, developers building self-awareness tools, and AI agents that need a pure compute step. Every number comes from real astronomical computation (Swiss Ephemeris) and a real 紫微斗數 library (iztro) — not from a remote service, not from cached lookups, and never over the network.
+It is built for people who want **reproducible, verifiable** chart calculations rather than a black-box web app: practitioners, developers building self-awareness tools, and AI agents that need a pure compute step. Every number comes from real astronomical computation (astronomy-engine) and a real 紫微斗數 library (iztro) — not from a remote service, not from cached lookups, and never over the network.
 
 ---
 
@@ -33,7 +33,7 @@ Type, Authority, and Definition in Human Design are **not hardcoded** — they a
 This engine does the real math instead of approximating or calling out to a service. That choice buys three properties that matter for any serious chart tool:
 
 - **Deterministic.** The same birth input always produces the same output, byte-for-byte. There is no randomness, no model, no rounding drift between runs.
-- **Reproducible.** Anyone with the repo and the same inputs can regenerate your exact chart. Calculations use Swiss Ephemeris (Moshier model) for the sky and iztro for 紫微斗數 — both deterministic.
+- **Reproducible.** Anyone with the repo and the same inputs can regenerate your exact chart. Calculations use astronomy-engine for the sky and iztro for 紫微斗數 — both deterministic.
 - **Cross-verifiable.** Because three independent systems are computed from one birth moment, you can triangulate. **When all three systems point at the same signal, treat it as high confidence. When only one system shows a detail, treat it as a reference point, not a conclusion.** This is the engine's core design principle — it produces facts to cross-read, not a single verdict.
 
 ---
@@ -88,7 +88,7 @@ uv pip install --python .venv/bin/python -r requirements.txt
 Python direct dependencies are pinned in `requirements.txt`:
 
 ```
-pyswisseph==2.10.3.2
+astronomy-engine>=2.1.19
 fastapi==0.128.8
 uvicorn==0.39.0
 httpx==0.28.1
@@ -200,7 +200,7 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
     "target": "2025-01-01"
   },
   "western": {
-    "system": "Tropical / Placidus / Moshier",
+    "system": "Tropical / Placidus / astronomy-engine",
     "ascendant": { "lon": 128.483, "sign": "獅子", "deg": 8, "min": 29, "label": "獅子 08°29'" },
     "midheaven": { "lon": 34.3665, "sign": "金牛", "deg": 4, "min": 22, "label": "金牛 04°22'" },
     "planets": [
@@ -262,7 +262,7 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
       }
     }
   },
-  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine" }
 }
 ```
 
@@ -289,11 +289,9 @@ For Hetzner Docker+Caddy deployment, see **[DEPLOY-HETZNER.md](./DEPLOY-HETZNER.
 ## Windows quick start
 
 The Unix `install.sh` / `setup.sh` assume a POSIX layout (`.venv/bin/python`) and pin
-CPython 3.12. On Windows, `pyswisseph==2.10.3.2` has **no 3.12 wheel**, so a 3.12 venv
-tries to compile it from C and fails unless MSVC Build Tools are installed. The bundled
-`setup.ps1` avoids this by using **CPython 3.11**, where every native dep
-(`pyswisseph` / `pythonmonkey` / `pydantic-core`) ships a wheel — no compiler needed.
-`py-iztro` behaves identically on 3.11.
+CPython 3.12. The bundled `setup.ps1` uses the same **CPython 3.12** runtime and the
+astronomy-engine ephemeris path, so Swiss Ephemeris compilation is no longer part of
+Windows setup.
 
 ```powershell
 # prerequisites: git, and uv
@@ -301,7 +299,7 @@ irm https://astral.sh/uv/install.ps1 | iex      # if uv is not installed
 
 git clone https://github.com/zhenheco/life-chart-engine.git
 cd life-chart-engine
-./setup.ps1            # CPython 3.11 venv + pinned deps (no compiler)
+./setup.ps1            # CPython 3.12 venv + pinned deps
 ./life-chart.ps1 --help
 ```
 
@@ -368,7 +366,7 @@ The `--json` envelope has seven top-level keys, in this order:
 | `western` | `system` string, `ascendant`/`midheaven` position objects, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
 | `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object or `null`; when present `{ decadal, yearly, age }`). |
-| `meta` | `{ engine, version, ephemeris }` — all literals (`ephemeris: "Moshier"`). |
+| `meta` | `{ engine, version, ephemeris }` — all literals (`ephemeris: "astronomy-engine"`). |
 
 For the full field contract — every key, type, and the agent invocation protocol — see **[AGENTS.md](./AGENTS.md)**.
 
@@ -395,7 +393,7 @@ Not every output carries the same confidence. Read each tier accordingly:
 
 ## Known limitations
 
-- **No Chiron / minor bodies.** The build uses the Moshier ephemeris (`swe.FLG_MOSEPH`, no data files), which does not provide Chiron or other minor bodies. Only the 10 classical planets plus the lunar nodes are computed.
+- **No Chiron / minor bodies.** The adapter exposes only the 10 classical planets plus the lunar nodes.
 - **紫微斗數 uses one default school.** iztro is called with fixed options (`bySolar(..., True, 'zh-TW')`); the star-placement school and 四化 are whatever iztro defaults to. If you normally use 飛星 or another school, the main structure is unchanged but some details may differ.
 - **Approximate birth time degrades the time-dependent tier.** If the birth time is uncertain, the Ascendant/MC/house assignments, Human Design lines, and 時辰 — and anything derived from them — become unreliable. In that case, **treat the time-dependent fields as provisional** and consider **event-based rectification** (matching known life events to chart timing) before relying on them.
 
@@ -480,7 +478,7 @@ No. Inputs are a Gregorian solar date (`--date YYYY-MM-DD`) and clock time (`--t
 The planetary positions are fine, but the Ascendant, Midheaven, house cusps, the house each planet sits in, Human Design lines, and the 時辰 are all time-sensitive. Treat those as provisional and consider event-based rectification before relying on them.
 
 **Where's Chiron / asteroids / minor bodies?**
-Not included. The Moshier ephemeris used here does not provide them; only the 10 classical planets and the lunar nodes are computed.
+Not included. The adapter exposes only the 10 classical planets and the lunar nodes.
 
 **Which 紫微斗數 school does it use?**
 The default school as implemented by iztro (`bySolar(..., True, 'zh-TW')`). The school is not user-selectable.

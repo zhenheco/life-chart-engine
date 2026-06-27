@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-import ephemeris_astronomy as eph  # noqa: E402
+import ephemeris as eph  # noqa: E402
 
 
 BASELINE = ROOT / "tests" / "fixtures" / "ephemeris_baseline.json"

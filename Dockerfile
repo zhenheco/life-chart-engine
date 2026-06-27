@@ -8,9 +8,9 @@ ENV PORT=8000
 
 WORKDIR /app
 
-# build-essential: compile pyswisseph. nodejs: run the Zi Wei sidecar at runtime.
+# nodejs: run the Zi Wei sidecar at runtime.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential ca-certificates nodejs \
+      ca-certificates nodejs \
  && rm -rf /var/lib/apt/lists/*
 RUN node --version
 

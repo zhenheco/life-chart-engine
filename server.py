@@ -31,7 +31,7 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
         return build_json(_engine_input(body))
     except HTTPException:
         raise  # 400s from _engine_input pass through unchanged
-    except Exception as exc:  # build_json / Swiss Ephemeris edge input
+    except Exception as exc:  # build_json / ephemeris edge input
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(exc), "schema_version": "1.1"},
