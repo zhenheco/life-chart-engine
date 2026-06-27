@@ -10,3 +10,6 @@ dist/
 .idea/
 .vscode/
 /vendor/.iztro-build/
+
+# /go local-md tracker (not for publication)
+.scratch/
