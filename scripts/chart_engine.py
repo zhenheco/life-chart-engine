@@ -10,7 +10,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-import swisseph as swe
+try:
+    from . import ephemeris as eph
+except ImportError:
+    import ephemeris as eph
 
 # ====================== INPUT（改這裡即可） ======================
 INPUT = {
@@ -25,7 +28,7 @@ INPUT = {
 }
 # ===============================================================
 
-FLG = swe.FLG_MOSEPH | swe.FLG_SPEED
+FLG = eph.FLG
 SIGNS = ['牡羊','金牛','雙子','巨蟹','獅子','處女','天秤','天蠍','射手','摩羯','水瓶','雙魚']
 
 def fmt(lon):
@@ -52,20 +55,17 @@ def _safe(obj):
 
 def jd_of(date, time, tz):
     y,mo,d = date; h,mi = time
-    return swe.julday(y,mo,d, h+mi/60 - tz, swe.GREG_CAL)
+    return eph.julday(y,mo,d, h+mi/60 - tz)
 
 # ---------- 西洋星盤 ----------
 def western(inp):
     jd = jd_of(inp["date"], inp["time"], inp["tz_offset"])
-    P = {'太陽':swe.SUN,'月亮':swe.MOON,'水星':swe.MERCURY,'金星':swe.VENUS,'火星':swe.MARS,
-         '木星':swe.JUPITER,'土星':swe.SATURN,'天王星':swe.URANUS,'海王星':swe.NEPTUNE,
-         '冥王星':swe.PLUTO,'北交點':swe.TRUE_NODE}
+    P = ['太陽','月亮','水星','金星','火星','木星','土星','天王星','海王星','冥王星','北交點']
     pos={}; retro={}
-    for n,b in P.items():
-        r=swe.calc_ut(jd,b,FLG); pos[n]=r[0][0]; retro[n]= r[0][3]<0
+    for n in P:
+        pos[n],speed=eph.body_lon_speed(jd,n); retro[n]=speed<0
     pos['南交點']=(pos['北交點']+180)%360; retro['南交點']=False
-    cusps,ascmc = swe.houses_ex(jd, inp["lat"], inp["lon"], b'P', FLG)
-    asc,mc = ascmc[0], ascmc[1]
+    cusps,asc,mc = eph.houses_asc_mc(jd, inp["lat"], inp["lon"])
     def house_of(lon):
         lon%=360
         for i in range(12):
@@ -117,17 +117,16 @@ def human_design(inp, sun_lon):
     # design = Sun 88° earlier
     target=(sun_lon-88)%360; lo,hi=jd_b-100,jd_b-80
     for _ in range(60):
-        mid=(lo+hi)/2; s=swe.calc_ut(mid,swe.SUN,FLG)[0][0]
+        mid=(lo+hi)/2; s=eph.body_lon_speed(mid,'太陽')[0]
         diff=(s-target+180)%360-180
         if diff<0: lo=mid
         else: hi=mid
     jd_d=(lo+hi)/2
-    dY,dM,dD,_=swe.revjul(jd_d+inp["tz_offset"]/24)
-    B={'☉':swe.SUN,'☾':swe.MOON,'☿':swe.MERCURY,'♀':swe.VENUS,'♂':swe.MARS,'♃':swe.JUPITER,
-       '♄':swe.SATURN,'♅':swe.URANUS,'♆':swe.NEPTUNE,'♇':swe.PLUTO,'☊':swe.TRUE_NODE}
+    dY,dM,dD,_=eph.revjul(jd_d+inp["tz_offset"]/24)
+    B=['☉','☾','☿','♀','♂','♃','♄','♅','♆','♇','☊']
     def acts(jd):
         o={}
-        for n,b in B.items(): o[n]=swe.calc_ut(jd,b,FLG)[0][0]
+        for n in B: o[n]=eph.body_lon_speed(jd,n)[0]
         o['⊕']=(o['☉']+180)%360; o['☋']=(o['☊']+180)%360
         return o
     Pp=acts(jd_b); Dd=acts(jd_d)
