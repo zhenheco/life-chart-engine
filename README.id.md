@@ -4,13 +4,13 @@
 
 **Komputasi deterministik asli dari tiga sistem bagan kehidupan — astrologi natal Barat, 人類圖 (Human Design), dan 紫微斗數 (Zi Wei Dou Shu) — dari satu catatan kelahiran.**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
 
 `life-chart-engine` adalah alat baris perintah kecil dan luring. Anda memberikannya data kelahiran satu orang — tanggal, waktu, zona waktu, dan koordinat tempat — dan alat ini menghitung tiga sistem bagan independen dalam satu lintasan, lalu mengeluarkan laporan Markdown yang mudah dibaca atau objek JSON terstruktur untuk dikonsumsi oleh program dan agen AI.
 
-Ini dibangun untuk orang-orang yang menginginkan **komputasi bagan yang dapat direproduksi dan dapat diverifikasi** daripada aplikasi web kotak hitam: praktisi, pengembang yang membangun alat kesadaran diri, dan agen AI yang membutuhkan langkah komputasi murni. Setiap angka berasal dari komputasi astronomi nyata (Swiss Ephemeris) dan perpustakaan 紫微斗數 nyata (iztro) — bukan dari layanan jarak jauh, bukan dari pencarian cache, dan tidak pernah melalui jaringan.
+Ini dibangun untuk orang-orang yang menginginkan **komputasi bagan yang dapat direproduksi dan dapat diverifikasi** daripada aplikasi web kotak hitam: praktisi, pengembang yang membangun alat kesadaran diri, dan agen AI yang membutuhkan langkah komputasi murni. Setiap angka berasal dari komputasi astronomi nyata dan perpustakaan 紫微斗數 nyata (iztro) — bukan dari layanan jarak jauh, bukan dari pencarian cache, dan tidak pernah melalui jaringan.
 
 ---
 
@@ -33,7 +33,7 @@ Tipe, Otoritas, dan Definisi dalam Human Design **bukan hardcoded** — mereka d
 Mesin ini melakukan matematika nyata daripada mendekati atau memanggil layanan. Pilihan itu menghadirkan tiga properti yang penting untuk alat bagan serius apa pun:
 
 - **Deterministik.** Input kelahiran yang sama selalu menghasilkan keluaran yang sama, byte demi byte. Tidak ada keacakan, tidak ada model, tidak ada hanyutan pembulatan antar lintasan.
-- **Dapat direproduksi.** Siapa pun dengan repo dan input yang sama dapat meregenerasi bagan Anda yang tepat. Perhitungan menggunakan Swiss Ephemeris (model Moshier) untuk langit dan iztro untuk 紫微斗數 — keduanya deterministik.
+- **Dapat direproduksi.** Siapa pun dengan repo dan input yang sama dapat meregenerasi bagan Anda yang tepat. Perhitungan menggunakan astronomy-engine untuk langit dan iztro untuk 紫微斗數 — keduanya deterministik.
 - **Dapat diverifikasi lintas-silang.** Karena tiga sistem independen dihitung dari satu momen kelahiran, Anda dapat triangulasi. **Ketika ketiga sistem menunjuk pada sinyal yang sama, perlakukan sebagai kepercayaan tinggi. Ketika hanya satu sistem menunjukkan detail, perlakukan sebagai titik referensi, bukan kesimpulan.** Ini adalah prinsip desain inti mesin — ia menghasilkan fakta untuk dibaca silang, bukan satu vonis.
 
 ---
@@ -91,7 +91,7 @@ bash scripts/build-iztro-bundle.sh
 Dependensi langsung Python dipatok di `requirements.txt`:
 
 ```
-pyswisseph==2.10.3.2
+astronomy-engine>=2.1.19
 fastapi==0.128.8
 uvicorn==0.39.0
 httpx==0.28.1
@@ -182,7 +182,7 @@ Sampel nyata terpangkas (array terpotong menjadi 1–2 entri; nilai verbatim):
     "target": "2025-01-01"
   },
   "western": {
-    "system": "Tropical / Placidus / Moshier",
+    "system": "Tropical / Placidus / astronomy-engine",
     "ascendant": { "lon": 128.483, "sign": "獅子", "deg": 8, "min": 29, "label": "獅子 08°29'" },
     "midheaven": { "lon": 34.3665, "sign": "金牛", "deg": 4, "min": 22, "label": "金牛 04°22'" },
     "planets": [
@@ -245,7 +245,7 @@ Sampel nyata terpangkas (array terpotong menjadi 1–2 entri; nilai verbatim):
     }
 
   },
-  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine" }
 }
 ```
 
@@ -285,7 +285,7 @@ Selubung `--json` memiliki tujuh kunci tingkat atas, dalam urutan ini:
 | `western` | String `system`, objek posisi `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
 | `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (objek atau `null`). |
-| `meta` | `{ engine, version, ephemeris }` — semua literal (`ephemeris: "Moshier"`). |
+| `meta` | `{ engine, version, ephemeris }` — semua literal (`ephemeris: "astronomy-engine"`). |
 
 Untuk kontrak bidang lengkap — setiap kunci, tipe, dan protokol invokasi agen — lihat **[AGENTS.md](./AGENTS.md)**.
 
@@ -312,7 +312,7 @@ Tidak setiap keluaran membawa kepercayaan yang sama. Baca setiap tingkat sesuai:
 
 ## Batasan yang diketahui
 
-- **Tidak ada Chiron / badan minor.** Pembangunan menggunakan ephemeris Moshier (`swe.FLG_MOSEPH`, tidak ada file data), yang tidak menyediakan Chiron atau badan minor lainnya. Hanya 10 planet klasik ditambah node lunar yang dihitung.
+- **Tidak ada Chiron / badan minor.** Adapter hanya mengekspos 10 planet klasik dan node lunar.
 - **紫微斗數 menggunakan satu sekolah default.** iztro dipanggil dengan opsi tetap (`bySolar(..., True, 'zh-TW')`); sekolah penempatan bintang dan 四化 adalah default iztro apa pun. Jika Anda biasanya menggunakan 飛星 atau sekolah lain, struktur utama tidak berubah tetapi beberapa detail mungkin berbeda.
 - **Waktu lahir perkiraan merendahkan tingkat tergantung waktu.** Jika waktu kelahiran tidak pasti, penugasan Ascendant/MC/rumah, garis Human Design, dan 時辰 — dan apa pun yang diturunkan darinya — menjadi tidak dapat diandalkan. Dalam hal itu, **perlakukan bidang tergantung waktu sebagai sementara** dan pertimbangkan **rektifikasi berbasis peristiwa** (mencocokkan peristiwa kehidupan yang diketahui dengan waktu bagan) sebelum mengandalkannya.
 
@@ -324,7 +324,7 @@ Model integrasi yang dimaksud adalah **instalasi-sendiri**, bukan SaaS.
 
 Pengguna menyalin URL repo ini, dan **mereka sendiri** agen atau CLI (Claude Code, Hermes, skrip, dll.) mengkloningnya dan menjalankannya **secara lokal di mesin pengguna**. Komputasi terjadi di sisi pengguna. Tidak ada titik akhir yang dihosting untuk dipanggil, tidak ada akun, dan **tidak ada integrasi SaaS yang diperlukan** — mesin adalah subprocess stateless, deterministik, offline.
 
-Karena penerbit tidak mengoperasikannya sebagai layanan jaringan, tidak ada kewajiban §13 yang jatuh pada penerbit untuk instalasi-sendiri seseorang. (Terpisah, §13 hanya mengikat operator yang menjalankan versi *termodifikasi* yang dapat dijangkau jaringan — bukan penggunaan lokal yang tidak dimodifikasi.)
+Penerbit tidak mengoperasikannya sebagai layanan jaringan. Di bawah MIT, penggunaan lokal, modifikasi, distribusi, dan penggunaan hosting diizinkan sesuai `LICENSE`.
 
 Untuk agen, kontraknya sederhana: dispatch subprocess `--json` dengan Python venv di workdir repo, parse stdout sebagai JSON, cabang di `ok` (dan kode keluar), lalu serahkan objek terstruktur. Tidak perlu pembersihan — stateless. Kontrak CLI + JSON lengkap ada di **[AGENTS.md](./AGENTS.md)**.
 
@@ -359,26 +359,13 @@ Human Design + Zi Wei Dou Shu (紫微斗數) dari data kelahiran.
 
 ## Lisensi
 
-Repositori ini dilisensikan di bawah **[AGPL-3.0](./LICENSE)**.
+Repositori ini berlisensi **[MIT](./LICENSE)**.
 
-**AGPL-3.0 dalam bahasa Inggris sederhana.** Ini adalah GNU GPL-3.0 (lisensi copyleft kuat: jika Anda mendistribusikan perangkat lunak, Anda harus merilis sumber lengkap yang sesuai di bawah lisensi yang sama) **ditambah satu klausul ekstra, Bagian 13**. §13 menutup "celah SaaS": melampaui pemicu GPL *distribusi*, ini menambahkan bahwa jika Anda *memodifikasi* program dan membiarkan pengguna berinteraksi dengan versi termodifikasi Anda melalui jaringan, Anda harus menawarkan pengguna jarak jauh sumber yang sesuai dengan versi Anda. (Menjalankan yang tidak dimodifikasi di hulu sebagai layanan jaringan tidak memicu §13 dengan sendirinya.) AGPL bersifat timbal balik tetapi bukan tanpa batas viral — ia hanya menjangkau kode yang merupakan turunan dari, atau ditautkan dengan, kode AGPL.
+Engine memakai **astronomy-engine (MIT)** untuk perhitungan astronomi dan **iztro (MIT)** untuk Zi Wei Dou Shu. Rumus rumah Placidus dan referensi Meeus dicatat di [CREDITS.md](./CREDITS.md).
 
-**Mengapa repo ini AGPL.** Mesin menghubungkan **Swiss Ephemeris** (via `pyswisseph`) untuk posisi planet dan cusp rumah. Astrodienst **dual-lisensi** Swiss Ephemeris sebagai **AGPL-3.0 ATAU lisensi komersial**, dan kodenya tidak dapat dilisensikan ulang sebagai apa pun yang lebih permisif. Karena AGPL adalah copyleft dan proyek ini menghubungkannya, seluruh karya gabungan harus AGPL. (`iztro` adalah MIT dan tidak memberlakukan copyleft; Swiss Ephemeris adalah satu-satunya komponen yang memaksa AGPL di sini.)
+Anda dapat memakai, menyalin, memodifikasi, mendistribusikan, mensublisensikan, dan menjual salinan berdasarkan ketentuan MIT. Pertahankan copyright dan permission notice pada bagian substansial perangkat lunak.
 
-**Apa artinya dalam praktik.**
-
-| Apa yang Anda lakukan | Kewajiban AGPL |
-|--------|-----------------|
-| **Instalasi-sendiri** (menjalankannya secara lokal untuk diri sendiri) | §13 *tidak* dipicu — tidak ada pengguna jarak jauh untuk dilayani, dan Anda sudah memiliki sumbernya. Bersih. |
-| **Menjalankan versi *termodifikasi* sebagai layanan jaringan** | §13 *dipicu* — Anda harus menawarkan pengguna jarak jauh sumber yang sesuai lengkap dari versi yang dikerahkan, di bawah AGPL, termasuk modifikasi Anda. Catatan: kewajiban penawar-sumber §13 disyaratkan pada modifikasi — menjalankan yang tidak dimodifikasi di hulu sebagai layanan jaringan tidak memicu §13 dengan sendirinya, meskipun sumbernya sudah publik. |
-
-**Tiga pilihan Anda** jika kewajiban sumber jaringan tidak sesuai dengan kasus penggunaan Anda:
-
-1. **Tetap AGPL** — publikasikan sumber lengkap yang sesuai (termasuk modifikasi) kepada siapa pun yang menggunakannya, termasuk melalui jaringan per §13. Gratis, tidak ada negosiasi.
-2. **Beli lisensi komersial Swiss Ephemeris dari [Astrodienst](https://www.astro.com/swisseph/)** — ini mengangkat kewajiban AGPL untuk bagian Swiss Ephemeris, memungkinkan Anda melisensikan ulang kode Anda sendiri dan mengirim/host build tertutup. (Ini adalah model dual-licensing Astrodienst.)
-3. **Tukar ephemeris** — ganti `pyswisseph` dengan sumber astronomi berlisensi permisif (misalnya **Skyfield (MIT)** ditambah **JPL DE440** ephemeris domain publik — alternatif ilustratif, bukan satu-satunya opsi). Dengan Swiss Ephemeris hilang, sisa stack (iztro MIT, ditambah MPL-2.0/MIT/Apache deps) tidak lagi memaksa AGPL dan seluruh repo dapat MIT. Ini adalah usaha teknik nyata: Anda harus menerapkan ulang semuanya yang saat ini bersumber dari Swiss Ephemeris — bujur planet, bendera retrograde, Asc/MC, cusp rumah Placidus, dan input ke pemecah desain 88° Human Design.
-
-Lihat **[CREDITS.md](./CREDITS.md)** untuk atribusi lengkap dan lisensi per-dependensi.
+Lihat **[CREDITS.md](./CREDITS.md)** untuk atribusi lengkap dan lisensi dependensi.
 
 ---
 
@@ -391,7 +378,7 @@ Tidak. Input adalah tanggal matahari Gregorian (`--date YYYY-MM-DD`) dan waktu j
 Posisi planet-planet baik-baik saja, tetapi Ascendant, Midheaven, cusp rumah, rumah tempat setiap planet duduk, garis Human Design, dan 時辰 semuanya sensitif waktu. Perlakukan ini sebagai sementara dan pertimbangkan rektifikasi berbasis peristiwa sebelum mengandalkannya.
 
 **Di mana Chiron / asteroid / badan minor?**
-Tidak termasuk. Ephemeris Moshier yang digunakan di sini tidak menyediakannya; hanya 10 planet klasik dan node lunar yang dihitung.
+Tidak termasuk. Adapter hanya mengekspos 10 planet klasik dan node lunar.
 
 **Sekolah 紫微斗數 mana yang digunakan?**
 Sekolah default seperti yang diimplementasikan oleh iztro (`bySolar(..., True, 'zh-TW')`). Sekolah tidak dapat dipilih pengguna.
@@ -399,8 +386,8 @@ Sekolah default seperti yang diimplementasikan oleh iztro (`bySolar(..., True, '
 **Apakah itu pulang telepon / gunakan jaringan?**
 Tidak. Mesin sepenuhnya offline — tidak ada telemetri, tidak ada panggilan jaringan, tidak ada efek samping. Ini adalah subprocess stateless, deterministik, satu kali.
 
-**Bisakah saya menggunakannya di dalam produk closed-source?**
-Di bawah AGPL-3.0, ya untuk penggunaan pribadi/lokal. Mendistribusikan build memicu kewajiban GPL yang menyampaikan/sumber, dan melayani jaringan build *termodifikasi* memicu §13 AGPL — bagaimanapun juga Anda harus menawarkan sumber yang sesuai. Untuk sepenuhnya closed-source, baik beli lisensi komersial Swiss Ephemeris dari Astrodienst atau tukar ephemeris ke Skyfield + JPL DE440 (lihat [Lisensi](#licensing)).
+**Bisakah saya menggunakannya di produk sumber tertutup?**
+Ya. Repositori ini berlisensi MIT. Pertahankan copyright dan permission notice pada bagian substansial perangkat lunak.
 
 ---
 
@@ -412,8 +399,9 @@ Di bawah AGPL-3.0, ya untuk penggunaan pribadi/lokal. Mendistribusikan build mem
 
 ## Kredit & Lisensi
 
-- **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, dual-licensed AGPL-3.0 / komersial (<https://www.astro.com/swisseph/>).
-- **iztro** — MIT, untuk 紫微斗數.
+- **astronomy-engine** — Don Cross, MIT; perhitungan astronomi.
+- **Meeus, Astronomical Algorithms** — referensi rumus rumah Placidus.
+- **iztro** — MIT, untuk Zi Wei Dou Shu.
 - Atribusi lengkap: **[CREDITS.md](./CREDITS.md)**.
-- **Lisensi:** [AGPL-3.0](./LICENSE).
+- **Lisensi:** [MIT](./LICENSE).
 - **Kontrak agen / JSON:** [AGENTS.md](./AGENTS.md).

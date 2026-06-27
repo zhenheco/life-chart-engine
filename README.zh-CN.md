@@ -4,13 +4,13 @@
 
 **一个确定性本地计算引擎，支持三种生命图表系统 —— 西方本命星盘、人类图 (Human Design) 和紫微斗数 —— 从单一出生记录生成。**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
 
 `life-chart-engine` 是一个小型、离线的命令行工具。给它一个人的出生数据 —— 日期、时间、时区和地点坐标 —— 它将在一次运行中计算三个独立的图表系统，然后输出易读的 Markdown 报告或结构化的 JSON 对象供程序和 AI 代理使用。
 
-它专为那些想要**可重现、可验证**的图表计算（而不是黑箱 Web 应用）的用户而设计：实践者、构建自我意识工具的开发者，以及需要纯计算步骤的 AI 代理。每个数字都来自真实的天文计算（Swiss Ephemeris）和真实的紫微斗数库（iztro）—— 不来自远程服务、不来自缓存查询，永远不经过网络。
+它专为那些想要**可重现、可验证**的图表计算（而不是黑箱 Web 应用）的用户而设计：实践者、构建自我意识工具的开发者，以及需要纯计算步骤的 AI 代理。每个数字都来自真实的天文计算和真实的紫微斗数库（iztro）—— 不来自远程服务、不来自缓存查询，永远不经过网络。
 
 ---
 
@@ -33,7 +33,7 @@
 该引擎进行真实的数学计算而不是近似或调用服务。这个选择为任何严肃的图表工具带来三个重要属性：
 
 - **确定性。** 相同的出生输入总是产生相同的输出，字节对字节。没有随机性、没有模型、没有运行之间的舍入漂移。
-- **可重现性。** 任何拥有仓库和相同输入的人都能重新生成你的精确图表。计算使用 Swiss Ephemeris（Moshier 模型）用于天空，iztro 用于紫微斗数 —— 两者都是确定性的。
+- **可重现性。** 任何拥有仓库和相同输入的人都能重新生成你的精确图表。计算使用 astronomy-engine用于天空，iztro 用于紫微斗数 —— 两者都是确定性的。
 - **跨系统可验证性。** 因为三个独立的系统是从一个出生时刻计算的，你可以三角验证。**当所有三个系统都指向同一个信号时，将其视为高信心。当只有一个系统显示一个细节时，将其视为参考点，而非结论。** 这是该引擎的核心设计原则 —— 它产生供交叉阅读的事实，而不是单一的判决。
 
 ---
@@ -91,7 +91,7 @@ bash scripts/build-iztro-bundle.sh
 Python 直接依赖固定在 `requirements.txt` 中：
 
 ```
-pyswisseph==2.10.3.2
+astronomy-engine>=2.1.19
 fastapi==0.128.8
 uvicorn==0.39.0
 httpx==0.28.1
@@ -182,7 +182,7 @@ iztro@2.5.8
     "target": "2025-01-01"
   },
   "western": {
-    "system": "Tropical / Placidus / Moshier",
+    "system": "Tropical / Placidus / astronomy-engine",
     "ascendant": { "lon": 128.483, "sign": "獅子", "deg": 8, "min": 29, "label": "獅子 08°29'" },
     "midheaven": { "lon": 34.3665, "sign": "金牛", "deg": 4, "min": 22, "label": "金牛 04°22'" },
     "planets": [
@@ -245,7 +245,7 @@ iztro@2.5.8
     }
 
   },
-  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine" }
 }
 ```
 
@@ -285,7 +285,7 @@ iztro@2.5.8
 | `western` | `system` 字符串、`ascendant`/`midheaven` 位置对象、`planets[]`、`houses[]`（×12）、`aspects[]`。 |
 | `human_design` | `type`、`authority`、`profile`、`definition`、`incarnation_cross`、`design_date`、`defined_centers[]`、`open_centers[]`、`channels[]`、`gates[]`。 |
 | `ziwei` | `five_elements_class`、`soul`、`body`、`hour_index`、`palaces[]`、`horoscope`（对象或 `null`）。 |
-| `meta` | `{ engine, version, ephemeris }` —— 全部字面值（`ephemeris: "Moshier"`）。 |
+| `meta` | `{ engine, version, ephemeris }` —— 全部字面值 (`ephemeris: "astronomy-engine"`). |
 
 完整字段合约 —— 每个键、类型和代理调用协议 —— 见 **[AGENTS.md](./AGENTS.md)**。
 
@@ -312,7 +312,7 @@ iztro@2.5.8
 
 ## 已知限制
 
-- **无 Chiron / 小天体。** 构建使用 Moshier 黄历（`swe.FLG_MOSEPH`，无数据文件），不提供 Chiron 或其他小天体。仅计算 10 颗古典行星加月球节点。
+- **无 Chiron / 小天体。** 当前 adapter 只输出 10 颗古典行星加月球节点。
 - **紫微斗数使用一个默认流派。** iztro 被调用时使用固定选项（`bySolar(..., True, 'zh-TW')`）；星曜位置流派和四化是 iztro 的默认值。如果你通常使用飞星或其他流派，主要结构不变但某些细节可能不同。
 - **近似出生时间降低时间依赖层级。** 如果出生时间不确定，上升点/中天/宫位分配、人类图线和时辰 —— 以及任何源自它们的东西 —— 变得不可靠。在这种情况下，**将时间依赖字段视为暂定**并在依赖它们之前考虑**基于事件的矫正**（将已知的生活事件与图表时间匹配）。
 
@@ -324,7 +324,7 @@ iztro@2.5.8
 
 用户复制此仓库的 URL，**他们自己的**代理或 CLI（Claude Code、Hermes、脚本等）克隆它并**在用户的计算机上本地**运行它。计算发生在用户方。没有托管的端点可调用，没有账户，**不需要 SaaS 整合** —— 引擎是一个无状态的、确定性的、离线的子进程。
 
-因为发布者不将其作为网络服务运营，第 13 条（§13）的义务对发布者来说不适用于有人自安装的情况。（单独地，§13 仅对运营*修改过的*网络可达版本的运营者强制 —— 不适用于未修改的本地使用。）
+发布者不把它作为网络服务运营。按照 MIT 条款，本地使用、修改、分发和托管使用都允许，细节见 `LICENSE`。
 
 对于代理来说，合约很简单：用仓库中的 venv Python 分发 `--json` 子进程，将 stdout 解析为 JSON，在 `ok`（和退出代码）上分支，然后移交结构化对象。不需要清理 —— 它是无状态的。完整的 CLI + JSON 合约存在于 **[AGENTS.md](./AGENTS.md)**。
 
@@ -359,26 +359,13 @@ iztro@2.5.8
 
 ## 许可证
 
-此仓库在 **[AGPL-3.0](./LICENSE)** 下许可。
+本仓库采用 **[MIT](./LICENSE)** 许可证。
 
-**AGPL-3.0 的通俗英文说法。** 它是 GNU GPL-3.0（一个强制性 copyleft 许可证：如果你分发软件，你必须在同一许可证下发布你的完整对应源代码）**加上一个额外条款，第 13 条**。§13 关闭了 "SaaS 漏洞"：超越 GPL 的*分发*触发器，它增加了如果你*修改*程序并让用户通过网络与你的修改版本交互，你必须向那些远程用户提供你的对应源代码。（将未修改的上游作为网络服务运行本身不触发 §13。）AGPL 是相互的但不无限地病毒性 —— 它仅涵盖到是 AGPL 代码的导数或与其链接的代码。
+引擎使用 **astronomy-engine (MIT)** 进行天文计算，并使用 **iztro (MIT)** 进行紫微斗数计算。Placidus 宫位公式和 Meeus 参考列在 [CREDITS.md](./CREDITS.md)。
 
-**为什么此仓库是 AGPL。** 引擎链接**Swiss Ephemeris**（通过 `pyswisseph`）用于行星位置和宫头。Astrodienst **双重许可** Swiss Ephemeris 为 **AGPL-3.0 或商业许可证**，其代码不能被重新许可为任何更宽松的东西。因为 AGPL 是 copyleft 且此项目链接它，整个组合工作必须是 AGPL。（`iztro` 是 MIT 且不强制 copyleft；Swiss Ephemeris 是这里唯一强制 AGPL 的组件。）
+你可以按 MIT 条款使用、复制、修改、分发、再授权和销售副本。请在软件的实质部分保留 copyright 与 permission notice。
 
-**在实践中意味着什么。**
-
-| 你做 | AGPL 义务 |
-|--------|-----------------|
-| **自安装**（为自己本地运行） | §13*不*被触发 —— 没有远程用户需要提供，你已经有了源代码。清晰。 |
-| **将*修改*版本作为网络服务运行** | §13*被*触发 —— 你必须向那些远程用户提供你的部署版本的完整对应源，在 AGPL 下，包括你的修改。注意：§13 的源代码提供义务以修改为条件 —— 仅仅将未修改的上游作为网络服务运行本身不触发 §13，尽管源代码已经公开了。 |
-
-**你的三个选项**，如果网络源义务不符合你的用例：
-
-1. **保持 AGPL** —— 向任何使用它的人发布你的完整对应源（包括修改），包括通过网络根据 §13。免费，无需协商。
-2. **从 [Astrodienst](https://www.astro.com/swisseph/) 购买 Swiss Ephemeris 商业许可证** —— 这解除了 Swiss Ephemeris 部分的 AGPL 义务，让你重新许可自己的代码并发送/主持一个闭源构建。（这是 Astrodienst 的双重许可模式。）
-3. **交换黄历** —— 将 `pyswisseph` 替换为有许可许可的天文学源（例如 **Skyfield (MIT)** 加上公共领域 **JPL DE440** 黄历 —— 示意的替代品，不是唯一的选项）。Swiss Ephemeris 消失后，剩余的堆栈（iztro MIT，加上 MPL-2.0/MIT/Apache deps）不再强制 AGPL，整个仓库可以是 MIT。这是真实的工程工作：你必须重新实现当前源自 Swiss Ephemeris 的所有东西 —— 行星黄经、逆行标志、上升点/中天、Placidus 宫头，以及人类图 88° 设计求解器的输入。
-
-见 **[CREDITS.md](./CREDITS.md)** 获取完整归属和每个依赖的许可证。
+完整致谢和依赖许可证见 **[CREDITS.md](./CREDITS.md)**。
 
 ---
 
@@ -391,7 +378,7 @@ iztro@2.5.8
 行星位置没问题，但上升点、中天、宫头、每颗行星所在的宫、人类图线和时辰都是时间敏感的。将这些视为暂定，在依赖它们之前考虑基于事件的矫正。
 
 **哪里有 Chiron / 小行星 / 小天体？**
-不包括。这里使用的 Moshier 黄历不提供它们；仅计算 10 颗古典行星和月球节点。
+不包括。当前 adapter 只输出 10 颗古典行星和月球节点。
 
 **它使用哪个紫微斗数流派？**
 iztro 实现的默认流派（`bySolar(..., True, 'zh-TW')`）。流派不是用户可选的。
@@ -400,7 +387,7 @@ iztro 实现的默认流派（`bySolar(..., True, 'zh-TW')`）。流派不是用
 否。引擎完全离线 —— 没有遥测、没有网络调用、没有副作用。它是一个无状态的、确定性的一次性子进程。
 
 **我可以在闭源产品中使用它吗？**
-根据 AGPL-3.0，是的用于私有/本地使用。分发构建触发 GPL 传达/源义务，网络服务*修改*构建触发 AGPL §13 —— 任意方式你必须提供对应源。为完全闭源，要么从 Astrodienst 购买 Swiss Ephemeris 商业许可证，要么将黄历交换为 Skyfield + JPL DE440（见[许可证](#许可证)）。
+可以。本仓库采用 MIT 许可证；请在软件的实质部分保留 copyright 与 permission notice。
 
 ---
 
@@ -412,8 +399,9 @@ iztro 实现的默认流派（`bySolar(..., True, 'zh-TW')`）。流派不是用
 
 ## 致谢与许可证
 
-- **Swiss Ephemeris** 通过 `pyswisseph` —— © Astrodienst AG，双重许可 AGPL-3.0 / 商业（<https://www.astro.com/swisseph/>）。
-- **iztro** —— MIT，用于紫微斗数。
+- **astronomy-engine** — Don Cross，MIT；天文计算。
+- **Meeus, Astronomical Algorithms** — Placidus 宫位公式参考。
+- **iztro** — MIT，用于紫微斗数。
 - 完整归属：**[CREDITS.md](./CREDITS.md)**。
-- **许可证：** [AGPL-3.0](./LICENSE)。
+- **许可证：** [MIT](./LICENSE)。
 - **代理 / JSON 合约：** [AGENTS.md](./AGENTS.md)。

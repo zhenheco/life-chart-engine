@@ -4,13 +4,13 @@
 
 **Deterministic native computation of three life-chart systems — Western natal astrology, 人類圖 (Human Design), and 紫微斗數 (Zi Wei Dou Shu) — from a single birth record.**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
 
 `life-chart-engine` is a small, offline command-line tool. You give it one person's birth data — date, time, timezone, and place coordinates — and it computes three independent chart systems in one pass, then emits either a human-readable Markdown report or a structured JSON object for programs and AI agents to consume.
 
-It is built for people who want **reproducible, verifiable** chart calculations rather than a black-box web app: practitioners, developers building self-awareness tools, and AI agents that need a pure compute step. Every number comes from real astronomical computation (astronomy-engine) and a real 紫微斗數 library (iztro) — not from a remote service, not from cached lookups, and never over the network.
+It is built for people who want **reproducible, verifiable** chart calculations rather than a black-box web app: practitioners, developers building self-awareness tools, and AI agents that need a pure compute step. Every number comes from real astronomical computation and a real 紫微斗數 library (iztro) — not from a remote service, not from cached lookups, and never over the network.
 
 ---
 
@@ -290,7 +290,7 @@ For Hetzner Docker+Caddy deployment, see **[DEPLOY-HETZNER.md](./DEPLOY-HETZNER.
 
 The Unix `install.sh` / `setup.sh` assume a POSIX layout (`.venv/bin/python`) and pin
 CPython 3.12. The bundled `setup.ps1` uses the same **CPython 3.12** runtime and the
-astronomy-engine ephemeris path, so Swiss Ephemeris compilation is no longer part of
+astronomy-engine dependency path, so native astronomy-library compilation is no longer part of
 Windows setup.
 
 ```powershell
@@ -405,7 +405,7 @@ The intended integration model is **self-install**, not SaaS.
 
 A user copies this repo's URL, and **their own** agent or CLI (Claude Code, Hermes, a script, etc.) clones it and runs it **locally on the user's machine**. The compute happens on the user's side. There is no hosted endpoint to call, no account, and **no SaaS integration required** — the engine is a stateless, deterministic, offline subprocess.
 
-Because the publisher does not operate it as a network service, no §13 obligation falls on the publisher for someone else's self-install. (Separately, §13 only obligates an operator who runs a *modified* network-reachable version — not unmodified local use.)
+The publisher does not operate it as a network service. Under MIT, local use, modification, distribution, and hosted use are allowed under the terms in `LICENSE`.
 
 For agents, the contract is simple: dispatch the installed `life-chart --json` wrapper when available, or fall back to the venv Python command in the repo workdir, parse stdout as JSON, branch on `ok` (and the exit code), then hand off the structured object. No cleanup needed — it is stateless. The full CLI + JSON contract lives in **[AGENTS.md](./AGENTS.md)**.
 
@@ -446,26 +446,13 @@ Human Design + Zi Wei Dou Shu (紫微斗數) from birth data.
 
 ## Licensing
 
-This repository is licensed under **[AGPL-3.0](./LICENSE)**.
+This repository is licensed under **[MIT](./LICENSE)**.
 
-**AGPL-3.0 in plain English.** It is the GNU GPL-3.0 (a strong copyleft license: if you distribute the software, you must release your complete corresponding source under the same license) **plus one extra clause, Section 13**. §13 closes the "SaaS loophole": beyond the GPL's *distribution* trigger, it adds that if you *modify* the program and let users interact with your modified version over a network, you must offer those remote users your corresponding source. (Running an unmodified upstream as a network service does not by itself trigger §13.) AGPL is reciprocal but not boundlessly viral — it only reaches code that is a derivative of, or linked with, the AGPL code.
+The engine uses **astronomy-engine (MIT)** for astronomical calculations and **iztro (MIT)** for Zi Wei Dou Shu. Placidus house formulas are credited in [CREDITS.md](./CREDITS.md) with the Meeus reference.
 
-**Why this repo is AGPL.** The engine links **Swiss Ephemeris** (via `pyswisseph`) for planetary positions and house cusps. Astrodienst **dual-licenses** Swiss Ephemeris as **AGPL-3.0 OR a commercial license**, and its code cannot be relicensed as anything more permissive. Because AGPL is copyleft and this project links it, the whole combined work must be AGPL. (`iztro` is MIT and imposes no copyleft; Swiss Ephemeris is the only component forcing AGPL here.)
+You may use, copy, modify, distribute, sublicense, and sell copies under the MIT terms. Keep the copyright and permission notice with substantial portions of the software.
 
-**What it means in practice.**
-
-| You do | AGPL obligation |
-|--------|-----------------|
-| **Self-install** (run it locally for yourself) | §13 is *not* triggered — there are no remote users to serve, and you already have the source. Clean. |
-| **Run a *modified* version as a network service** | §13 *is* triggered — you must offer those remote users the complete corresponding source of your deployed version, under AGPL, including your modifications. Note: §13's source-offer duty is conditioned on modification — running the unmodified upstream as a network service does not by itself trigger §13, though the source is already public anyway. |
-
-**Your three options** if the network-source obligation does not fit your use case:
-
-1. **Keep AGPL** — publish your complete corresponding source (including modifications) to anyone who uses it, including over a network per §13. Free, no negotiation.
-2. **Buy a Swiss Ephemeris commercial license from [Astrodienst](https://www.astro.com/swisseph/)** — this lifts the AGPL obligation for the Swiss Ephemeris portion, letting you relicense your own code and ship/host a closed build. (This is Astrodienst's dual-licensing model.)
-3. **Swap the ephemeris** — replace `pyswisseph` with a permissively licensed astronomy source (for example **Skyfield (MIT)** plus the public-domain **JPL DE440** ephemeris — illustrative alternatives, not the only option). With Swiss Ephemeris gone, the remaining stack (iztro MIT, plus the MPL-2.0/MIT/Apache deps) no longer forces AGPL and the whole repo could be MIT. This is real engineering effort: you must reimplement everything currently sourced from Swiss Ephemeris — planetary longitudes, retrograde flags, Asc/MC, Placidus house cusps, and the inputs to the Human Design 88° design solver.
-
-See **[CREDITS.md](./CREDITS.md)** for full attribution and per-dependency licenses.
+See **[CREDITS.md](./CREDITS.md)** for full attribution and dependency licenses.
 
 ---
 
@@ -487,7 +474,7 @@ The default school as implemented by iztro (`bySolar(..., True, 'zh-TW')`). The 
 No. The engine is fully offline — no telemetry, no network calls, no side effects. It is a stateless, deterministic one-shot subprocess.
 
 **Can I use it inside a closed-source product?**
-Under AGPL-3.0, yes for private/local use. Distributing a build triggers the GPL conveying/source obligations, and network-serving a *modified* build triggers AGPL §13 — either way you must offer corresponding source. To go fully closed-source, either buy a Swiss Ephemeris commercial license from Astrodienst or swap the ephemeris to Skyfield + JPL DE440 (see [Licensing](#licensing)).
+Yes. The repository is MIT-licensed. Keep the copyright and permission notice with substantial portions of the software.
 
 ---
 
@@ -499,8 +486,9 @@ Under AGPL-3.0, yes for private/local use. Distributing a build triggers the GPL
 
 ## Credits & License
 
-- **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, dual-licensed AGPL-3.0 / commercial (<https://www.astro.com/swisseph/>).
-- **iztro** — MIT, for 紫微斗數.
+- **astronomy-engine** — Don Cross, MIT; astronomical calculations.
+- **Meeus, Astronomical Algorithms** — reference for Placidus house formulas.
+- **iztro** — MIT, for Zi Wei Dou Shu.
 - Full attribution: **[CREDITS.md](./CREDITS.md)**.
-- **License:** [AGPL-3.0](./LICENSE).
+- **License:** [MIT](./LICENSE).
 - **Agent / JSON contract:** [AGENTS.md](./AGENTS.md).

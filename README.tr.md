@@ -4,13 +4,13 @@
 
 **Üç yaşam haritası sisteminin deterministik yerel hesaplaması — Batı doğum haritacılığı (Western natal astrology), 人類圖 (Human Design) ve 紫微斗數 (Zi Wei Dou Shu) — tek bir doğum kaydından.**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
 
 `life-chart-engine` küçük ve çevrimdışı bir komut satırı aracıdır. Bir kişinin doğum verilerini — tarih, zaman, saat dilimi ve yer koordinatlarını — girin; araç üç bağımsız harita sistemini tek seferde hesaplar ve insan tarafından okunabilir bir Markdown raporu ya da programlar ve yapay zeka ajanları tarafından tüketilecek yapılandırılmış bir JSON nesnesi yayınlar.
 
-Gerçek astronomik hesaplamayı (Swiss Ephemeris) ve gerçek bir 紫微斗數 kütüphanesini (iztro) kullanan **üretebilir ve doğrulanabilir** harita hesaplamaları isteyen insanlar için tasarlanmıştır — bir kara kutu web uygulaması değil, uzak bir hizmet değil, hiçbir zaman ağ üzerinden değil. Her sayı gerçek astronomik hesaplamadan (Swiss Ephemeris) ve gerçek bir 紫微斗數 kütüphanesinden (iztro) gelir — uzak bir hizmet, önbelleğe alınmış arama veya ağ üzerinde hiçbir şey olmaz.
+Gerçek astronomik hesaplamayı ve gerçek bir 紫微斗數 kütüphanesini (iztro) kullanan **üretebilir ve doğrulanabilir** harita hesaplamaları isteyen insanlar için tasarlanmıştır — bir kara kutu web uygulaması değil, uzak bir hizmet değil, hiçbir zaman ağ üzerinden değil. Her sayı gerçek astronomik hesaplamadan (astronomy-engine) ve gerçek bir 紫微斗數 kütüphanesinden (iztro) gelir — uzak bir hizmet, önbelleğe alınmış arama veya ağ üzerinde hiçbir şey olmaz.
 
 ---
 
@@ -33,7 +33,7 @@ Human Design'da Tip, Yetki ve Tanım **sabit kodlanmamıştır** — tanımlanan
 Bu motor yaklaşımcılık yapmak veya bir hizmeti çağırmak yerine gerçek matematik yapar. Bu seçim, ciddi bir harita aracı için önemli olan üç özellik getirir:
 
 - **Deterministik.** Aynı doğum girdisi her zaman aynı çıktıyı, bayt-bayt aynı şekilde üretir. Rastgelelik yok, model yok, çalıştırmalar arasında yuvarlama sapması yok.
-- **Üretilebilir.** Depoyu ve aynı girdileri olan herkes, tam haritanızı yeniden oluşturabilir. Hesaplamalar gökyüzü için Swiss Ephemeris (Moshier modeli) ve 紫微斗數 için iztro kullanır — ikisi de deterministiktir.
+- **Üretilebilir.** Depoyu ve aynı girdileri olan herkes, tam haritanızı yeniden oluşturabilir. Hesaplamalar gökyüzü için astronomy-engine ve 紫微斗數 için iztro kullanır — ikisi de deterministiktir.
 - **Çapraz doğrulanabilir.** Üç bağımsız sistem tek bir doğum anından hesaplandığı için, üçgenlenebilirsiniz. **Üç sistem de aynı sinyale işaret ettiğinde, bunu yüksek güven olarak değerlendirin. Sadece bir sistem bir ayrıntı gösterdiğinde, bunu bir referans noktası olarak değerlendirin, sonuç olarak değil.** Bu, motorun temel tasarım ilkesidir — çapraz okunacak gerçekler üretir, tek bir karar değil.
 
 ---
@@ -91,7 +91,7 @@ bash scripts/build-iztro-bundle.sh
 Python doğrudan bağımlılıkları `requirements.txt` içinde sabitlenmiştir:
 
 ```
-pyswisseph==2.10.3.2
+astronomy-engine>=2.1.19
 fastapi==0.128.8
 uvicorn==0.39.0
 httpx==0.28.1
@@ -182,7 +182,7 @@ Kesilmiş gerçek örnek (diziler 1–2 giriş ile kesilmiş; değerler olduğu 
     "target": "2025-01-01"
   },
   "western": {
-    "system": "Tropical / Placidus / Moshier",
+    "system": "Tropical / Placidus / astronomy-engine",
     "ascendant": { "lon": 128.483, "sign": "獅子", "deg": 8, "min": 29, "label": "獅子 08°29'" },
     "midheaven": { "lon": 34.3665, "sign": "金牛", "deg": 4, "min": 22, "label": "金牛 04°22'" },
     "planets": [
@@ -245,7 +245,7 @@ Kesilmiş gerçek örnek (diziler 1–2 giriş ile kesilmiş; değerler olduğu 
     }
 
   },
-  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine" }
 }
 ```
 
@@ -285,7 +285,7 @@ Kesilmiş gerçek örnek (diziler 1–2 giriş ile kesilmiş; değerler olduğu 
 | `western` | `system` dizesi, `ascendant`/`midheaven` konum nesneleri, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
 | `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (nesne ya da `null`). |
-| `meta` | `{ engine, version, ephemeris }` — tümü değişmezler (`ephemeris: "Moshier"`). |
+| `meta` | `{ engine, version, ephemeris }` — tümü değişmezler (`ephemeris: "astronomy-engine"`). |
 
 Tam alan sözleşmesi için — her anahtar, tür ve ajan çağırma protokolü — bkz. **[AGENTS.md](./AGENTS.md)**.
 
@@ -312,7 +312,7 @@ Her çıkış aynı güvene sahip değildir. Her katmanı uygun şekilde okuyun:
 
 ## Bilinen sınırlamalar
 
-- **Chiron / küçük cisimler yok.** Yapı Moshier efemerisini (`swe.FLG_MOSEPH`, veri dosyası yok) kullanır; bu da Chiron veya diğer küçük cisimleri sağlamaz. Sadece 10 klasik gezegen ve ay düğümleri hesaplanır.
+- **Chiron / küçük cisimler yok.** Adapter yalnızca 10 klasik gezegeni ve ay düğümlerini çıkarır.
 - **紫微斗數 bir varsayılan okulu kullanır.** iztro sabit seçeneklerle çağrılır (`bySolar(..., True, 'zh-TW')`); yıldız yerleşimi okulu ve 四化 iztro'nun varsayılanlarıdır. Normalde 飛星 veya başka bir okul kullanıyorsanız, ana yapı değişmez ancak bazı ayrıntılar farklı olabilir.
 - **Yaklaşık doğum zamanı zamana bağlı katmanı bozar.** Doğum zamanı belirsizse, Yükselen Burç/MC/ev atamaları, Human Design çizgileri ve 時辰 — ve onlardan türetilen her şey — güvenilmez olur. Bu durumda, **zamana bağlı alanları geçici olarak ele alın** ve **olaya dayalı düzeltmeyi göz önünde bulundurun** (bilinen yaşam olaylarını harita zamanlamasıyla eşleştirmek) bunlara güvenmeden önce.
 
@@ -324,7 +324,7 @@ Amaçlanan entegrasyon modeli SaaS değil, **self-install**dir.
 
 Bir kullanıcı bu depoyu URL'sini kopyalar ve **kendi** ajanı veya CLI'si (Claude Code, Hermes, bir komut dosyası vb.) bunu klonlar ve **kullanıcının makinesinde yerel olarak çalıştırır**. Hesaplama, kullanıcı tarafında gerçekleşir. Çağrılacak barındırılan bir uç nokta yok, hesap yok ve **SaaS entegrasyonu gerekli değil** — motor, durumsuz, deterministik, çevrimdışı bir alt süreçtir.
 
-Yayıncı bunu bir ağ hizmeti olarak işletmediği için, başka birinin self-install'ı için §13 yükümlülüğü yayıncıya düşmez. (Ayrıca, §13 sadece *değiştirilmiş* bir ağ erişimine açık sürümü çalıştıran bir operatörü yükümlü kılar — değiştirilmemiş yerel kullanımı değil.)
+Yayıncı bunu bir ağ hizmeti olarak işletmez. MIT kapsamında yerel kullanım, değiştirme, dağıtım ve barındırılan kullanım `LICENSE` koşullarıyla serbesttir.
 
 Ajanlar için, sözleşme basittir: `--json` alt işlemini venv Python'u repo çalışma dizininde gönderin, stdout'u JSON olarak ayrıştırın, `ok` (ve çıkış kodu) üzerinde dal ve yapılandırılmış nesneyi devraleçin. Temizlik gerekli değil — durumsuz. Tam CLI + JSON sözleşmesi **[AGENTS.md](./AGENTS.md)** içinde yaşar.
 
@@ -359,26 +359,13 @@ Bu bloku doğrudan Claude Code, ChatGPT veya herhangi bir kodlama ajanına yapı
 
 ## Lisanslama
 
-Bu depo, **[AGPL-3.0](./LICENSE)** altında lisanslanmıştır.
+Bu depo **[MIT](./LICENSE)** lisansı altındadır.
 
-**AGPL-3.0 sade İngilizce.** GNU GPL-3.0'dır (güçlü bir copyleft lisansı: yazılımı dağıtırsanız, tam ilgili kaynağınızı aynı lisans altında yayınlamalısınız) **artı bir ekstra madde, 13. Bölüm**. §13 "SaaS açığını" kapatır: GPL'nin *dağıtım* tetikleyicisinin ötesinde, programı *değiştirir* ve kullanıcılarınızın değiştirilmiş sürümünüzle bir ağ üzerinden etkileşime girmesine izin verirseniz, bu uzak kullanıcılara ilgili kaynağınızı sunmalısınız. (Değiştirilmemiş üst akışı bir ağ hizmeti olarak çalıştırmak kendisinde §13'ü tetiklemez.) AGPL karşılıklıdır ancak sınırsız viral değil — yalnızca AGPL kodunun türevi veya bağlantılı kodu ulaşır.
+Motor astronomik hesaplamalar için **astronomy-engine (MIT)**, Zi Wei Dou Shu için **iztro (MIT)** kullanır. Placidus ev formülleri ve Meeus referansı [CREDITS.md](./CREDITS.md) içinde belirtilir.
 
-**Bu depo neden AGPL'dir.** Motor, gezegen konumları ve ev uçları için **Swiss Ephemeris** (`pyswisseph` aracılığıyla) bağlantı kurar. Astrodienst, Swiss Ephemeris'i **AGPL-3.0 VEYA ticari lisans** olarak çift lisanslı tutar ve kodunun daha izin verici bir şeye lisans değiştirilmesi mümkün değil. AGPL copyleft olduğu ve bu proje bunu bağladığı için, tüm birleştirilmiş iş AGPL olmalı. (`iztro` MIT'dir ve copyleft empoze etmez; Swiss Ephemeris, burada AGPL'yi zorlayan tek bileşendir.)
+MIT koşulları altında kopyaları kullanabilir, kopyalayabilir, değiştirebilir, dağıtabilir, alt lisanslayabilir ve satabilirsiniz. Yazılımın önemli bölümlerinde copyright ve permission notice bırakın.
 
-**Pratikte ne anlama gelir.**
-
-| Bunu yaparsınız | AGPL yükümlülüğü |
-|---|---|
-| **Self-install** (kendiniz için yerel olarak çalıştırın) | §13 *tetiklenmez* — uzak kullanıcı yok ve kaynağa zaten sahipsiniz. Temiz. |
-| **Bir *değiştirilmiş* sürümü ağ hizmeti olarak çalıştırın** | §13 *tetiklenir* — bu uzak kullanıcılara değiştirilmiş sürüm de dahil olmak üzere, tam ilgili kaynağını AGPL altında sunmalısınız. Not: §13'ün kaynak sunma görevi değiştirmeye koşulludur — değiştirilmemiş üst akışı bir ağ hizmeti olarak çalıştırmak kendisinde §13'ü tetiklemez, ancak kaynak zaten kamuya açıktır. |
-
-**Ağ-kaynak yükümlülüğü, kullanım durumunuza uymazsa üç seçeneğiniz vardır:**
-
-1. **AGPL'yi tutun** — tam ilgili kaynağınızı (değişiklikler dahil) ağ üzerinden de dahil olmak üzere kullanan herkese yayınlayın §13 başına. Ücretsiz, müzakere yok.
-2. **[Astrodienst](https://www.astro.com/swisseph/) 'den bir Swiss Ephemeris ticari lisansı satın alın** — bu, Swiss Ephemeris kısmı için AGPL yükümlülüğünü kaldırır; kendi kodunuzu yeniden lisanslayabilir ve kapalı bir yapı gönderip barındırabilirsiniz. (Bu, Astrodienst'ın çift lisanslama modelidir.)
-3. **Efemeris'i değiştirin** — `pyswisseph`'i izin verici bir şekilde lisanslanan astronomik kaynakla değiştirin (örneğin **Skyfield (MIT)** artı kamu-alan **JPL DE440** efemeris — bilgilendirici alternatifler, tek seçenek değil). Swiss Ephemeris gitti, kalan yığın (iztro MIT, artı MPL-2.0/MIT/Apache bağımlılıkları) artık AGPL'yi zorlamamaz ve tüm depo MIT olabilir. Bu gerçek mühendislik çabasıdır: şu anda Swiss Ephemeris'ten kaynaklanan her şeyi yeniden uygulamanız gerekir — gezegen boylamları, geriye dönüş işaretleri, Asc/MC, Placidus ev uçları ve Human Design 88° tasarım çözücüsüne girdiler.
-
-Tam atıf ve bağımlılık başına lisanslar için **[CREDITS.md](./CREDITS.md)** bölümüne bakın.
+Tam atıf ve bağımlılık lisansları için **[CREDITS.md](./CREDITS.md)** bölümüne bakın.
 
 ---
 
@@ -391,7 +378,7 @@ Hayır. Girdiler Gregoryen güneş tarihi (`--date YYYY-MM-DD`) ve saat saatidir
 Gezegen konumları tamam, ancak Yükselen Burç, Orta Gök, ev uçları, her gezegenin oturduğu ev, Human Design çizgileri ve 時辰 tümü zamana duyarlıdır. Bunları geçici olarak ele alın ve bunlara güvenmeden önce olaya dayalı düzeltmeyi göz önünde bulundurun.
 
 **Chiron / asteroidler / küçük cisimler nerede?**
-Dahil değil. Burada kullanılan Moshier efemeris bunları sağlamaz; sadece 10 klasik gezegen ve ay düğümleri hesaplanır.
+Dahil değil. Adapter yalnızca 10 klasik gezegeni ve ay düğümlerini çıkarır.
 
 **紫微斗數 hangi okulu kullanır?**
 iztro (`bySolar(..., True, 'zh-TW')`) tarafından uygulanan varsayılan okul. Okul kullanıcı tarafından seçilebilir değil.
@@ -399,8 +386,8 @@ iztro (`bySolar(..., True, 'zh-TW')`) tarafından uygulanan varsayılan okul. Ok
 **Telefona ev aramı yapar / ağ kullanır mı?**
 Hayır. Motor tamamen çevrimdışı — telemetri yok, ağ çağrısı yok, yan etki yok. Durumsuz, deterministik, tek seferlik bir alt işlemdir.
 
-**Kapalı kaynaklı bir ürünün içinde kullanabilir miyim?**
-AGPL-3.0 altında, özel/yerel kullanım için evet. Bir yapıyı dağıtmak GPL iletme/kaynak yükümlülüklerini tetikler ve değiştirilmiş bir yapıyı ağ ile sunmak AGPL §13'ünü tetikler — her iki durumda da ilgili kaynağı sunmalısınız. Tamamen kapalı kaynak olmak için, Astrodienst'den bir Swiss Ephemeris ticari lisansı satın alın veya efemeris'i Skyfield + JPL DE440 olarak değiştirin ([Lisanslama](#licensing) bölümüne bakın).
+**Kapalı kaynaklı bir üründe kullanabilir miyim?**
+Evet. Depo MIT lisanslıdır. Yazılımın önemli bölümlerinde copyright ve permission notice bırakın.
 
 ---
 
@@ -412,8 +399,9 @@ AGPL-3.0 altında, özel/yerel kullanım için evet. Bir yapıyı dağıtmak GPL
 
 ## Jenerik & Lisans
 
-- **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, çift lisanslı AGPL-3.0 / ticari (<https://www.astro.com/swisseph/>).
-- **iztro** — MIT, 紫微斗數 için.
+- **astronomy-engine** — Don Cross, MIT; astronomik hesaplamalar.
+- **Meeus, Astronomical Algorithms** — Placidus ev formülleri referansı.
+- **iztro** — MIT, Zi Wei Dou Shu için.
 - Tam atıf: **[CREDITS.md](./CREDITS.md)**.
-- **Lisans:** [AGPL-3.0](./LICENSE).
+- **Lisans:** [MIT](./LICENSE).
 - **Ajan / JSON sözleşmesi:** [AGENTS.md](./AGENTS.md).

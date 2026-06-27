@@ -1,7 +1,7 @@
 # setup.ps1 — Windows setup for life-chart-engine (CPython 3.12 venv + deps)
 #
 # WHY 3.12: kept aligned with the Unix setup and CI-tested runtime. The
-# astronomy-engine ephemeris path does not require compiling Swiss Ephemeris.
+# astronomy-engine does not require compiling native astronomy libraries.
 #
 # Usage:  ./setup.ps1     then    ./start-web.ps1   (web UI)  or  ./life-chart.ps1 --help
 $ErrorActionPreference = "Stop"

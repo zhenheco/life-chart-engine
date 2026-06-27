@@ -4,13 +4,13 @@
 
 **Calcolo determinístico nativo di tre sistemi di carte astrologiche — astrologia natale occidentale, 人類圖 (Human Design) e 紫微斗數 (Zi Wei Dou Shu) — a partire da un singolo dato di nascita.**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
 
 `life-chart-engine` è uno strumento da riga di comando piccolo e offline. Si fornisce un dato di nascita — data, ora, fuso orario e coordinate del luogo — e calcola tre sistemi di carte indipendenti in una sola passata, quindi emette un rapporto Markdown leggibile o un oggetto JSON strutturato che programmi e agenti IA possono consumare.
 
-È costruito per persone che desiderano calcoli di carte **riproducibili e verificabili** piuttosto che un'app web a scatola nera: praticanti, sviluppatori che costruiscono strumenti di consapevolezza di sé, e agenti IA che hanno bisogno di un puro passo computazionale. Ogni numero proviene da veri calcoli astronomici (Swiss Ephemeris) e da una vera libreria 紫微斗數 (iztro) — non da un servizio remoto, non da ricerche in cache, e mai sulla rete.
+È costruito per persone che desiderano calcoli di carte **riproducibili e verificabili** piuttosto che un'app web a scatola nera: praticanti, sviluppatori che costruiscono strumenti di consapevolezza di sé, e agenti IA che hanno bisogno di un puro passo computazionale. Ogni numero proviene da veri calcoli astronomici e da una vera libreria 紫微斗數 (iztro) — non da un servizio remoto, non da ricerche in cache, e mai sulla rete.
 
 ---
 
@@ -33,7 +33,7 @@ Tipo, Autorità e Definizione in Human Design **non sono hardcoded** — sono de
 Questo motore fa la vera matematica invece di approssimare o chiamare un servizio. Quella scelta compra tre proprietà che importano per qualsiasi strumento di carta serio:
 
 - **Deterministico.** Lo stesso input di nascita produce sempre lo stesso output, byte per byte. Non c'è casualità, nessun modello, nessuna deriva di arrotondamento tra le esecuzioni.
-- **Riproducibile.** Chiunque con il repository e gli stessi input può rigenerare la tua carta esatta. I calcoli usano Swiss Ephemeris (modello Moshier) per il cielo e iztro per 紫微斗數 — entrambi deterministici.
+- **Riproducibile.** Chiunque con il repository e gli stessi input può rigenerare la tua carta esatta. I calcoli usano astronomy-engine per il cielo e iztro per 紫微斗數 — entrambi deterministici.
 - **Verificabile trasversalmente.** Perché tre sistemi indipendenti sono calcolati da un momento di nascita, puoi triangolare. **Quando tutti e tre i sistemi puntano allo stesso segnale, trattalo come alta fiducia. Quando solo un sistema mostra un dettaglio, trattalo come un punto di riferimento, non una conclusione.** Questo è il principio di design core del motore — produce fatti da leggere trasversalmente, non un unico verdetto.
 
 ---
@@ -91,7 +91,7 @@ bash scripts/build-iztro-bundle.sh
 Le dipendenze dirette Python sono fissate in `requirements.txt`:
 
 ```
-pyswisseph==2.10.3.2
+astronomy-engine>=2.1.19
 fastapi==0.128.8
 uvicorn==0.39.0
 httpx==0.28.1
@@ -182,7 +182,7 @@ Esempio reale ritagliato (array troncati a 1–2 elementi; valori verbatim):
     "target": "2025-01-01"
   },
   "western": {
-    "system": "Tropical / Placidus / Moshier",
+    "system": "Tropical / Placidus / astronomy-engine",
     "ascendant": { "lon": 128.483, "sign": "獅子", "deg": 8, "min": 29, "label": "獅子 08°29'" },
     "midheaven": { "lon": 34.3665, "sign": "金牛", "deg": 4, "min": 22, "label": "金牛 04°22'" },
     "planets": [
@@ -245,7 +245,7 @@ Esempio reale ritagliato (array troncati a 1–2 elementi; valori verbatim):
     }
 
   },
-  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine" }
 }
 ```
 
@@ -285,7 +285,7 @@ L'envelope `--json` ha sette chiavi di livello superiore, in questo ordine:
 | `western` | Stringa `system`, oggetti di posizione `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
 | `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (oggetto o `null`). |
-| `meta` | `{ engine, version, ephemeris }` — tutti letterali (`ephemeris: "Moshier"`). |
+| `meta` | `{ engine, version, ephemeris }` — tutti letterali (`ephemeris: "astronomy-engine"`). |
 
 Per il contratto di campo completo — ogni chiave, tipo, e il protocollo di invocazione dell'agente — vedi **[AGENTS.md](./AGENTS.md)**.
 
@@ -312,7 +312,7 @@ Non ogni output ha la stessa fiducia. Leggi ogni livello di conseguenza:
 
 ## Limitazioni note
 
-- **Niente Chirone / corpi minori.** La build usa l'efemeride Moshier (`swe.FLG_MOSEPH`, nessun file di dati), che non fornisce Chirone o altri corpi minori. Solo i 10 pianeti classici più i nodi lunari sono calcolati.
+- **Niente Chirone / corpi minori.** L'adapter espone solo i 10 pianeti classici più i nodi lunari.
 - **紫微斗數 usa una scuola predefinita.** iztro viene chiamato con opzioni fisse (`bySolar(..., True, 'zh-TW')`); la scuola di posizionamento delle stelle e 四化 sono qualsiasi iztro prepara. Se normalmente usi 飛星 o un'altra scuola, la struttura principale è invariata ma alcuni dettagli possono differire.
 - **L'ora di nascita approssimativa degrada il livello dipendente dal tempo.** Se l'ora di nascita è incerta, le assegnazioni di Ascendente/MC/casa, le linee di Human Design, e 時辰 — e qualsiasi cosa derivata da loro — diventano inaffidabili. In quel caso, **tratta i campi dipendenti dal tempo come provvisori** e considera **rettificazione basata su eventi** (corrispondendo eventi di vita noti al timing della carta) prima di fare affidamento su di loro.
 
@@ -324,7 +324,7 @@ Il modello di integrazione inteso è **auto-installazione**, non SaaS.
 
 Un utente copia l'URL di questo repository, e **il suo proprio** agente o CLI (Claude Code, Hermes, uno script, ecc.) lo clona e lo esegue **localmente sulla macchina dell'utente**. Il calcolo avviene dal lato dell'utente. Non c'è endpoint ospitato da chiamare, nessun account, e **nessun integrazione SaaS richiesta** — il motore è un subprocess stateless, deterministico, offline.
 
-Poiché l'editore non lo opera come un servizio di rete, nessun obbligo §13 cade sull'editore per l'auto-installazione di qualcun altro. (Separatamente, §13 obbliga solo un operatore che esegue una versione di rete *modificata* — non l'uso locale non modificato.)
+Il publisher non lo gestisce come servizio di rete. Con MIT, uso locale, modifica, distribuzione e uso in hosting sono consentiti secondo `LICENSE`.
 
 Per gli agenti, il contratto è semplice: dispatch il subprocess `--json` con il Python del venv nel workdir del repo, analizza stdout come JSON, fa branching su `ok` (e il codice di uscita), quindi consegna l'oggetto strutturato. Non è necessaria pulizia — è stateless. Il contratto CLI + JSON completo vive in **[AGENTS.md](./AGENTS.md)**.
 
@@ -359,26 +359,13 @@ Human Design + Zi Wei Dou Shu (紫微斗數) dai dati di nascita.
 
 ## Licenza
 
-Questo repository è concesso in licenza sotto **[AGPL-3.0](./LICENSE)**.
+Questo repository è concesso in licenza **[MIT](./LICENSE)**.
 
-**AGPL-3.0 in semplice inglese.** È la GPL-3.0 GNU (una licenza copyleft forte: se distribuisci il software, devi rilasciare il tuo codice sorgente completo corrispondente con la stessa licenza) **più una clausola extra, Sezione 13**. §13 chiude la "scappatoia SaaS": oltre il trigger di *distribuzione* della GPL, aggiunge che se *modifichi* il programma e lasci che gli utenti interagiscano con la tua versione modificata su una rete, devi offrire a quegli utenti remoti il tuo sorgente corrispondente. (Eseguire un upstream non modificato come servizio di rete non attiva da solo §13.) AGPL è reciproca ma non infinitamente virale — raggiunge solo il codice che è un derivato, o collegato, al codice AGPL.
+Il motore usa **astronomy-engine (MIT)** per i calcoli astronomici e **iztro (MIT)** per Zi Wei Dou Shu. Le formule delle case Placidus e il riferimento a Meeus sono accreditati in [CREDITS.md](./CREDITS.md).
 
-**Perché questo repository è AGPL.** Il motore collega **Swiss Ephemeris** (via `pyswisseph`) per posizioni planetarie e cuspidi delle case. Astrodienst **doppia licenza** Swiss Ephemeris come **AGPL-3.0 OR licenza commerciale**, e il suo codice non può essere rilicenziato come qualcosa di più permissivo. Poiché AGPL è copyleft e questo progetto lo collega, l'intero lavoro combinato deve essere AGPL. (`iztro` è MIT e non impone copyleft; Swiss Ephemeris è l'unico componente che forza AGPL qui.)
+Puoi usare, copiare, modificare, distribuire, sublicenziare e vendere copie secondo i termini MIT. Conserva copyright e permission notice nelle parti sostanziali del software.
 
-**Cosa significa in pratica.**
-
-| Tu fai | Obbligo AGPL |
-|--------|--------------|
-| **Auto-installazione** (eseguilo localmente per te) | §13 non è *attivato* — non ci sono utenti remoti da servire, e hai già il sorgente. Pulito. |
-| **Esegui una versione *modificata* come servizio di rete** | §13 è *attivato* — devi offrire a quegli utenti remoti il sorgente completo corrispondente della tua versione distribuita, sotto AGPL, incluse le tue modifiche. Nota: il dovere di offerta di sorgente di §13 è condizionato dalla modifica — eseguire l'upstream non modificato come servizio di rete non attiva da solo §13, sebbene il sorgente sia già pubblico comunque. |
-
-**Le tue tre opzioni** se l'obbligo di sorgente di rete non si adatta al tuo caso d'uso:
-
-1. **Mantieni AGPL** — pubblica il tuo sorgente completo corrispondente (incluse le modifiche) a chiunque lo usi, incluso sulla rete per §13. Gratuito, nessuna negoziazione.
-2. **Acquista una licenza commerciale Swiss Ephemeris da [Astrodienst](https://www.astro.com/swisseph/)** — questo solleva l'obbligo AGPL per la porzione Swiss Ephemeris, permettendoti di rilicenziare il tuo codice e distribuire/ospitare una build chiusa. (Questo è il modello di doppia licenza di Astrodienst.)
-3. **Scambia l'efemeride** — sostituisci `pyswisseph` con una fonte di astronomia con licenza permissiva (per esempio **Skyfield (MIT)** più l'efemeride **JPL DE440** di dominio pubblico — alternative illustrative, non le uniche opzioni). Con Swiss Ephemeris via, lo stack rimanente (iztro MIT, più le dipendenze MPL-2.0/MIT/Apache) non forza più AGPL e l'intero repository potrebbe essere MIT. Questo è vero sforzo ingegneristico: devi reimplementare tutto attualmente proveniente da Swiss Ephemeris — longitudini planetarie, flag di retrogradazione, Asc/MC, cuspidi della casa Placidus, e gli input al risolutore di design 88° di Human Design.
-
-Vedi **[CREDITS.md](./CREDITS.md)** per l'attribuzione completa e le licenze per dipendenza.
+Vedi **[CREDITS.md](./CREDITS.md)** per attribuzione completa e licenze delle dipendenze.
 
 ---
 
@@ -391,7 +378,7 @@ No. Gli input sono una data solare gregoriana (`--date YYYY-MM-DD`) e l'ora dell
 Le posizioni planetarie vanno bene, ma l'Ascendente, il Medio Cielo, le cuspidi delle case, la casa dove ogni pianeta sta, le linee di Human Design, e il 時辰 sono tutti sensibili al tempo. Tratta quelli come provvisori e considera la rettificazione basata su eventi prima di fidarti di loro.
 
 **Dov'è Chirone / asteroidi / corpi minori?**
-Non incluso. L'efemeride Moshier usato qui non li fornisce; solo i 10 pianeti classici e i nodi lunari sono calcolati.
+Non incluso. L'adapter espone solo i 10 pianeti classici più i nodi lunari.
 
 **Quale scuola 紫微斗數 usa?**
 La scuola predefinita come implementata da iztro (`bySolar(..., True, 'zh-TW')`). La scuola non è selezionabile dall'utente.
@@ -399,8 +386,8 @@ La scuola predefinita come implementata da iztro (`bySolar(..., True, 'zh-TW')`)
 **Fa il "phoning home" / usa la rete?**
 No. Il motore è completamente offline — nessuna telemetria, nessuna chiamata di rete, nessun effetto collaterale. È un subprocess stateless, deterministico, una sola volta.
 
-**Posso usarlo dentro un prodotto closed-source?**
-Sotto AGPL-3.0, sì per l'uso privato/locale. Distribuire una build attiva gli obblighi di trasferimento GPL/sorgente, e servire su rete una build *modificata* attiva AGPL §13 — comunque devi offrire sorgente corrispondente. Per andare completamente closed-source, acquista una licenza commerciale Swiss Ephemeris da Astrodienst o scambia l'efemeride in Skyfield + JPL DE440 (vedi [Licenza](#licensing)).
+**Posso usarlo in un prodotto closed-source?**
+Sì. Il repository è concesso in licenza MIT. Conserva copyright e permission notice nelle parti sostanziali del software.
 
 ---
 
@@ -412,8 +399,9 @@ Sotto AGPL-3.0, sì per l'uso privato/locale. Distribuire una build attiva gli o
 
 ## Crediti e licenza
 
-- **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, doppia licenza AGPL-3.0 / commerciale (<https://www.astro.com/swisseph/>).
-- **iztro** — MIT, per 紫微斗數.
+- **astronomy-engine** — Don Cross, MIT; calcoli astronomici.
+- **Meeus, Astronomical Algorithms** — riferimento per le formule delle case Placidus.
+- **iztro** — MIT, per Zi Wei Dou Shu.
 - Attribuzione completa: **[CREDITS.md](./CREDITS.md)**.
-- **Licenza:** [AGPL-3.0](./LICENSE).
-- **Contratto agente / JSON:** [AGENTS.md](./AGENTS.md).
+- **Licenza:** [MIT](./LICENSE).
+- **Contratto agent / JSON:** [AGENTS.md](./AGENTS.md).

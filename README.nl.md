@@ -4,13 +4,13 @@
 
 **Deterministische native berekening van drie levensgrafiek-systemen — Western astrologie, Human Design (人類圖) en Zi Wei Dou Shu (紫微斗數) — vanuit één geboortegegevens.**
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
 
 `life-chart-engine` is een klein, offline opdrachtregelgereedschap. Je geeft het de geboortegegevens van één persoon — datum, tijd, tijdzone en plaatscoördinaten — en het berekent drie onafhankelijke grafiek-systemen in één keer, vervolgens genereert het óf een leesbaar Markdown-rapport óf een gestructureerd JSON-object voor programma's en AI-agents.
 
-Het is gebouwd voor mensen die **reproduceerbare, verifieerbare** grafiekberekeningen willen in plaats van een ondoorzichtige web-app: beoefenaars, ontwikkelaars die zelf-bewustzijnshulpmiddelen bouwen, en AI-agents die een pure rekenstap nodig hebben. Elk getal komt uit echte astronomische berekening (Swiss Ephemeris) en een echte Zi Wei Dou Shu-bibliotheek (iztro) — niet van een remote service, niet van gecachede opzoekingen, en nooit via het netwerk.
+Het is gebouwd voor mensen die **reproduceerbare, verifieerbare** grafiekberekeningen willen in plaats van een ondoorzichtige web-app: beoefenaars, ontwikkelaars die zelf-bewustzijnshulpmiddelen bouwen, en AI-agents die een pure rekenstap nodig hebben. Elk getal komt uit echte astronomische berekening en een echte Zi Wei Dou Shu-bibliotheek (iztro) — niet van een remote service, niet van gecachede opzoekingen, en nooit via het netwerk.
 
 ---
 
@@ -33,7 +33,7 @@ Type, Authority en Definition in Human Design zijn **niet hardgecodeerd** — zi
 Deze engine doet de echte wiskunde in plaats van benadering of het aanroepen van een service. Die keuze levert drie eigenschappen op die belangrijk zijn voor elk serieus grafiek-hulpmiddel:
 
 - **Deterministisch.** Dezelfde geboorte-invoer levert altijd dezelfde uitvoer op, byte-voor-byte. Er is geen willekeur, geen model, geen afrondings-drift tussen runs.
-- **Reproduceerbaar.** Iedereen met de repository en dezelfde invoer kan uw exacte grafiek opnieuw genereren. Berekeningen gebruiken Swiss Ephemeris (Moshier-model) voor de lucht en iztro voor Zi Wei Dou Shu — beide deterministisch.
+- **Reproduceerbaar.** Iedereen met de repository en dezelfde invoer kan uw exacte grafiek opnieuw genereren. Berekeningen gebruiken astronomy-engine voor de lucht en iztro voor Zi Wei Dou Shu — beide deterministisch.
 - **Kruislings verifieerbaar.** Omdat drie onafhankelijke systemen worden berekend vanuit één geboortemoment, kun je trianguleren. **Wanneer alle drie systemen naar hetzelfde signaal wijzen, beschouw het als hoog vertrouwen. Wanneer slechts één systeem een detail toont, beschouw het als een referentiepunt, geen conclusie.** Dit is het kernontwerp-principe van de engine — het levert feiten op om kruislings te lezen, niet één vonnis.
 
 ---
@@ -91,7 +91,7 @@ bash scripts/build-iztro-bundle.sh
 Directe Python-afhankelijkheden zijn gepind in `requirements.txt`:
 
 ```
-pyswisseph==2.10.3.2
+astronomy-engine>=2.1.19
 fastapi==0.128.8
 uvicorn==0.39.0
 httpx==0.28.1
@@ -182,7 +182,7 @@ Ingekort reëel voorbeeld (arrays afgekapt tot 1–2 invoer; waarden woordelijk)
     "target": "2025-01-01"
   },
   "western": {
-    "system": "Tropical / Placidus / Moshier",
+    "system": "Tropical / Placidus / astronomy-engine",
     "ascendant": { "lon": 128.483, "sign": "獅子", "deg": 8, "min": 29, "label": "獅子 08°29'" },
     "midheaven": { "lon": 34.3665, "sign": "金牛", "deg": 4, "min": 22, "label": "金牛 04°22'" },
     "planets": [
@@ -245,7 +245,7 @@ Ingekort reëel voorbeeld (arrays afgekapt tot 1–2 invoer; waarden woordelijk)
     }
 
   },
-  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "Moshier" }
+  "meta": { "engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine" }
 }
 ```
 
@@ -285,7 +285,7 @@ De `--json` envelop heeft zeven top-level sleutels, in deze volgorde:
 | `western` | `system` string, `ascendant`/`midheaven` positieobjecten, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
 | `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object of `null`). |
-| `meta` | `{ engine, version, ephemeris }` — allemaal letterlijke waarden (`ephemeris: "Moshier"`). |
+| `meta` | `{ engine, version, ephemeris }` — allemaal letterlijke waarden (`ephemeris: "astronomy-engine"`). |
 
 Voor het volledige veldcontract — elke sleutel, type en het agent-oproep-protocol — zie **[AGENTS.md](./AGENTS.md)**.
 
@@ -312,7 +312,7 @@ Niet elke uitvoer draagt hetzelfde vertrouwen. Lees elke laag dienovereenkomstig
 
 ## Bekende beperkingen
 
-- **Geen Chiron / kleine lichamen.** De bouw gebruikt de Moshier-efemerisis (`swe.FLG_MOSEPH`, geen databestanden), die Chiron of andere kleine lichamen niet levert. Alleen de 10 klassieke planeten plus de maanknooplijnen worden berekend.
+- **Geen Chiron / kleine lichamen.** De adapter geeft alleen de 10 klassieke planeten plus de maanknopen uit.
 - **Zi Wei Dou Shu gebruikt één standaard-school.** iztro wordt aangeroe met vaste opties (`bySolar(..., True, 'zh-TW')`); de ster-plaatsingsschool en 四化 zijn wat iztro standaard doet. Als je normaal 飛星 of een andere school gebruikt, blijft de hoofdstructuur ongewijzigd maar kunnen sommige details verschillen.
 - **Benaderde geboortemoment verslechtert de tijd-afhankelijke laag.** Als het geboortemoment onzeker is, worden de Ascendant/MC/huistoewijzingen, Human Design-lijnen en 時辰 — en alles wat ervan is afgeleid — onbetrouwbaar. In dat geval, **behandel de tijd-afhankelijke velden als voorlopig** en overweeg **event-gebaseerde rectificatie** (bekende levensgebeurtenissen afstemmen op grafiek-timing) voordat je erop vertrouwt.
 
@@ -324,7 +324,7 @@ Het beoogde integratie-model is **self-install**, niet SaaS.
 
 Een gebruiker kopieert deze repo's URL, en **hun eigen** agent of CLI (Claude Code, Hermes, een script, enz.) klont het en voert het **lokaal op de machine van de gebruiker** uit. De berekening gebeurt aan de zijde van de gebruiker. Er is geen gehoste eindpunt om aan te roepen, geen account, en **geen SaaS-integratie vereist** — de engine is een stateless, deterministisch, offline subproces.
 
-Omdat de uitgever het niet als netwerkservice exploiteert, geldt geen §13-verplichting voor de uitgever voor iemands self-install. (Afzonderlijk is §13 alleen een uitgever verbonden die een *gewijzigde* netwerktoegankelijke versie draait — niet ongewijzigd lokaal gebruik.)
+De uitgever exploiteert het niet als netwerkdienst. Onder MIT zijn lokaal gebruik, wijziging, distributie en gehost gebruik toegestaan volgens `LICENSE`.
 
 Voor agents is het contract eenvoudig: verzend het `--json` subproces met de venv Python in de repo workdir, parse stdout als JSON, vertakkingen op `ok` (en de exit-code), en geef het gestructureerde object af. Geen opschoning nodig — het is stateless. Het volledige CLI + JSON-contract staat in **[AGENTS.md](./AGENTS.md)**.
 
@@ -359,26 +359,13 @@ Human Design + Zi Wei Dou Shu (紫微斗數) berekent uit geboortevgegevens.
 
 ## Licentie
 
-Deze repository is gelicentieerd onder **[AGPL-3.0](./LICENSE)**.
+Deze repository is gelicentieerd onder **[MIT](./LICENSE)**.
 
-**AGPL-3.0 in duidelijk Nederlands.** Het is de GNU GPL-3.0 (een sterke copyleft-licentie: als je de software distribueert, moet je je volledige overeenkomstige bron onder dezelfde licentie vrijgeven) **plus één extra clausule, Sectie 13**. §13 sluit de "SaaS-uitzondering" af: voorbij de verdeling-trigger van de GPL, voegt het toe dat als je het programma *wijzigt* en gebruikers je gewijzigde versie over een netwerk laat interageren, je die externe gebruikers je overeenkomstige bron moet aanbieden. (Het uitvoeren van een ongewijzigde upstream als netwerkservice triggert §13 op zich niet.) AGPL is wederkerig maar niet grenzeloos viraal — het bereikt alleen code die een derivaat of gekoppeld is met de AGPL-code.
+De engine gebruikt **astronomy-engine (MIT)** voor astronomische berekeningen en **iztro (MIT)** voor Zi Wei Dou Shu. De Placidus-huisformules en Meeus-referentie staan in [CREDITS.md](./CREDITS.md).
 
-**Waarom deze repo AGPL is.** De engine koppelt **Swiss Ephemeris** (via `pyswisseph`) voor planetaire posities en huiscuspden. Astrodienst **tweevoudig licentieert** Swiss Ephemeris als **AGPL-3.0 OF een commerciële licentie**, en de code kan niet onder iets permissiever opnieuw worden gelicentieerd. Omdat AGPL copyleft is en dit project het koppelt, moet het gehele gecombineerde werk AGPL zijn. (`iztro` is MIT en legt geen copyleft op; Swiss Ephemeris is de enige component die AGPL hier forceert.)
+Je mag kopieën gebruiken, kopiëren, wijzigen, verspreiden, sublicentiëren en verkopen volgens de MIT-voorwaarden. Laat copyright en permission notice staan in substantiële delen van de software.
 
-**Wat het in de praktijk betekent.**
-
-| Je doet | AGPL-verplichting |
-|--------|-----------------|
-| **Self-install** (lokaal voor jezelf uitvoeren) | §13 wordt *niet* geactiveerd — er zijn geen externe gebruikers om te bedienen, en je hebt al de bron. Schoon. |
-| **Een *gewijzigde* versie als netwerkservice uitvoeren** | §13 *wordt* geactiveerd — je moet die externe gebruikers de volledige overeenkomstige bron van je ingezette versie aanbieden, onder AGPL, inclusief jouw wijzigingen. Opmerking: §13's source-aanbod-plicht is conditioneel op wijziging — het uitvoeren van de ongewijzigde upstream als netwerkservice triggert §13 op zich niet, hoewel de bron toch al openbaar is. |
-
-**Jouw drie opties** als de netwerkbron-verplichting niet past bij jouw geval:
-
-1. **AGPL behouden** — publiceer jouw volledige overeenkomstige bron (inclusief wijzigingen) aan iedereen die het gebruikt, inclusief over een netwerk per §13. Gratis, geen onderhandeling.
-2. **Koop een commerciële Swiss Ephemeris-licentie van [Astrodienst](https://www.astro.com/swisseph/)** — dit tilt de AGPL-verplichting voor het Swiss Ephemeris-gedeelte, waardoor je jouw eigen code opnieuw kunt licentiëren en een gesloten bouw/host kunt verzenden. (Dit is Astrodienst's dual-licensing-model.)
-3. **Wissel de efemerisis** — vervang `pyswisseph` door een permissief gelicentieerde astronomie-bron (bijv. **Skyfield (MIT)** plus de publiek-domein **JPL DE440** efemerisis — illustratieve alternatieven, niet de enige optie). Met Swiss Ephemeris weg, dwingt de resterende stack (iztro MIT, plus de MPL-2.0/MIT/Apache deps) AGPL niet meer af en zou de hele repo MIT kunnen zijn. Dit is echte engineering-inspanning: je moet alles wat momenteel afkomstig is van Swiss Ephemeris opnieuw implementeren — planetaire lengtes, retrograde-vlaggen, Asc/MC, Placidus-huiscuspden en de invoer naar de Human Design 88° design-oplosser.
-
-Zie **[CREDITS.md](./CREDITS.md)** voor volledige attributie en per-afhankelijkheid licenties.
+Zie **[CREDITS.md](./CREDITS.md)** voor volledige attributie en dependency-licenties.
 
 ---
 
@@ -391,7 +378,7 @@ Nee. Invoer zijn een Gregoriaanse zonnedatum (`--date YYYY-MM-DD`) en klok-tijd 
 De planetaire posities zijn prima, maar het Ascendant, Midheaven, huiscuspden, het huis waarin elke planeet zit, Human Design-lijnen en de 時辰 zijn allemaal tijd-gevoelig. Behandel die als voorlopig en overweeg event-gebaseerde rectificatie voordat je erop vertrouwt.
 
 **Waar zijn Chiron / asteroïden / kleine lichamen?**
-Niet inbegrepen. De Moshier-efemerisis die hier wordt gebruikt, levert ze niet; alleen de 10 klassieke planeten en de maanknooplijnen worden berekend.
+Niet inbegrepen. De adapter geeft alleen de 10 klassieke planeten plus de maanknopen uit.
 
 **Welke Zi Wei Dou Shu-school gebruikt het?**
 De standaard-school zoals geïmplementeerd door iztro (`bySolar(..., True, 'zh-TW')`). De school kan niet door de gebruiker worden geselecteerd.
@@ -399,8 +386,8 @@ De standaard-school zoals geïmplementeerd door iztro (`bySolar(..., True, 'zh-T
 **Telt het huiswaarts / gebruikt het het netwerk?**
 Nee. De engine is volledig offline — geen telemetrie, geen netwerkoproepen, geen bijwerkingen. Het is een stateless, deterministisch eenmalig subproces.
 
-**Kan ik het in een gesloten-bron product gebruiken?**
-Onder AGPL-3.0, ja voor privé/lokaal gebruik. Het distribueren van een bouw triggert de GPL-vervoerings-/bronverplichtingen, en het netwerkbediening van een *gewijzigde* bouw triggert AGPL §13 — hoe dan ook moet je overeenkomstige bron aanbieden. Om volledig gesloten-bron te gaan, koopt u ofwel een commerciële Swiss Ephemeris-licentie van Astrodienst of verwisselt u de efemerisis voor Skyfield + JPL DE440 (zie [Licentie](#licensing)).
+**Kan ik het gebruiken in een closed-source product?**
+Ja. De repository heeft een MIT-licentie. Laat copyright en permission notice staan in substantiële delen van de software.
 
 ---
 
@@ -412,8 +399,9 @@ Onder AGPL-3.0, ja voor privé/lokaal gebruik. Het distribueren van een bouw tri
 
 ## Credits & Licentie
 
-- **Swiss Ephemeris** via `pyswisseph` — © Astrodienst AG, tweevoudig gelicentieerd AGPL-3.0 / commercieel (<https://www.astro.com/swisseph/>).
+- **astronomy-engine** — Don Cross, MIT; astronomische berekeningen.
+- **Meeus, Astronomical Algorithms** — referentie voor Placidus-huisformules.
 - **iztro** — MIT, voor Zi Wei Dou Shu.
 - Volledige attributie: **[CREDITS.md](./CREDITS.md)**.
-- **Licentie:** [AGPL-3.0](./LICENSE).
+- **Licentie:** [MIT](./LICENSE).
 - **Agent / JSON-contract:** [AGENTS.md](./AGENTS.md).
