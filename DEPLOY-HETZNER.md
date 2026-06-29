@@ -1,6 +1,9 @@
 # Deploy HTTP Engine on Hetzner
 
-Target: existing Hetzner host with Docker + Caddy, sharing the box with Movo.
+Target: existing Hetzner host with Docker + Cloudflare Tunnel, sharing the box with Movo.
+
+Host: `acejou@157.90.157.99`
+Tunnel: `engine-life.aicycle.cc` → `127.0.0.1:8012`
 
 ## 1. Build
 
@@ -12,7 +15,14 @@ docker build -t life-engine:latest .
 
 ## 2. Run
 
-Use a long random key. Store the same value in `life-web`.
+Use a long random key. Store the same value in `life-web`. For routine redeploys, preserve the key from the existing container so the Worker does not need a secret rotation:
+
+```bash
+ENGINE_API_KEY="$(docker inspect life-engine \
+  --format '{{range .Config.Env}}{{println .}}{{end}}' \
+  | sed -n 's/^ENGINE_API_KEY=//p' | head -1)"
+test -n "$ENGINE_API_KEY"
+```
 
 ```bash
 docker rm -f life-engine 2>/dev/null || true
@@ -20,30 +30,16 @@ docker run -d \
   --name life-engine \
   --restart unless-stopped \
   -p 127.0.0.1:8012:8000 \
-  -e ENGINE_API_KEY='replace-with-long-random-key' \
+  -e ENGINE_API_KEY="$ENGINE_API_KEY" \
   life-engine:latest
 ```
 
 Without `ENGINE_API_KEY`, the service is open. Do not expose it publicly that way.
 
-## 3. Caddy
+## 3. Tunnel
 
-Add this site block to the Caddyfile:
-
-```caddyfile
-engine-life.aicycle.cc {
-	reverse_proxy 127.0.0.1:8012
-}
-```
-
-Reload Caddy:
-
-```bash
-caddy fmt --overwrite /etc/caddy/Caddyfile
-systemctl reload caddy
-```
-
-Caddy terminates HTTPS for `engine-life.aicycle.cc` and proxies to the local container.
+`engine-life.aicycle.cc` is served by the existing `cloudflared` systemd service.
+Routine app deploys do not need DNS, Caddy, or firewall changes.
 
 ## 4. Verify
 
@@ -52,7 +48,7 @@ curl -fsS https://engine-life.aicycle.cc/health
 
 curl -fsS https://engine-life.aicycle.cc/chart \
   -H 'Content-Type: application/json' \
-  -H 'X-Engine-Key: replace-with-long-random-key' \
+  -H "X-Engine-Key: $ENGINE_API_KEY" \
   -d '{"date":"1990-06-15","time":"08:30","tz":8,"lat":25.0,"lon":121.5,"gender":"女","target":"2025-01-01"}'
 ```
 
