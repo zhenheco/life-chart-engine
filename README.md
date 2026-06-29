@@ -278,7 +278,8 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 
 - `GET /health` returns `{"ok": true}`.
 - `POST /chart` accepts JSON keys matching the CLI flags: `date`, `time`, `tz`,
-  `lat`, `lon`, `gender`, optional `name`, optional `target`.
+  `lat`, `lon`, `gender`, optional `name`, optional `target`, optional
+  `ziwei_day_divide`.
 - If `ENGINE_API_KEY` is set, requests to `/chart` must include
   `X-Engine-Key: <value>` or they return `401`.
 
@@ -346,6 +347,7 @@ There are **no `required=True` flags** — argparse never errors on a missing on
 | `--lat` | float | **Yes** | falls back to `25.0330` | Latitude in decimal degrees (Western houses/Asc/MC). |
 | `--lon` | float | **Yes** | falls back to `121.5654` | Longitude in decimal degrees. |
 | `--target` | string | No | `"2025-01-01"` | `YYYY-MM-DD`; 紫微 luck-period reference date (運限參考日). |
+| `--ziwei-day-divide` | string | No | `"forward"` | 晚子時 rule: `forward` counts 23:00-23:59 as next day; `current` counts it as current day. |
 | `--json` | flag | No | `False` (Markdown) | Presence → JSON mode; absence → Markdown. Takes no value. |
 
 > The engine does **not** geocode places or look up time zones. The caller must convert place → `lat`/`lon`/`tz` themselves — and timezone/DST is the most common source of error, so verify the UTC offset that applied at the birth place and birth date.
@@ -394,7 +396,7 @@ Not every output carries the same confidence. Read each tier accordingly:
 ## Known limitations
 
 - **No Chiron / minor bodies.** The adapter exposes only the 10 classical planets plus the lunar nodes.
-- **紫微斗數 uses one default school.** iztro is called with fixed options (`bySolar(..., True, 'zh-TW')`); the star-placement school and 四化 are whatever iztro defaults to. If you normally use 飛星 or another school, the main structure is unchanged but some details may differ.
+- **紫微斗數 uses one default school.** iztro is called with its default star-placement school and 四化; only the late 子 hour day boundary is exposed (`--ziwei-day-divide`, default `forward`). If you normally use 飛星 or another school, the main structure is unchanged but some details may differ.
 - **Approximate birth time degrades the time-dependent tier.** If the birth time is uncertain, the Ascendant/MC/house assignments, Human Design lines, and 時辰 — and anything derived from them — become unreliable. In that case, **treat the time-dependent fields as provisional** and consider **event-based rectification** (matching known life events to chart timing) before relying on them.
 
 ---
@@ -468,7 +470,7 @@ The planetary positions are fine, but the Ascendant, Midheaven, house cusps, the
 Not included. The adapter exposes only the 10 classical planets and the lunar nodes.
 
 **Which 紫微斗數 school does it use?**
-The default school as implemented by iztro (`bySolar(..., True, 'zh-TW')`). The school is not user-selectable.
+The default school as implemented by iztro. The school is not user-selectable; only the late 子 hour day boundary is configurable with `--ziwei-day-divide`.
 
 **Does it phone home / use the network?**
 No. The engine is fully offline — no telemetry, no network calls, no side effects. It is a stateless, deterministic one-shot subprocess.

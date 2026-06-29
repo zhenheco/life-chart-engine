@@ -68,6 +68,25 @@ def test_post_chart_forwards_engine_input(server_client):
     ]
 
 
+def test_post_chart_forwards_ziwei_day_divide(server_client):
+    client, calls = server_client
+
+    response = client.post("/chart", json={**BODY, "ziwei_day_divide": "current"})
+
+    assert response.status_code == 200
+    assert calls[0]["ziwei_day_divide"] == "current"
+
+
+def test_invalid_ziwei_day_divide_returns_400(server_client):
+    client, calls = server_client
+
+    response = client.post("/chart", json={**BODY, "ziwei_day_divide": "tomorrow"})
+
+    assert response.status_code == 400
+    assert "ziwei_day_divide" in response.json()["detail"]
+    assert calls == []
+
+
 def test_missing_required_field_returns_400(server_client):
     client, calls = server_client
     body = dict(BODY)

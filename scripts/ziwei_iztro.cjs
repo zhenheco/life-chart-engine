@@ -91,6 +91,12 @@ function palace(palaceObj) {
 async function main() {
   const body = await readStdin();
   const req = JSON.parse(body || '{}');
+  const dayDivide = req.dayDivide || 'forward';
+  if (!['forward', 'current'].includes(dayDivide)) {
+    process.stderr.write('dayDivide must be forward or current.\n');
+    process.exit(1);
+  }
+  astro.config({ dayDivide });
   const result = astro.bySolar(
     req.date,
     req.timeIndex,

@@ -66,7 +66,7 @@ def _engine_input(body: Any) -> dict[str, Any]:
     try:
         target = str(body.get("target", INPUT["target"]))
         _parse_date(target, "target")
-        return {
+        out = {
             "name": str(body.get("name", INPUT["name"])),
             "gender": gender,
             "date": _parse_date(body["date"], "date"),
@@ -76,6 +76,12 @@ def _engine_input(body: Any) -> dict[str, Any]:
             "lon": float(body["lon"]),
             "target": target,
         }
+        if "ziwei_day_divide" in body:
+            day_divide = body["ziwei_day_divide"]
+            if day_divide not in {"forward", "current"}:
+                raise ValueError("ziwei_day_divide must be forward or current")
+            out["ziwei_day_divide"] = day_divide
+        return out
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

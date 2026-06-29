@@ -25,6 +25,7 @@ INPUT = {
     "lat":       25.0330,       # Taipei 101 (public landmark)
     "lon":       121.5654,
     "target":    "2025-01-01",
+    "ziwei_day_divide": "forward",  # 晚子時: forward=算次日, current=算當日
 }
 # ===============================================================
 
@@ -192,8 +193,12 @@ def ziwei(inp):
     h=inp["time"][0]
     ti = ((h+1)//2)%12 if h!=23 else 12
     # 早子(0-1)算0; 23點為晚子12
+    day_divide = inp.get("ziwei_day_divide", "forward")
+    if day_divide not in {"forward", "current"}:
+        raise ValueError("ziwei_day_divide must be forward or current")
     ds=f'{inp["date"][0]}-{inp["date"][1]}-{inp["date"][2]}'
-    req=dict(date=ds,timeIndex=ti,gender=inp["gender"],fixLeap=True,language='zh-TW',target=inp["target"])
+    req=dict(date=ds,timeIndex=ti,gender=inp["gender"],fixLeap=True,language='zh-TW',
+             target=inp["target"],dayDivide=day_divide)
     sidecar=Path(__file__).resolve().with_name("ziwei_iztro.cjs")
     proc=subprocess.run(["node", str(sidecar)], input=json.dumps(req, ensure_ascii=False),
                         capture_output=True, text=True, encoding="utf-8", timeout=15)
@@ -352,10 +357,13 @@ def _parse_args():
     p.add_argument('--lat', type=float, help='緯度')
     p.add_argument('--lon', type=float, help='經度')
     p.add_argument('--target', default=INPUT['target'], help='紫微運限參考日 YYYY-MM-DD')
+    p.add_argument('--ziwei-day-divide', default=INPUT['ziwei_day_divide'],
+                   choices=['forward','current'], help='晚子時規則：forward=算次日, current=算當日')
     p.add_argument('--json', action='store_true', default=False)
     a=p.parse_args()
     inp=dict(INPUT)
     inp['name']=a.name; inp['gender']=a.gender; inp['target']=a.target
+    inp['ziwei_day_divide']=a.ziwei_day_divide
     if a.date: y,m,d=map(int,a.date.split('-')); inp['date']=(y,m,d)
     if a.time: hh,mm=map(int,a.time.split(':')); inp['time']=(hh,mm)
     if a.tz is not None: inp['tz_offset']=a.tz

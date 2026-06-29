@@ -10,10 +10,10 @@ SIDECAR = ROOT / "scripts" / "ziwei_iztro.cjs"
 FIXTURE = ROOT / "tests" / "fixtures" / "ziwei_py_iztro_2_5_0_parity.json"
 
 
-def _input(date, time="08:30", gender="女", target="2025-01-01"):
+def _input(date, time="08:30", gender="女", target="2025-01-01", ziwei_day_divide=None):
     year, month, day = map(int, date.split("-"))
     hour, minute = map(int, time.split(":"))
-    return {
+    inp = {
         "name": "Test",
         "gender": gender,
         "date": (year, month, day),
@@ -23,6 +23,9 @@ def _input(date, time="08:30", gender="女", target="2025-01-01"):
         "lon": 121.5,
         "target": target,
     }
+    if ziwei_day_divide is not None:
+        inp["ziwei_day_divide"] = ziwei_day_divide
+    return inp
 
 
 def _comparable_ziwei(result):
@@ -136,6 +139,18 @@ def test_node_sidecar_returns_plain_iztro_subset():
         "adjectiveStars",
         "decadal",
     }
+
+
+def test_late_rat_hour_day_divide_can_stay_on_current_day():
+    current_day = _comparable_ziwei(
+        ziwei(_input("2004-02-29", time="23:30", ziwei_day_divide="current"))
+    )
+    early_same_day = _comparable_ziwei(ziwei(_input("2004-02-29", time="00:30")))
+    forward_day = _comparable_ziwei(ziwei(_input("2004-02-29", time="23:30")))
+    early_next_day = _comparable_ziwei(ziwei(_input("2004-03-01", time="00:30")))
+
+    assert current_day["palaces"] == early_same_day["palaces"]
+    assert forward_day["palaces"] == early_next_day["palaces"]
 
 
 def test_horoscope_mutagen_labeled_and_decadal_age_range():

@@ -74,6 +74,7 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 | `--gender` | enum | for 紫微 | `男` or `女`. Only affects Zi Wei. |
 | `--name` | string | no | Display label only. |
 | `--target` | string | no | Zi Wei horoscope reference date `YYYY-MM-DD`. Pass today's date for current 大限/流年. |
+| `--ziwei-day-divide` | enum | no | Late 子 hour rule: `forward` (default, 23:00-23:59 counts as next day) or `current` (counts as current day). |
 
 **Caller responsibilities (the agent, not the engine):**
 
