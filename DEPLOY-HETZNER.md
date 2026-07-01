@@ -31,10 +31,16 @@ docker run -d \
   --restart unless-stopped \
   -p 127.0.0.1:8012:8000 \
   -e ENGINE_API_KEY="$ENGINE_API_KEY" \
+  -e SENTRY_DSN="$SENTRY_DSN" \
+  -e SENTRY_ENVIRONMENT=production \
+  -e SENTRY_RELEASE="$(git rev-parse --short HEAD)" \
   life-engine:latest
 ```
 
 Without `ENGINE_API_KEY`, the service is open. Do not expose it publicly that way.
+Keep `SENTRY_DSN` in 1Password or the host secret store; do not write the raw DSN
+into the repo or shell history. `SENTRY_ENVIRONMENT` and `SENTRY_RELEASE` are
+non-secret runtime labels used to group engine exceptions in Sentry.
 
 ## 3. Tunnel
 

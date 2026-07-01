@@ -8,7 +8,10 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from scripts.chart_engine import INPUT, build_json
+from sentry_config import capture_exception, init_sentry
 
+
+init_sentry()
 
 app = FastAPI(title="life-chart-engine")
 
@@ -32,6 +35,7 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
     except HTTPException:
         raise  # 400s from _engine_input pass through unchanged
     except Exception as exc:  # build_json / ephemeris edge input
+        capture_exception(exc)
         return JSONResponse(
             status_code=500,
             content={"ok": False, "error": str(exc), "schema_version": "1.1"},
