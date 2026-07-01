@@ -5,8 +5,10 @@
 - Scope: local source remediation for `webapp.py`, `DEPLOY-HETZNER.md`, and security regression tests.
 - Fixed: webapp DOM XSS risk from dynamic chart/input values rendered through `innerHTML`; browser rendering now uses `textContent`, DOM node construction, and `replaceChildren`.
 - Fixed: deploy verification docs now build the engine auth header from `ENGINE_API_KEY` at runtime with `printf`, then pass `-H "$ENGINE_AUTH_HEADER"` instead of embedding a literal key-bearing header snippet.
+- Fixed: added a Python lint gate with `ruff` pyflakes rules and removed the unused Human Design `psun` assignment it surfaced.
 - Verified:
   - `.venv/bin/python -m pytest tests/test_webapp_dom_safety.py -q`
+  - `uvx --from ruff==0.15.20 ruff check .`
   - `.venv/bin/python -m pytest -q`
   - `gitleaks detect --source . --redact --no-banner --no-git`
   - `git diff --check`

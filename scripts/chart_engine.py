@@ -176,7 +176,6 @@ def human_design(inp, sun_lon):
     elif '意志' in defined: auth='意志力(心)權威'
     elif 'G' in defined: auth='自我投射型權威'
     else: auth='無內在權威(心智投射/月亮)'
-    psun=[r for r in rows if r[0]=='☉'][0]; dsun=psun
     prof=f"{rows[0][2]}/{rows[0][4]}"
     RIGHT={(1,3),(1,4),(2,4),(2,5),(3,5),(3,6),(4,6)}; LEFT={(5,1),(5,2),(6,2),(6,3)}; JUX={(4,1)}
     pr=(rows[0][2],rows[0][4])
