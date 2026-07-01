@@ -227,27 +227,57 @@ async function run(){
   }catch(e){ st.className='err'; st.textContent='請求失敗：'+e.message; }
 }
 
-function el(tag, cls, html){const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e;}
+function el(tag, cls, text){
+  const e=document.createElement(tag);
+  if(cls)e.className=cls;
+  if(text!=null)e.textContent=text;
+  return e;
+}
+function cell(tag, text, cls){return {tag, text, cls};}
+function addRow(table, cells, rowCls){
+  const tr=el('tr', rowCls);
+  cells.forEach(c=>{
+    const td=el(c.tag || 'td', c.cls || null, c.text);
+    tr.appendChild(td);
+  });
+  table.appendChild(tr);
+  return tr;
+}
+function addHeader(table, labels){addRow(table, labels.map(x=>cell('th',x)));}
+function resetResults(){
+  const R=$('results');
+  R.replaceChildren();
+  R.style.display='block';
+  return R;
+}
+function h2WithTag(title, tag){
+  const h=el('h2');
+  h.append(title+' ');
+  h.appendChild(el('span','tag',tag));
+  return h;
+}
 
 function render(d){
-  const R = $('results'); R.innerHTML=''; R.style.display='block';
+  const R = resetResults();
   const inp = d.input;
   R.appendChild(el('div','sub', `${inp.name}　${inp.gender}　${inp.date} ${inp.time}　UTC${inp.tz_offset>=0?'+':''}${inp.tz_offset}　(${inp.lat}, ${inp.lon})　流年參考 ${inp.target}`));
 
   // ---- Western ----
   const w = d.western;
   let s = el('div','sec');
-  s.appendChild(el('h2',null,'西洋本命盤 <span class="tag">'+w.system+'</span>'));
+  s.appendChild(h2WithTag('西洋本命盤', w.system));
   let kv = el('div','kv');
   kv.appendChild(kvItem('上升 ASC', w.ascendant.label));
   kv.appendChild(kvItem('天頂 MC', w.midheaven.label));
   s.appendChild(kv);
-  let t = el('table'); t.innerHTML='<tr><th>行星</th><th>星座度數</th><th>宮位</th><th>逆行</th></tr>';
+  let t = el('table'); addHeader(t, ['行星','星座度數','宮位','逆行']);
   w.planets.forEach(p=>{
-    const tr=el('tr');
-    tr.innerHTML=`<td>${p.name}</td><td>${p.label}</td><td>${p.house}</td>`+
-      `<td class="${p.retrograde?'retro':''}">${p.retrograde?'℞ 逆':''}</td>`;
-    t.appendChild(tr);
+    addRow(t, [
+      cell('td',p.name),
+      cell('td',p.label),
+      cell('td',String(p.house)),
+      cell('td',p.retrograde?'℞ 逆':'',p.retrograde?'retro':'')
+    ]);
   });
   s.appendChild(t);
   const asp = w.aspects.slice(0,12).map(a=>`${a.a}–${a.b} ${a.type}(${a.orb}°)`).join('　');
@@ -273,10 +303,13 @@ function render(d){
   h.channels.forEach(c=>ch.appendChild(el('span','tag',c)));
   s.appendChild(el('div','hint','通道：'));
   s.appendChild(ch);
-  let gt = el('table'); gt.innerHTML='<tr><th>行星</th><th>個性 (體)</th><th>設計</th></tr>';
+  let gt = el('table'); addHeader(gt, ['行星','個性 (體)','設計']);
   h.gates.forEach(g=>{
-    gt.appendChild(el('tr',null,
-      `<td>${g.planet}</td><td>${g.personality.gate}.${g.personality.line}</td><td>${g.design.gate}.${g.design.line}</td>`));
+    addRow(gt, [
+      cell('td',g.planet),
+      cell('td',`${g.personality.gate}.${g.personality.line}`),
+      cell('td',`${g.design.gate}.${g.design.line}`)
+    ]);
   });
   s.appendChild(gt);
   R.appendChild(s);
@@ -294,15 +327,21 @@ function render(d){
   z.palaces.forEach(p=>{
     const isLife = p.flags && p.flags.indexOf('命')>=0;
     const pc = el('div','palace'+(isLife?' life':''));
-    let flag = '';
-    if(p.flags && p.flags.indexOf('命')>=0) flag += '<span class="flagbadge">命</span>';
-    if(p.flags && p.flags.indexOf('身')>=0) flag += '<span class="flagbadge">身</span>';
-    pc.innerHTML =
-      `<span class="pgz">${p.ganzhi}</span><span class="pname">${p.name}${flag}</span>`+
-      (p.major_stars.length?`<div class="maj">${p.major_stars.join('　')}</div>`:`<div class="maj" style="opacity:.5">（空宮）</div>`)+
-      (p.minor_stars.length?`<div class="min">${p.minor_stars.join('　')}</div>`:``)+
-      (p.adjective_stars.length?`<div class="adj">${p.adjective_stars.join('　')}</div>`:``)+
-      `<div class="adj">大限 ${p.decadal_range}</div>`;
+    pc.appendChild(el('span','pgz',p.ganzhi));
+    const pname = el('span','pname',p.name);
+    if(p.flags && p.flags.indexOf('命')>=0) pname.appendChild(el('span','flagbadge','命'));
+    if(p.flags && p.flags.indexOf('身')>=0) pname.appendChild(el('span','flagbadge','身'));
+    pc.appendChild(pname);
+    if(p.major_stars.length){
+      pc.appendChild(el('div','maj',p.major_stars.join('　')));
+    }else{
+      const empty=el('div','maj','（空宮）');
+      empty.style.opacity='.5';
+      pc.appendChild(empty);
+    }
+    if(p.minor_stars.length) pc.appendChild(el('div','min',p.minor_stars.join('　')));
+    if(p.adjective_stars.length) pc.appendChild(el('div','adj',p.adjective_stars.join('　')));
+    pc.appendChild(el('div','adj','大限 '+p.decadal_range));
     pg.appendChild(pc);
   });
   s.appendChild(pg);
@@ -311,11 +350,15 @@ function render(d){
   // raw
   const det = el('details');
   det.appendChild(el('summary',null,'查看原始 JSON'));
-  det.appendChild(el('pre',null, esc(JSON.stringify(d,null,2))));
+  det.appendChild(el('pre',null, JSON.stringify(d,null,2)));
   R.appendChild(det);
 }
-function kvItem(k,v){return el('div','item',`<div class="k">${k}</div><div class="v">${v}</div>`);}
-function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function kvItem(k,v){
+  const item=el('div','item');
+  item.appendChild(el('div','k',k));
+  item.appendChild(el('div','v',v));
+  return item;
+}
 
 // ---- 邊界對照 ----
 function curBody(timeStr){
@@ -355,7 +398,7 @@ async function compareBoundary(){
   }catch(e){ st.className='err'; st.textContent='請求失敗：'+e.message; }
 }
 function renderCompare(offsets,times,datas){
-  const R=$('results'); R.innerHTML=''; R.style.display='block';
+  const R=resetResults();
   const inp=datas[2].input;
   R.appendChild(el('div','sub',`邊界對照　${inp.name}　${inp.date}　以 ${times[2]} 為中心，±30 分鐘`));
   const fields=[
@@ -371,21 +414,23 @@ function renderCompare(offsets,times,datas){
     ['身主', d=>d.ziwei.body],
   ];
   const t=el('table','cmp');
-  let head='<tr><th>欄位 \\ 時間</th>';
-  offsets.forEach((o,i)=>{ const lbl=times[i]+(o===0?' ●':(o>0?' +'+o:' '+o)); head+=`<th class="${o===0?'center':''}">${lbl}</th>`; });
-  head+='</tr>'; t.innerHTML=head;
+  const header=[cell('th','欄位 \\ 時間')];
+  offsets.forEach((o,i)=>{
+    const lbl=times[i]+(o===0?' ●':(o>0?' +'+o:' '+o));
+    header.push(cell('th',lbl,o===0?'center':''));
+  });
+  addRow(t, header);
   fields.forEach(f=>{
     const vals=datas.map(f[1]);
     const center=vals[2];
     const changed=vals.some(v=>v!==center);
-    const tr=el('tr', changed?'':'stable');
-    let row=`<td>${f[0]}</td>`;
+    const row=[cell('td',f[0])];
     vals.forEach((v,i)=>{
       const isC=offsets[i]===0;
       const diff=v!==center;
-      row+=`<td class="${isC?'center ':''}${diff?'changed':''}">${v}</td>`;
+      row.push(cell('td',v,`${isC?'center ':''}${diff?'changed':''}`));
     });
-    tr.innerHTML=row; t.appendChild(tr);
+    addRow(t, row, changed?'':'stable');
   });
   R.appendChild(t);
   R.appendChild(el('div','note','綠色列＝這 ±30 分鐘內完全不變（可信任）；黃色＝會隨時間變動，代表該欄位對出生時間敏感，請先確認時間精確度再採用。'));
