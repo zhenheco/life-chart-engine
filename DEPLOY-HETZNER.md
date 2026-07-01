@@ -52,11 +52,16 @@ Routine app deploys do not need DNS, Caddy, or firewall changes.
 ```bash
 curl -fsS https://engine-life.aicycle.cc/health
 
+ENGINE_AUTH_HEADER="$(printf '%s: %s' 'X-Engine-Key' "$ENGINE_API_KEY")"
 curl -fsS https://engine-life.aicycle.cc/chart \
   -H 'Content-Type: application/json' \
-  -H "X-Engine-Key: $ENGINE_API_KEY" \
+  -H "$ENGINE_AUTH_HEADER" \
   -d '{"date":"1990-06-15","time":"08:30","tz":8,"lat":25.0,"lon":121.5,"gender":"女","target":"2025-01-01"}'
 ```
+
+For the chart request, construct the `X-Engine-Key` request header at runtime
+from `ENGINE_API_KEY` (shell env or secret manager). Use `printf` instead of
+copying key values into docs, shell history, tickets, or logs.
 
 ## 5. life-web
 
@@ -64,14 +69,11 @@ Set the Worker backend to call the HTTPS endpoint and send the key:
 
 ```env
 ENGINE_URL=https://engine-life.aicycle.cc/chart
-ENGINE_API_KEY=replace-with-long-random-key
+ENGINE_API_KEY=<set in platform secret store>
 ```
 
-The Worker request must include:
-
-```http
-X-Engine-Key: replace-with-long-random-key
-```
+The Worker request must include the `X-Engine-Key` header value sourced from
+the configured `ENGINE_API_KEY` secret.
 
 The HTTP response schema is the same `schema_version: "1.1"` JSON object documented in `AGENTS.md`.
 
