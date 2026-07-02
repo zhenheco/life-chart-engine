@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export LIFE_VENV="${LIFE_VENV:-$HOME/.claude/skills/life/.venv}"
+export LIFE_VENV="${LIFE_VENV:-$REPO/.venv}"
 
 if [ ! -x "$LIFE_VENV/bin/python" ]; then
   echo "missing test venv python at $LIFE_VENV/bin/python" >&2
