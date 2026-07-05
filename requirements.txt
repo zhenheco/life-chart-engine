@@ -6,7 +6,9 @@
 # the remaining dependencies and deployment image.
 
 astronomy-engine>=2.1.19
-fastapi==0.128.8
+fastapi==0.139.0
+# Security pin for FastAPI's Starlette runtime dependency.
+starlette==1.3.1
 uvicorn==0.39.0
 httpx==0.28.1
 sentry-sdk==2.48.0
