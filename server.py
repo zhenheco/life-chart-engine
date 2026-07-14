@@ -1,21 +1,18 @@
 import os
-from datetime import date as valid_date
-from datetime import time as valid_time
 from json import JSONDecodeError
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from scripts.chart_engine import INPUT, build_json
+from scripts.chart_engine import build_json
+from scripts.validation import validate_input
 from sentry_config import capture_exception, init_sentry
 
 
 init_sentry()
 
 app = FastAPI(title="life-chart-engine")
-
-REQUIRED_FIELDS = ("date", "time", "tz", "lat", "lon", "gender")
 
 
 @app.get("/health")
@@ -59,60 +56,10 @@ def _engine_input(body: Any) -> dict[str, Any]:
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="body must be a JSON object")
 
-    missing = [field for field in REQUIRED_FIELDS if field not in body]
-    if missing:
-        raise HTTPException(status_code=400, detail=f"missing required fields: {', '.join(missing)}")
-
-    gender = body["gender"]
-    if gender not in {"男", "女"}:
-        raise HTTPException(status_code=400, detail="gender must be 男 or 女")
-
+    # Single validation source shared with the CLI (and MCP): scripts/validation.py.
+    # Out-of-range / non-finite / out-of-window rejection is deliberate 400 hardening
+    # over the historical float()-coercion behaviour — see AGENTS.md §3/§5.
     try:
-        target = str(body.get("target", INPUT["target"]))
-        _parse_date(target, "target")
-        out = {
-            "name": str(body.get("name", INPUT["name"])),
-            "gender": gender,
-            "date": _parse_date(body["date"], "date"),
-            "time": _parse_time(body["time"]),
-            "tz_offset": float(body["tz"]),
-            "lat": float(body["lat"]),
-            "lon": float(body["lon"]),
-            "target": target,
-        }
-        if "ziwei_day_divide" in body:
-            day_divide = body["ziwei_day_divide"]
-            if day_divide not in {"forward", "current"}:
-                raise ValueError("ziwei_day_divide must be forward or current")
-            out["ziwei_day_divide"] = day_divide
-        return out
-    except (TypeError, ValueError) as exc:
+        return validate_input(body)
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-def _parse_date(value: Any, field: str) -> tuple[int, int, int]:
-    if not isinstance(value, str):
-        raise ValueError(f"{field} must be YYYY-MM-DD")
-    parts = value.split("-")
-    if len(parts) != 3:
-        raise ValueError(f"{field} must be YYYY-MM-DD")
-    try:
-        y, m, d = map(int, parts)
-    except ValueError as exc:
-        raise ValueError(f"{field} must be YYYY-MM-DD") from exc
-    valid_date(y, m, d)
-    return y, m, d
-
-
-def _parse_time(value: Any) -> tuple[int, int]:
-    if not isinstance(value, str):
-        raise ValueError("time must be HH:MM")
-    parts = value.split(":")
-    if len(parts) != 2:
-        raise ValueError("time must be HH:MM")
-    try:
-        h, m = map(int, parts)
-    except ValueError as exc:
-        raise ValueError("time must be HH:MM") from exc
-    valid_time(h, m)
-    return h, m

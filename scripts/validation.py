@@ -53,17 +53,13 @@ def validate_input(raw):
             raise ValueError(f"{field}: is required")
 
     gender = raw["gender"]
-    if gender not in {"男", "女"}:
+    if not isinstance(gender, str) or gender not in {"男", "女"}:
         raise ValueError("gender: must be 男 or 女")
-
-    day_divide = raw.get("ziwei_day_divide", "forward")
-    if day_divide not in {"forward", "current"}:
-        raise ValueError("ziwei_day_divide: must be forward or current")
 
     birth_date = _date_value("date", raw["date"])
     target = _date_value("target", raw.get("target", DEFAULT_TARGET))
-    return {
-        "name": raw.get("name", DEFAULT_NAME),
+    normalized = {
+        "name": DEFAULT_NAME if raw.get("name") is None else str(raw["name"]),
         "gender": gender,
         "date": (birth_date.year, birth_date.month, birth_date.day),
         "time": _time_value(raw["time"]),
@@ -71,5 +67,10 @@ def validate_input(raw):
         "lat": _finite_float("lat", raw["lat"], -90, 90),
         "lon": _finite_float("lon", raw["lon"], -180, 180),
         "target": target.isoformat(),
-        "ziwei_day_divide": day_divide,
     }
+    if "ziwei_day_divide" in raw:
+        day_divide = raw["ziwei_day_divide"]
+        if not isinstance(day_divide, str) or day_divide not in {"forward", "current"}:
+            raise ValueError("ziwei_day_divide: must be forward or current")
+        normalized["ziwei_day_divide"] = day_divide
+    return normalized

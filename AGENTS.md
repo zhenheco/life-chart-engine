@@ -57,7 +57,13 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 - `POST /chart` accepts the same input fields as the CLI flags, with `tz`
   mapped to `tz_offset` internally, and returns the same `schema_version: "1.1"`
   JSON object.
-- If `ENGINE_API_KEY` is set, callers must send `X-Engine-Key`.
+- If `ENGINE_API_KEY` is set, callers must send `X-Engine-Key` (wrong key → `401`).
+- **Fail-closed:** if `ENGINE_API_KEY` is NOT set, the server refuses requests with
+  `503` unless `ENGINE_ALLOW_OPEN=1` is set explicitly (local/dev only).
+- HTTP input validation shares `scripts/validation.py` with the CLI. Out-of-range
+  `tz`/`lat`/`lon`, non-finite values, and years outside 1900–2100 return `400`
+  (deliberate hardening added in v1.1.0; previously such values could reach the
+  engine as a `200` wrong chart or a `500`).
 - Hetzner Docker+Caddy deployment notes live in [`DEPLOY-HETZNER.md`](./DEPLOY-HETZNER.md).
 
 ---
@@ -222,6 +228,14 @@ On success, stdout is one JSON object:
 | `2` | argument/validation error (argparse) | **empty** (usage text goes to stderr) — includes missing required flags, malformed dates/times, out-of-range `tz`/`lat`/`lon`, years outside 1900–2100, and illegal `--example` combinations |
 
 Agents should branch on `ok` (and on exit code) before reading chart fields.
+
+**Error transport matrix** — the *validation decision* is identical on every
+surface (same shared validator); only the carrier differs:
+
+| failure class | CLI | HTTP `/chart` |
+|---|---|---|
+| validation error (missing/malformed/out-of-range/out-of-window input) | exit `2`, empty stdout, usage on stderr | `400` + `detail` naming the field |
+| runtime error (Node sidecar failure, high-latitude Placidus, timeout) | exit `1` (`--json`: one `{"ok": false}` envelope; Markdown: message on stderr, empty stdout) | `500` + `{"ok": false, ...}` envelope |
 
 ---
 
