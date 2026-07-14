@@ -86,11 +86,11 @@
   - MCP：stdio；`compute_chart` inputSchema pin＝/chart body 欄位（必填 date/time/tz/lat/lon/gender；選填 name/target/ziwei_day_divide），tools/list 測試斷言欄位名與必填性；成功＝單一 text content（serializer）；驗證失敗與 runtime 失敗＝`isError: true`，server 續存。
   - **錯誤傳輸矩陣**（寫進 AGENTS.md＋parity test）：驗證錯 → CLI exit 2／HTTP 400／MCP isError；runtime 錯（Node、高緯度、timeout）→ CLI exit 1／HTTP 500／MCP isError。parity＝「驗證決策」一致（同輸入三面同判），載體各異。
 - 架構決策:
-  - MCP thin wrapper over `build_json()`；`mcp` SDK 以 `==` 精確 pin（實作時取最新穩定版，版本記入 `docs/RELEASING.md`）；`life-chart-mcp` 常駐 scripts，無 extra 時給安裝提示。
+  - MCP thin wrapper over `build_json()`；`mcp` SDK pin＝**`mcp==1.28.1`**（2026-07-14 PyPI 現行穩定版；pyproject 與 `docs/RELEASING.md` 同值）；`life-chart-mcp` 常駐 scripts，無 extra 時給安裝提示。
   - 打包佈局（定案）：repo 目錄不動；wheel import package＝`life_chart_engine`（hatchling sources 映射）；`scripts/__init__.py`＋相對 import；vendor force-include；core deps＝astronomy-engine only；版本 1.1.0；requires-python `>=3.12,<3.13`。Node ≥ 18 supported/tested（**CI node 18/24 matrix 佐證**）；`~/.local/bin/life-chart` 與 install.sh symlink 共存註記。
   - 發佈：`publish.yml` `on: release: types: [published]`；兩 job（build artifact → OIDC publish，`permissions: id-token: write`，artifact upload/download 傳遞）；PR 側 build＋`twine check`（twine 以固定版本裝進 qa-gate）在 qa-gate 跑；publish.yml 有靜態契約測試（斷言 trigger types、permissions、job 結構）。
   - **CI 佈線歸屬**：引入新測試/工具需求的 slice 自帶 qa-gate 修改＋`qa_gate_workflow_test.py` regex 同步（見 Modules 表），確保 DAG 順序下每個 slice 合併後 CI 皆綠；`test_mcp_server.py` 用 `importorskip` 防本地無 extra 紅燈。
-- 第三方/整合: `mcp` SDK（MIT，== pin）、hatchling、twine（CI 固定版本）、vhs（開發機）。禁止 AGPL／swisseph。
+- 第三方/整合: `mcp` SDK（MIT，`mcp==1.28.1`）、hatchling、twine（CI 固定版本）、vhs（開發機）。禁止 AGPL／swisseph。
 - 安全/權限: 無 secrets；no-network 雙層證明——Python in-process socket guard＋sidecar 原始碼靜態斷言（`ziwei_iztro.cjs`＋`vendor/iztro.cjs` 無 `require('http`/`require('net`/`fetch(`/`XMLHttpRequest`），並文件化 Python guard 管不到 Node 子行程的邊界；OIDC 不存 token；GIF/tape 只用 `--example`。
 - 邊界/效能: Node 缺席/失敗/timeout 收斂單一 loud-error 路徑（PATH 遮蔽/假 node 注入）；PDF：發現瀏覽器時必跑真瀏覽器 `%PDF` 測試，僅無瀏覽器 skip；translations guard 用 pinned literal＋恰好 18 檔。
 
@@ -149,7 +149,7 @@
 - **Blocked by**: Slice 1
 - **User stories**: #9, #10, #23
 - **Acceptance criteria**:
-  - [ ] `pyproject.toml`：`[project]`（deps＝astronomy-engine only、1.1.0、requires-python `>=3.12,<3.13`）＋hatchling sources 映射＋console scripts `life-chart`/`life-chart-engine`（**`life-chart-mcp` entry point 隨 Slice 6 一併落 pyproject**，避免 dangling 指向未建模組）＋`[mcp]` extra（`mcp` `==` pin，版本記入 RELEASING.md——檔案本體 Slice 9 建，pin 值此處先落 pyproject）
+  - [ ] `pyproject.toml`：`[project]`（deps＝astronomy-engine only、1.1.0、requires-python `>=3.12,<3.13`）＋hatchling sources 映射＋console scripts `life-chart`/`life-chart-engine`（**`life-chart-mcp` entry point 隨 Slice 6 一併落 pyproject**，避免 dangling 指向未建模組）＋`[mcp]` extra（**`mcp==1.28.1`**——2026-07-14 PyPI 現行穩定版；同一版本值寫入 pyproject 與 docs/RELEASING.md）
   - [ ] wheel import package `life_chart_engine`；`scripts/__init__.py`＋相對 import；checkout 與 wheel 雙載入
   - [ ] vendor force-include；`.cjs` 雙路徑解析有測試
   - [ ] 乾淨 venv＋checkout 外：兩 entry points `--example --json` 合法 JSON（自動化）
