@@ -2,8 +2,20 @@
 'use strict';
 
 const path = require('node:path');
+const fs = require('node:fs');
 
-const { astro } = require(path.resolve(__dirname, '..', 'vendor', 'iztro.cjs'));
+// Resolution order: packaged layout (wheel: <pkg>/vendor/iztro.cjs beside this
+// file) first, then checkout layout (<repo>/vendor/iztro.cjs one level up).
+const VENDOR_CANDIDATES = [
+  path.resolve(__dirname, 'vendor', 'iztro.cjs'),
+  path.resolve(__dirname, '..', 'vendor', 'iztro.cjs'),
+];
+const vendorBundle = VENDOR_CANDIDATES.find((p) => fs.existsSync(p));
+if (!vendorBundle) {
+  console.error(`iztro vendor bundle not found; looked in: ${VENDOR_CANDIDATES.join(', ')}`);
+  process.exit(1);
+}
+const { astro } = require(vendorBundle);
 
 function readStdin() {
   return new Promise((resolve, reject) => {

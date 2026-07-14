@@ -56,6 +56,8 @@ cd life-chart-engine
 bash setup.sh
 ```
 
+> Development note: `pip install -e .` is not supported (the build maps `scripts/` → the `life_chart_engine` package, which hatchling's dev mode can't rewrite). Use the `setup.sh` venv for development.
+
 ### What `setup.sh` does
 
 It runs under `set -euo pipefail` and performs five steps:
@@ -352,6 +354,8 @@ All six birth flags are **required** — a missing flag exits `2` with usage on 
 | `--target` | string | No | `YYYY-M-D`; 紫微 luck-period reference date (運限參考日), same 1900–2100 window. Default `"2025-01-01"`. |
 | `--ziwei-day-divide` | string | No | 晚子時 rule: `forward` (default) counts 23:00-23:59 as next day; `current` counts it as current day. |
 | `--json` | flag | No | Presence → JSON mode; absence → Markdown. Takes no value. |
+
+> **Install-path note (Linux/macOS):** `pip install --user life-chart-engine` and the git `install.sh` both place a `life-chart` executable at `~/.local/bin/life-chart` — installing both means the later one silently overwrites the symlink/script. Pick one method (or use `uvx`, which is unaffected). On Windows, pip user-installs go to the Python `Scripts\` directory instead and do not collide with `install.sh` (which is POSIX-only).
 
 > The engine does **not** geocode places or look up time zones. The caller must convert place → `lat`/`lon`/`tz` themselves — and timezone/DST is the most common source of error, so verify the UTC offset that applied at the birth place and birth date.
 

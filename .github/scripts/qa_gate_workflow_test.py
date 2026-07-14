@@ -39,3 +39,11 @@ def test_workflow_publishes_fail_closed_automerge_gate_context() -> None:
     assert re.search(r"(?m)^\s+name:\s+automerge-gate\s*$", workflow)
     assert re.search(r"(?m)^\s+if:\s+\$\{\{\s*always\(\)\s*\}\}\s*$", workflow)
     assert "needs.tests.result" in workflow
+
+
+def test_workflow_installs_and_runs_packaging_dry_run() -> None:
+    workflow = _workflow_text()
+
+    assert "pytest build twine==6.1.0" in workflow
+    assert re.search(r"\.venv/bin/python -m build --outdir dist-ci", workflow)
+    assert re.search(r"\.venv/bin/python -m twine check dist-ci/\*", workflow)
