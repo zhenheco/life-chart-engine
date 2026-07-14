@@ -46,7 +46,7 @@ Human Design のタイプ、オーソリティ、ディフィニションは**�
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-`~/.life-chart-engine` にインストールします（`LIFE_CHART_DIR` で上書き可能）。`sudo` 不要、システム全体への変更なし — リポジトリを clone し、分離された CPython 3.12 venv を作成し、固定された iztro Node バンドルを生成するだけです。`git`、[`uv`](https://docs.astral.sh/uv/)、Node.js/npm が必要です。最新版へ更新するにはいつでも再実行してください。
+`~/.life-chart-engine` にインストールします（`LIFE_CHART_DIR` で上書き可能）。`sudo` 不要、システム全体への変更なし — リポジトリを clone し、分離された CPython 3.12 venv を作成し、固定された iztro Node バンドルを生成するだけです。`git`、[`uv`](https://docs.astral.sh/uv/)、**Node.js ≥ 18** が必要です（18 と 24 でサポート/テスト済み — 紫微斗數は Node サイドカーで動作するため、Node がない場合は 3 つ目のシステムを黙って省略するのではなく、すべてのチャートリクエストが明示的に失敗します）。最新版へ更新するにはいつでも再実行してください。
 
 ### ソースからのインストール
 
@@ -340,7 +340,7 @@ iztro@2.5.8
 Set up and use "life-chart-engine" — a CLI that computes a Western natal chart +
 Human Design + Zi Wei Dou Shu (紫微斗數) from birth data.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Compute a chart and read stdout as JSON:

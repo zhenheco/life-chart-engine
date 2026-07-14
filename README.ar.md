@@ -46,7 +46,7 @@
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-يُثبَّت في `~/.life-chart-engine` (يمكن التجاوز بـ `LIFE_CHART_DIR`). لا `sudo` ولا تغييرات على مستوى النظام — ينسخ المستودع فقط، ويبني venv معزولًا لـ CPython 3.12، وينشئ حزمة iztro Node المثبتة. يتطلب `git` و[`uv`](https://docs.astral.sh/uv/) و Node.js/npm. أعد تشغيله في أي وقت للتحديث إلى أحدث إصدار.
+يُثبَّت في `~/.life-chart-engine` (يمكن التجاوز بـ `LIFE_CHART_DIR`). لا `sudo` ولا تغييرات على مستوى النظام — ينسخ المستودع فقط، ويبني venv معزولًا لـ CPython 3.12، وينشئ حزمة iztro Node المثبتة. يتطلب `git` و[`uv`](https://docs.astral.sh/uv/) و **Node.js ≥ 18** (مدعوم ومختبَر على 18 و24 — تعمل 紫微斗數 عبر sidecar بلغة Node؛ ومن دونه يفشل كل طلب مخطط بشكل صريح بدلًا من إسقاط النظام الثالث بصمت). أعد تشغيله في أي وقت للتحديث إلى أحدث إصدار.
 
 ### من المصدر
 
@@ -340,7 +340,7 @@ iztro@2.5.8
 Set up and use "life-chart-engine" — a CLI that computes a Western natal chart +
 Human Design + Zi Wei Dou Shu (紫微斗數) from birth data.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Compute a chart and read stdout as JSON:

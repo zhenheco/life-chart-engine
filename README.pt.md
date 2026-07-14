@@ -46,7 +46,7 @@ Este motor faz a matemática real em vez de aproximar ou chamar um serviço. Ess
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Instala em `~/.life-chart-engine` (substitua com `LIFE_CHART_DIR`). Sem `sudo`, sem mudanças no sistema todo — apenas clona o repositório, cria um venv CPython 3.12 isolado e gera o bundle Node iztro fixado. Requer `git`, [`uv`](https://docs.astral.sh/uv/) e Node.js/npm. Execute novamente a qualquer momento para atualizar para a versão mais recente.
+Instala em `~/.life-chart-engine` (substitua com `LIFE_CHART_DIR`). Sem `sudo`, sem mudanças no sistema todo — apenas clona o repositório, cria um venv CPython 3.12 isolado e gera o bundle Node iztro fixado. Requer `git`, [`uv`](https://docs.astral.sh/uv/) e **Node.js ≥ 18** (suportado/testado nas versões 18 e 24 — o 紫微斗數 roda via um sidecar Node; sem ele, cada pedido de carta falha de forma explícita em vez de descartar silenciosamente o terceiro sistema). Execute novamente a qualquer momento para atualizar para a versão mais recente.
 
 ### Do source
 
@@ -340,7 +340,7 @@ Cole este bloco direto em Claude Code, ChatGPT ou qualquer agente de codificaç�
 Configurar e usar "life-chart-engine" — uma CLI que calcula uma carta natal ocidental +
 Human Design + Zi Wei Dou Shu (紫微斗數) a partir de dados de nascimento.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Calcular uma carta e ler stdout como JSON:

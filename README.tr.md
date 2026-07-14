@@ -46,7 +46,7 @@ Bu motor yaklaşımcılık yapmak veya bir hizmeti çağırmak yerine gerçek ma
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-`~/.life-chart-engine` içine kurar (`LIFE_CHART_DIR` ile geçersiz kılınabilir). `sudo` yok, sistem genelinde değişiklik yok — yalnızca repoyu klonlar, izole bir CPython 3.12 venv oluşturur ve sabitlenmiş iztro Node paketini üretir. `git`, [`uv`](https://docs.astral.sh/uv/) ve Node.js/npm gerektirir. En son sürüme güncellemek için istediğiniz zaman tekrar çalıştırın.
+`~/.life-chart-engine` içine kurar (`LIFE_CHART_DIR` ile geçersiz kılınabilir). `sudo` yok, sistem genelinde değişiklik yok — yalnızca repoyu klonlar, izole bir CPython 3.12 venv oluşturur ve sabitlenmiş iztro Node paketini üretir. `git`, [`uv`](https://docs.astral.sh/uv/) ve **Node.js ≥ 18** gerektirir (18 ve 24 sürümlerinde desteklenir/test edilmiştir — 紫微斗數 bir Node sidecar üzerinden çalışır; o olmadan her harita isteği, üçüncü sistemi sessizce atlamak yerine yüksek sesle hata verir). En son sürüme güncellemek için istediğiniz zaman tekrar çalıştırın.
 
 ### Kaynaktan
 
@@ -340,7 +340,7 @@ Bu bloku doğrudan Claude Code, ChatGPT veya herhangi bir kodlama ajanına yapı
 "life-chart-engine" — doğum verilerinden Batı doğum haritası + Human Design +
 紫微斗數 (Zi Wei Dou Shu) hesaplayan bir CLI'yi kurun ve kullanın.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Bir harita hesaplayın ve stdout'u JSON olarak okuyun:

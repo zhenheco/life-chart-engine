@@ -44,6 +44,12 @@ life-chart --json \
   `~/.local/bin/life-chart`.
 - `<VENV_PY>` = the project venv's Python (CPython 3.12), created by `setup.sh`
   (default `<REPO>/.venv/bin/python`). Do **not** use the system `python3`.
+- **Node.js ≥ 18 on PATH is a hard runtime requirement** (supported/tested on
+  18 and 24 in CI) — 紫微斗數 runs via a Node sidecar. A missing or failing
+  `node` fails the whole request loudly (`--json`: `{"ok": false}` exit `1`
+  naming the requirement; Markdown: one stderr line, empty stdout; HTTP: `500`).
+  This applies to `pip install life-chart-engine` installs too — install Node
+  from https://nodejs.org or your package manager.
 - Pass `--json` for the structured contract below. Omit it for human Markdown.
 - The process prints **exactly one JSON object to stdout** and nothing else.
 

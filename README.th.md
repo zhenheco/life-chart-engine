@@ -46,7 +46,7 @@ Type Authority และ Definition ใน Human Design **ไม่ได้ร�
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-ติดตั้งลง `~/.life-chart-engine` (override ด้วย `LIFE_CHART_DIR`) ไม่ใช้ `sudo` ไม่เปลี่ยนทั้งระบบ — แค่ clone repo, สร้าง CPython 3.12 venv แบบ isolated และ generate pinned iztro Node bundle ต้องมี `git`, [`uv`](https://docs.astral.sh/uv/) และ Node.js/npm รันซ้ำเมื่อไรก็ได้เพื่อ update เป็น version ล่าสุด
+ติดตั้งลง `~/.life-chart-engine` (override ด้วย `LIFE_CHART_DIR`) ไม่ใช้ `sudo` ไม่เปลี่ยนทั้งระบบ — แค่ clone repo, สร้าง CPython 3.12 venv แบบ isolated และ generate pinned iztro Node bundle ต้องมี `git`, [`uv`](https://docs.astral.sh/uv/) และ **Node.js ≥ 18** (รองรับ/ทดสอบบน 18 และ 24 — 紫微斗數 รันผ่าน Node sidecar หากไม่มี ทุกคำขอ chart จะล้มเหลวแบบแจ้งชัดเจน แทนที่จะเงียบ ๆ ตัดระบบที่สามทิ้ง) รันซ้ำเมื่อไรก็ได้เพื่อ update เป็น version ล่าสุด
 
 ### จากแหล่ง
 
@@ -340,7 +340,7 @@ Flags การเกิดทั้งหกตัวเป็น **ข้อ�
 Set up and use "life-chart-engine" — a CLI that computes a Western natal chart +
 Human Design + Zi Wei Dou Shu (紫微斗數) from birth data.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Compute a chart and read stdout as JSON:

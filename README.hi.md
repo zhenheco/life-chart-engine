@@ -46,7 +46,7 @@ Human Design में प्रकार, प्राधिकार, और �
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-`~/.life-chart-engine` में इंस्टॉल होता है (`LIFE_CHART_DIR` से बदलें)। कोई `sudo` नहीं, कोई system-wide बदलाव नहीं — यह केवल repo clone करता है, isolated CPython 3.12 venv बनाता है, और pinned iztro Node bundle जनरेट करता है। `git`, [`uv`](https://docs.astral.sh/uv/), और Node.js/npm चाहिए। नवीनतम संस्करण में update करने के लिए कभी भी फिर से चलाएँ।
+`~/.life-chart-engine` में इंस्टॉल होता है (`LIFE_CHART_DIR` से बदलें)। कोई `sudo` नहीं, कोई system-wide बदलाव नहीं — यह केवल repo clone करता है, isolated CPython 3.12 venv बनाता है, और pinned iztro Node bundle जनरेट करता है। `git`, [`uv`](https://docs.astral.sh/uv/), और **Node.js ≥ 18** चाहिए (18 और 24 पर supported/tested — 紫微斗數 एक Node sidecar के ज़रिए चलता है; इसके बिना हर chart request तीसरे system को चुपचाप छोड़ने के बजाय loudly fail करता है)। नवीनतम संस्करण में update करने के लिए कभी भी फिर से चलाएँ।
 
 ### स्रोत से
 
@@ -339,7 +339,7 @@ Engine अभी verified **CPython 3.12** runtime पर चलता है।
 ```text
 "life-chart-engine" को सेट अप और उपयोग करें — एक CLI जो जन्म डेटा से एक पश्चिमी जन्म चार्ट + Human Design + Zi Wei Dou Shu (紫微斗數) की गणना करता है।
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. एक चार्ट की गणना करें और stdout को JSON के रूप में पढ़ें:

@@ -46,7 +46,7 @@ Mesin ini melakukan matematika nyata daripada mendekati atau memanggil layanan. 
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Menginstal ke `~/.life-chart-engine` (timpa dengan `LIFE_CHART_DIR`). Tanpa `sudo`, tanpa perubahan seluruh sistem — hanya mengkloning repo, membangun venv CPython 3.12 terisolasi, dan menghasilkan bundle Node iztro yang dipatok. Membutuhkan `git`, [`uv`](https://docs.astral.sh/uv/), dan Node.js/npm. Jalankan ulang kapan saja untuk memperbarui ke versi terbaru.
+Menginstal ke `~/.life-chart-engine` (timpa dengan `LIFE_CHART_DIR`). Tanpa `sudo`, tanpa perubahan seluruh sistem — hanya mengkloning repo, membangun venv CPython 3.12 terisolasi, dan menghasilkan bundle Node iztro yang dipatok. Membutuhkan `git`, [`uv`](https://docs.astral.sh/uv/), dan **Node.js ≥ 18** (didukung/teruji pada 18 dan 24 — Zi Wei Dou Shu (紫微斗數) berjalan melalui sidecar Node; tanpanya setiap permintaan bagan gagal secara eksplisit alih-alih diam-diam menghilangkan sistem ketiga). Jalankan ulang kapan saja untuk memperbarui ke versi terbaru.
 
 ### Dari sumber
 
@@ -340,7 +340,7 @@ Tempel blok ini langsung ke Claude Code, ChatGPT, atau agen coding apa pun — i
 Siapkan dan gunakan "life-chart-engine" — CLI yang menghitung bagan natal Barat +
 Human Design + Zi Wei Dou Shu (紫微斗數) dari data kelahiran.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Hitung bagan dan baca stdout sebagai JSON:

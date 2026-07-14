@@ -18,6 +18,7 @@ EXPECTED_TRANSLATIONS = {
 # language-independent literals every translation (and English) must carry
 HOROSCOPE_SHAPE = "{ decadal, yearly, age }"
 EXAMPLE_FLAG = "`--example`"
+NODE_FLOOR = "Node.js ≥ 18"
 REQUIRED_FLAG_TOKENS = ("`--date`", "`--time`", "`--tz`", "`--lat`", "`--lon`", "`--gender`")
 STALE_MARKERS = ("required=True", "{ decadal, yearly }です", "{ decadal, yearly }`")
 
@@ -38,6 +39,8 @@ def test_every_translation_carries_the_pinned_contract_literals():
             problems.append(f"{name}: missing horoscope shape literal {HOROSCOPE_SHAPE!r}")
         if EXAMPLE_FLAG not in text:
             problems.append(f"{name}: missing {EXAMPLE_FLAG} flag documentation")
+        if NODE_FLOOR not in text:
+            problems.append(f"{name}: missing Node runtime floor literal {NODE_FLOOR!r}")
         for token in REQUIRED_FLAG_TOKENS:
             if token not in text:
                 problems.append(f"{name}: missing required-flag token {token}")

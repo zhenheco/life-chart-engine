@@ -46,7 +46,7 @@ Type, Authority, và Definition trong Human Design **không được hardcode** 
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Cài vào `~/.life-chart-engine` (ghi đè bằng `LIFE_CHART_DIR`). Không `sudo`, không thay đổi toàn hệ thống — chỉ clone repo, tạo venv CPython 3.12 cô lập, và sinh bundle Node iztro đã ghim. Cần `git`, [`uv`](https://docs.astral.sh/uv/), và Node.js/npm. Chạy lại bất cứ lúc nào để cập nhật lên phiên bản mới nhất.
+Cài vào `~/.life-chart-engine` (ghi đè bằng `LIFE_CHART_DIR`). Không `sudo`, không thay đổi toàn hệ thống — chỉ clone repo, tạo venv CPython 3.12 cô lập, và sinh bundle Node iztro đã ghim. Cần `git`, [`uv`](https://docs.astral.sh/uv/), và **Node.js ≥ 18** (hỗ trợ/đã kiểm thử trên 18 và 24 — 紫微斗數 chạy qua một sidecar Node; thiếu nó, mọi yêu cầu tính biểu đồ sẽ thất bại rõ ràng thay vì âm thầm bỏ mất hệ thống thứ ba). Chạy lại bất cứ lúc nào để cập nhật lên phiên bản mới nhất.
 
 ### Từ nguồn
 
@@ -340,7 +340,7 @@ Dán khối này trực tiếp vào Claude Code, ChatGPT, hoặc bất kỳ agen
 Thiết lập và sử dụng "life-chart-engine" — một CLI tính toán biểu đồ sinh phương Tây +
 Human Design + Zi Wei Dou Shu (紫微斗數) từ dữ liệu sinh.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Tính toán biểu đồ và đọc stdout dưới dạng JSON:

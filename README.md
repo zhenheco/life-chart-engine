@@ -46,7 +46,7 @@ This engine does the real math instead of approximating or calling out to a serv
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Installs into `~/.life-chart-engine` (override with `LIFE_CHART_DIR`). No `sudo`, no system-wide changes — it only clones the repo, builds an isolated CPython 3.12 venv, and uses the checked-in iztro Node bundle. Requires `git`, [`uv`](https://docs.astral.sh/uv/), and Node.js. Re-run any time to update to the latest version.
+Installs into `~/.life-chart-engine` (override with `LIFE_CHART_DIR`). No `sudo`, no system-wide changes — it only clones the repo, builds an isolated CPython 3.12 venv, and uses the checked-in iztro Node bundle. Requires `git`, [`uv`](https://docs.astral.sh/uv/), and **Node.js ≥ 18** (supported/tested on 18 and 24 — 紫微斗數 runs via a Node sidecar; without it every chart request fails loudly rather than silently dropping the third system). Re-run any time to update to the latest version.
 
 ### From source
 

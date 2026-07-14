@@ -23,6 +23,8 @@ def test_workflow_runs_python_312_and_node_backed_test_suite() -> None:
 
     assert "python-version: \"3.12\"" in workflow
     assert "actions/setup-node@" in workflow
+    assert re.search(r"node-version:\s*\[18,\s*24\]", workflow)
+    assert "node-version: ${{ matrix.node-version }}" in workflow
     assert "python -m venv .venv" in workflow
     assert ".venv/bin/python -m pip install" in workflow
     assert re.search(

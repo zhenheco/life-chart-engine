@@ -46,7 +46,7 @@
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-安裝到 `~/.life-chart-engine`（可用 `LIFE_CHART_DIR` 覆寫）。不需要 `sudo`，不做系統層級變更 — 它只會 clone repo、建立隔離的 CPython 3.12 venv，並產生固定版本的 iztro Node bundle。需要 `git`、[`uv`](https://docs.astral.sh/uv/) 和 Node.js/npm。可隨時重新執行以更新到最新版本。
+安裝到 `~/.life-chart-engine`（可用 `LIFE_CHART_DIR` 覆寫）。不需要 `sudo`，不做系統層級變更 — 它只會 clone repo、建立隔離的 CPython 3.12 venv，並產生固定版本的 iztro Node bundle。需要 `git`、[`uv`](https://docs.astral.sh/uv/) 和 **Node.js ≥ 18**（支援/測試版本為 18 與 24 — 紫微斗數透過 Node sidecar 執行；缺少它時每次排盤請求都會大聲失敗，而不是默默丟掉第三套系統）。可隨時重新執行以更新到最新版本。
 
 ### 從原始碼
 
@@ -340,7 +340,7 @@ iztro@2.5.8
 設定並使用 "life-chart-engine" — 一個從出生資料計算西洋本命星盤 +
 人類圖 + 紫微斗數 (Zi Wei Dou Shu) 的 CLI。
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. 計算一個圖表並將 stdout 讀為 JSON：

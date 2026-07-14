@@ -46,7 +46,7 @@ Ten silnik wykonuje rzeczywistą matematykę zamiast przybliżać lub wywoływa�
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Instaluje do `~/.life-chart-engine` (można zmienić przez `LIFE_CHART_DIR`). Bez `sudo`, bez zmian w całym systemie — tylko klonuje repo, buduje izolowany venv CPython 3.12 i generuje przypięty bundle Node iztro. Wymaga `git`, [`uv`](https://docs.astral.sh/uv/) oraz Node.js/npm. Uruchom ponownie w dowolnym momencie, aby zaktualizować do najnowszej wersji.
+Instaluje do `~/.life-chart-engine` (można zmienić przez `LIFE_CHART_DIR`). Bez `sudo`, bez zmian w całym systemie — tylko klonuje repo, buduje izolowany venv CPython 3.12 i generuje przypięty bundle Node iztro. Wymaga `git`, [`uv`](https://docs.astral.sh/uv/) oraz **Node.js ≥ 18** (wspierane/testowane na 18 i 24 — 紫微斗數 działa przez sidecar Node; bez niego każde żądanie wykresu kończy się głośnym błędem, zamiast po cichu pomijać trzeci system). Uruchom ponownie w dowolnym momencie, aby zaktualizować do najnowszej wersji.
 
 ### Ze źródła
 
@@ -340,7 +340,7 @@ Wklej ten blok bezpośrednio do Claude Code, ChatGPT lub dowolnego agenta kodowa
 Skonfiguruj i użyj "life-chart-engine" — CLI, który oblicza zachodnia wykres narodzenia +
 Human Design + Zi Wei Dou Shu (紫微斗數) z danych urodzeniowych.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Oblicz wykres i czytaj stdout jako JSON:

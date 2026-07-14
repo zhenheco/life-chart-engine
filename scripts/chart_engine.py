@@ -6,6 +6,7 @@
 改 INPUT 區塊即可為任何人計算。
 """
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -201,10 +202,23 @@ def ziwei(inp):
     req=dict(date=ds,timeIndex=ti,gender=inp["gender"],fixLeap=True,language='zh-TW',
              target=inp["target"],dayDivide=day_divide)
     sidecar=Path(__file__).resolve().with_name("ziwei_iztro.cjs")
-    proc=subprocess.run(["node", str(sidecar)], input=json.dumps(req, ensure_ascii=False),
-                        capture_output=True, text=True, encoding="utf-8", timeout=15)
+    # Node ≥ 18 is the supported/tested runtime; any sidecar failure converges
+    # to one loud error path (no partial chart on any surface).
+    NODE_HINT = "this engine requires Node.js >= 18 on PATH for 紫微斗數"
+    try:
+        timeout_s = float(os.environ.get("LIFE_ZIWEI_TIMEOUT", "15"))
+    except ValueError:
+        timeout_s = 15.0  # invalid override: fall back rather than crash
+    try:
+        proc=subprocess.run(["node", str(sidecar)], input=json.dumps(req, ensure_ascii=False),
+                            capture_output=True, text=True, encoding="utf-8", timeout=timeout_s)
+    except OSError as exc:  # FileNotFoundError, PermissionError, exec-format errors …
+        raise RuntimeError(f"紫微斗數 sidecar failed to launch node ({exc}) — {NODE_HINT}") from None
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"紫微斗數 sidecar timed out after {timeout_s:g}s — {NODE_HINT}") from None
     if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or proc.stdout.strip() or "ziwei iztro sidecar failed")
+        detail = proc.stderr.strip() or proc.stdout.strip() or "ziwei iztro sidecar failed"
+        raise RuntimeError(f"{detail} — {NODE_HINT}")
     r=json.loads(proc.stdout)
     palaces=[]
     def star_str(lst):
@@ -417,7 +431,13 @@ def main(argv=None):
             sys.stdout.write(to_json_text(envelope) + "\n")
             return 1
     else:
-        sys.stdout.write(compose_markdown(inp))
+        try:
+            sys.stdout.write(compose_markdown(inp))
+        except Exception as e:
+            # runtime failure in Markdown mode: nothing on stdout (the buffer is
+            # discarded), one clean line on stderr, exit 1 — no traceback.
+            sys.stderr.write(f"error: {e}\n")
+            return 1
     return 0
 
 
