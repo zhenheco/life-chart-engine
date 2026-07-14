@@ -2,9 +2,10 @@
 
 > `/go` 唯一輸入。本 spec 只含公開安全內容（本 repo 為公開 MIT repo）；
 > 商業／行銷細節一律在私有 workspace 文件（見 Further Notes），不進本 repo。
-> rev 4：吸收 rounds 1–3 交叉驗證全部發現（累計 13 🔴／40 🟡）。關鍵定案：
-> 支援年份窗改為三系統交集 1900–2100（iztro 農曆表界）；CI 佈線改由各 slice 自帶；
-> Markdown 模式錯誤時 stdout 全緩衝不留部分盤。
+> rev 4.1：吸收 rounds 1–4 交叉驗證全部發現（round 4 Agent 判定 0 🔴 implementation-ready，
+> 其 9 🟡 已摺入）。關鍵定案：支援年份窗＝保守驗證窗 1900–2100（三系統交集）；CI 佈線
+> 各 slice 自帶；Markdown 錯誤時 stdout 全緩衝；golden fixtures 於 Linux（repo Docker 映像）
+> 擷取、byte 斷言僅 Linux 跑。
 
 ---
 
@@ -35,13 +36,13 @@
 
 1. As a CLI user, I want omitting any of `--date/--time/--tz/--lat/--lon/--gender` to fail at the argparse layer (exit 2, usage on stderr, empty stdout) listing the missing flags, so that I can never mistake the built-in example person's chart for my own.
 2. As an AI agent, I want `--json` mode to emit either exactly one JSON object on stdout (success, or `{"ok": false, ...}` for runtime errors, exit 1) or nothing on stdout for argument errors (exit 2), so that I can parse stdout unconditionally.
-3. As a docs/demo author, I want an explicit `--example` flag that reproduces the historical example-person chart byte-for-byte (against golden fixtures captured from the pre-change CLI, both JSON and Markdown modes), so that existing tutorials keep a supported path.
+3. As a docs/demo author, I want an explicit `--example` flag that reproduces the historical example-person chart byte-for-byte against golden fixtures captured from the pre-change CLI **inside the repo's Docker image (Linux, same platform family as CI)**, both JSON and Markdown modes — byte-identity asserted on Linux only (`skipif` on other platforms, which fall back to the suite's existing tolerance comparisons) — so that existing tutorials keep a supported path without cross-platform libm flakes.
 4. As a CLI user, I want `--example` to be mutually exclusive with birth flags (exit 2) but combinable with non-birth flags (`--target`, `--name`, `--ziwei-day-divide`, `--json`), so that demo semantics are unambiguous.
-5. As a CLI user passing a malformed or out-of-window value (`--date 1990-13-45`／非閏年 02-29／`--time 25:99`／`--target 2500-01-01`／出生或 target 年份在 1900–2100 之外／tz、lat、lon 越界或非有限），I want an exit-2 usage error naming the bad flag, so that garbage or unverifiable input is rejected before any computation. Unpadded but valid forms (`1990-6-15`, `8:30`) stay accepted and are normalized, matching current CLI/HTTP behavior.
+5. As a CLI user passing a malformed or out-of-window value (`--date 1990-13-45`／非閏年 02-29／`--time 25:99`／`--target 2500-01-01`／出生或 target 年份在 1900–2100 之外／tz、lat、lon 越界或非有限），I want an exit-2 usage error naming the bad flag, so that garbage or unverifiable input is rejected before any computation. Unpadded but valid forms (`1990-6-15`, `8:30`, and single-digit minutes like `8:5` — int-parse semantics) stay accepted and are normalized, matching current CLI/HTTP behavior.
 6. As an agent author, I want `AGENTS.md` to document every field the engine actually emits — `stars` only under `decadal`/`yearly`, `yearlyDecStar` only under `yearly` — and to correct the stale "horoscope becomes null on failure" statement to the actual all-or-nothing loud failure, so that the contract matches reality.
 7. As a non-English reader, I want all 18 translated READMEs to describe the same horoscope object shape (`{ decadal, yearly, age }`) and the same required-flags/`--example` semantics as the English README, so that translated docs are trustworthy.
 8. As a maintainer, I want a guard test asserting the exact 18-file translation set each contains the pinned language-independent literals, so that translation staleness is caught by CI.
-9. As a Python developer, I want `pip install life-chart-engine`, `uvx life-chart-engine --example --json`, and `uvx --from life-chart-engine life-chart --example --json` to all work (both forms verified post-publication), so that trying the engine costs one line.
+9. As a Python developer, I want `pip install life-chart-engine`, `uvx life-chart-engine --example --json`, and `uvx --from life-chart-engine life-chart --example --json` to all work (both forms verified post-publication), so that trying the engine costs one line — with the README install section presenting `uvx` as the primary path and noting the CPython 3.12 requirement next to the bare `pip install` line (system 3.13/3.14 users are rejected by requires-python; uv auto-provisions 3.12).
 10. As a packager, I want the wheel to install import package `life_chart_engine` (not top-level `scripts`) and include the Node sidecar files inside the package, so that 紫微 works from an installed package without namespace pollution.
 11. As a caller without a working Node, I want every surface to fail loudly with no partial chart anywhere: `--json` → `{"ok": false, "error": ...Node.js >= 18...}` exit 1 with only that envelope on stdout; Markdown mode → **stdout fully buffered and suppressed on failure**（不留已印出的 western/HD 段落）, one clean stderr line, exit 1; HTTP → 500 with the same message; MCP → `isError: true`. (Node ≥ 18 is the documented supported/tested runtime — CI runs an 18/24 matrix; no active version probing.)
 12. As a maintainer, I want a release-triggered publish workflow (`on: release: types: [published]`, separate build-artifact job → OIDC publish job with `permissions: id-token: write`), with the build＋`twine check` dry-run running in `qa-gate.yml` on every PR and a static workflow contract test, so that publishing is safe and drafts can't double-fire.
@@ -62,7 +63,7 @@
 | Module | 職責（一句） | 公開介面（窄） | 新建/修改 |
 |---|---|---|---|
 | `scripts/chart_engine.py` | argparse 驗證、`--example`、`main(argv=None)`；Markdown 輸出改全緩衝（錯誤時 stdout 無部分盤）；`ziwei()` Node 失敗 → loud error；輸出走 serializer | CLI flags＋`main(argv=None)`＋`to_json_text(envelope)` | 修改 |
-| `scripts/validation.py` | 唯一輸入驗證：**raw schema**（date "YYYY-M-D" 可未補零、time "H:MM"、tz/lat/lon 數值、gender 男/女、選填 name/target/ziwei_day_divide）→ **normalized schema**（正規化整數 tuple／浮點；錯誤丟 `ValueError` 帶欄位名）；範圍：tz∈[-12,14]、lat∈[-90,90]、lon∈[-180,180]、有限值、真實日曆日、**出生日與 target 年份窗 1900–2100** | `validate_input(raw: dict) -> normalized dict` | 新建 |
+| `scripts/validation.py` | 唯一輸入驗證：**raw schema**（date "YYYY-M-D" 可未補零、time "H:M"（時、分皆可未補零，int-parse 語意）、tz/lat/lon 數值、gender 男/女、選填 name/target/ziwei_day_divide）→ **normalized schema**（正規化整數 tuple／浮點；錯誤丟 `ValueError` 帶欄位名；**name/target 的預設值自持於本模組**（值不變：範例/2025-01-01 語意照舊），server 不再回讀 `chart_engine.INPUT`，避免循環 import）；範圍：tz∈[-12,14]、lat∈[-90,90]、lon∈[-180,180]、有限值、真實日曆日、**出生日與 target 年份窗 1900–2100** | `validate_input(raw: dict) -> normalized dict` | 新建 |
 | `server.py` | `_engine_input` 改走 `validation.py`；`test_server.py` 既有覆蓋行為不變；越界/非有限/窗外 → 400（hardening） | 既有 HTTP 介面＋新 400 案例 | 修改 |
 | `scripts/mcp_server.py` | stdio MCP server，`compute_chart`（inputSchema＝/chart body 欄位）wrap `build_json()` | console script `life-chart-mcp`（無 extra → 安裝提示，非 raw ImportError） | 新建 |
 | `scripts/ziwei_iztro.cjs` | vendored bundle 解析順序 `__dirname/vendor/` → `__dirname/../vendor/` | stdin/stdout JSON 不變 | 修改 |
@@ -77,7 +78,7 @@
 ## Implementation Decisions
 
 - Schema: 無 DB。JSON 輸出形狀不變、`schema_version` 維持 `"1.1"`；`meta.version` 維持 `"1.0"`（區別文件化）。無 Node／sidecar 失敗 → 整包 loud error，不做 per-system 部分結果。
-- **支援年份窗＝1900-01-01 … 2100-12-31（出生日與 target 同窗）**：依據＝三系統能力交集——iztro vendored 農曆表 1900–2100（round-3 實測：窗外會默默出盤，必須擋）⊂ astronomy-engine 1700–2200；HD design chart 前推 ~88–100 天與速度取樣 ±0.5 天自窗界出發仍在 astronomy-engine 範圍內，無邊界破口。窗界端點測試四件組（1899-12-31 拒／1900-01-01 收／2100-12-31 收／2101-01-01 拒）＋target 同組。`AGENTS.md`／README known limitations 記 per-system 範圍。
+- **支援年份窗＝1900-01-01 … 2100-12-31（出生日與 target 同窗）**：依據＝**保守驗證窗**：iztro 文件宣稱支援範圍 1900–2100（vendored bundle 為 lunar-typescript 演算法實作、無硬表界，故窗外會默默出盤而無任何錯誤——round-3/4 實測 1600/1700/2199 皆如此，必須在驗證層擋）∩ astronomy-engine 精度聲明 1700–2200；AGENTS.md/README 措辭寫「文件宣稱支援範圍／保守驗證窗」，不寫「農曆表界」（bundle 內無此表，勿載入不可驗證的機制宣稱）；HD design chart 前推 ~88–100 天與速度取樣 ±0.5 天自窗界出發仍在 astronomy-engine 範圍內，無邊界破口。窗界端點測試四件組（1899-12-31 拒／1900-01-01 收／2100-12-31 收／2101-01-01 拒）＋target 同組。`AGENTS.md`／README known limitations 記 per-system 範圍。
 - **Envelope serializer 單一來源**：`to_json_text(envelope)`；CLI `--json` stdout＝serializer＋trailing newline；MCP text content＝serializer（無 newline）；webapp `/api/chart` 維持現行 compact 重序列化（parity＝parsed-JSON 語意等價，非 byte）。
 - API contract:
   - CLI：單一錯誤通道（argparse `parser.error()`：exit 2、stderr usage、stdout 空）；**未補零格式維持接受並正規化**（`1990-6-15`、`8:30`——與現行 CLI/HTTP 行為一致，不引入 exact-format 拒絕）；執行期錯誤：`--json` → envelope exit 1；**Markdown → 全緩衝、失敗時 stdout 空**、stderr 一行（Node 案例含 "Node.js >= 18"）、exit 1。`--gender` 必填。
@@ -148,7 +149,7 @@
 - **Blocked by**: Slice 1
 - **User stories**: #9, #10, #23
 - **Acceptance criteria**:
-  - [ ] `pyproject.toml`：`[project]`（deps＝astronomy-engine only、1.1.0、requires-python `>=3.12,<3.13`）＋hatchling sources 映射＋console scripts `life-chart`/`life-chart-engine`＋`[mcp]` extra（`mcp` `==` pin，版本記入 RELEASING.md——檔案本體 Slice 9 建，pin 值此處先落 pyproject）
+  - [ ] `pyproject.toml`：`[project]`（deps＝astronomy-engine only、1.1.0、requires-python `>=3.12,<3.13`）＋hatchling sources 映射＋console scripts `life-chart`/`life-chart-engine`（**`life-chart-mcp` entry point 隨 Slice 6 一併落 pyproject**，避免 dangling 指向未建模組）＋`[mcp]` extra（`mcp` `==` pin，版本記入 RELEASING.md——檔案本體 Slice 9 建，pin 值此處先落 pyproject）
   - [ ] wheel import package `life_chart_engine`；`scripts/__init__.py`＋相對 import；checkout 與 wheel 雙載入
   - [ ] vendor force-include；`.cjs` 雙路徑解析有測試
   - [ ] 乾淨 venv＋checkout 外：兩 entry points `--example --json` 合法 JSON（自動化）
@@ -171,10 +172,10 @@
 - **Blocked by**: Slice 4
 - **User stories**: #14, #15, #16, #23
 - **Acceptance criteria**:
-  - [ ] `[mcp]` extra 安裝後 `life-chart-mcp` 可啟動；無 extra → 安裝提示（非 raw ImportError）
+  - [ ] `life-chart-mcp` entry point 於本 slice 落入 pyproject；`[mcp]` extra 安裝後可啟動；無 extra → 安裝提示（非 raw ImportError）
   - [ ] in-process 測試：initialize → tools/list（**斷言 compute_chart inputSchema 欄位名＋必填性＝/chart body**）→ tools/call 回單一 text content＝serializer 輸出（byte 級）
   - [ ] 壞輸入／runtime 錯誤 → `isError: true`；同 session 再次成功呼叫
-  - [ ] no-network：in-process socket guard＋**sidecar 靜態斷言（兩個 .cjs 無網路原語）**；邊界說明入 AGENTS.md
+  - [ ] no-network：in-process guard 改 patch `socket.create_connection`＋`socket.getaddrinfo`（不可整段 patch `socket.socket`——asyncio event loop 自身的 `socketpair` self-pipe 會被誤殺），且僅包 tools/call 計算路徑＋**sidecar 靜態斷言（兩個 .cjs 無網路原語）**；邊界說明入 AGENTS.md
   - [ ] installed-wheel＋checkout 外 `life-chart-mcp` 冒煙
   - [ ] **qa-gate 佈線（本 slice 自帶）**：`pip install -e ".[mcp]"` step＋regex 同步；`test_mcp_server.py` 用 `importorskip("mcp")`；CI 綠
   - [ ] `AGENTS.md`＋`README.md` 增 MCP 使用段（Claude Desktop/Code 設定範例）
@@ -194,7 +195,8 @@
 - **Blocked by**: Slice 1, Slice 4, Slice 6
 - **User stories**: #13, #22, #23
 - **Acceptance criteria**:
-  - [ ] qa-gate 加 `push: branches: [main]`（badge 需 default-branch run）＋regex 同步；CI 綠
+  - [ ] qa-gate 加 `push: branches: [main]`（badge 需 default-branch run）；`concurrency.cancel-in-progress` 改僅 PR 生效（`${{ github.event_name == 'pull_request' }}`，避免連續 merge 把 main run 取消成非綠 badge）；regex 同步；CI 綠
+  - [ ] README 安裝段：uvx 列首選路徑、`pip install` 旁註明 CPython 3.12 需求
   - [ ] README.md 頂部 CI badge（qa-gate、default branch）
   - [ ] `docs/demo.tape` 入 repo；GIF 生成嵌入 README（vhs；受阻列 HITL follow-up，不阻塞其餘 AC）
   - [ ] 「Hosted version」段落進 README.md、README.zh-TW.md、README.zh-CN.md：**連結 https://life.aicycle.cc**、措辭為「基於本引擎的獨立 hosted 產品」、不含價格；**同步修正三檔中「不存在 hosted endpoint／SaaS」的既有句子**；其餘 15 譯本列 follow-up
@@ -206,7 +208,7 @@
 - **User stories**: #12
 - **Acceptance criteria**:
   - [ ] `.github/workflows/publish.yml`：`on: release: types: [published]`；build-artifact job（build＋twine check＋upload artifact）→ publish job（download artifact、`permissions: id-token: write`、OIDC trusted publishing）
-  - [ ] publish.yml 靜態契約測試（trigger types、permissions、兩 job 結構）納入 pytest 蒐集
+  - [ ] publish.yml 靜態契約測試（trigger types、permissions、兩 job 結構）**檔案落 `tests/`**（qa-gate pytest 僅蒐集 `.github/scripts/qa_gate_workflow_test.py` 與 `tests/`，放 `.github/scripts/` 不會被跑）
   - [ ] `docs/RELEASING.md`：版本 bump→tag→release→pending publisher 註冊；記錄 `mcp` pin 版本；`~/.local/bin` 共存注意
 
 ### Slice 10 — PyPI 首發（HITL）
