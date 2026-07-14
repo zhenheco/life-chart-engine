@@ -22,7 +22,7 @@ Mesin menjalankan tiga sistem terhadap **momen kelahiran yang sama**, sehingga k
 |--------|------|------------------------|
 | **Western natal** (Tropical / Placidus) | Astrologi Barat klasik — di mana planet-planet duduk melawan zodiak saat kelahiran Anda, dibagi menjadi 12 rumah. | Ascendant + Midheaven, 12 planet/poin (太陽 → 南交點) dengan tanda, derajat, rumah dan bendera retrograde, semua 12 cusp rumah, dan setiap aspek yang terdeteksi (合相/六分/四分/三分/對分) diurutkan berdasarkan keketatan. |
 | **人類圖 Human Design** | Sintesis modern astrologi, I-Ching, dan sistem chakra. Mendeskripsikan bagaimana energi Anda "terwiring" melalui gerbang, saluran, dan pusat. | Tipe, Otoritas, Profil, Definisi, Incarnation Cross, tanggal Desain 88° lebih awal, pusat terdefinisi/terbuka, saluran terdefinisi, dan aktivasi garis gerbang per-planet untuk bagan Personality dan Design. |
-| **紫微斗數 Zi Wei Dou Shu** | Sistem astrologi tradisional Cina yang memetakan takdir ke papan 12-istana, dipenuhi bintang-bintang bernama. | 五行局 (Five Elements Class), 命主 (jiwa) / 身主 (tubuh), indeks 時辰 (jam), dan data per-istana — ganzhi, flag 命/身, kisaran usia dekade, dan bintang-bintang utama/minor/adjektif (dengan terang dan 四化). Opsional horoscope 大限/流年 best-effort. |
+| **紫微斗數 Zi Wei Dou Shu** | Sistem astrologi tradisional Cina yang memetakan takdir ke papan 12-istana, dipenuhi bintang-bintang bernama. | 五行局 (Five Elements Class), 命主 (jiwa) / 身主 (tubuh), indeks 時辰 (jam), dan data per-istana — ganzhi, flag 命/身, kisaran usia dekade, dan bintang-bintang utama/minor/adjektif (dengan terang dan 四化). Ditambah horoscope 大限/流年/小限 — 四化-nya berupa array nama bintang polos (`mutagen`) plus tampilan bertipe aditif `{star, type}` (`mutagenTyped`), dan 大限 menyertakan rentang usia. |
 
 Tipe, Otoritas, dan Definisi dalam Human Design **bukan hardcoded** — mereka diturunkan dari grafik konektivitas pusat-pusat terdefinisi.
 
@@ -253,19 +253,23 @@ Sampel nyata terpangkas (array terpotong menjadi 1–2 entri; nilai verbatim):
 
 ## Referensi flag CLI
 
-Tidak ada **flag `required=True`** — argparse tidak pernah error pada yang hilang. Menghilangkan `--date`/`--time`/`--tz`/`--lat`/`--lon` diam-diam kembali ke orang contoh built-in (`範例`, lahir `2000-01-01 12:00`, UTC+8, Taipei 101). Jadi untuk bagan yang benar, sediakan semuanya.
+Keenam flag kelahiran **wajib diisi** — flag yang hilang membuat program keluar dengan kode `2`, pesan usage di stderr, dan stdout kosong, sehingga bagan orang contoh tidak akan pernah tertukar dengan bagan Anda sendiri. Untuk melihat orang contoh built-in (`範例`, lahir `2000-01-01 12:00`, UTC+8, Taipei 101), berikan `--example` secara eksplisit.
 
-| Flag | Tipe | Diperlukan untuk penggunaan yang benar? | Default | Format / aturan |
-|------|------|---------------------------|---------|---------------|
-| `--name` | string | Tidak (kosmetik) | `"範例"` | Teks bebas; bergema ke output saja. |
-| `--gender` | string | Hanya untuk 紫微 | `"女"` | Harus tepat `男` atau `女` (argparse `choices`; yang lain → keluar `2`). |
-| `--date` | string | **Ya** | kembali ke `2000-01-01` | `YYYY-MM-DD`, pisahkan pada `-`. Tidak ada persyaratan zero-pad. |
-| `--time` | string | **Ya** | kembali ke `12:00` | `HH:MM`, jam 24 jam waktu lokal jam, pisahkan pada `:`. |
-| `--tz` | float | **Ya** | kembali ke `8.0` | Offset UTC termasuk DST (Taiwan = `8`). Ditulis ke kunci input `tz_offset`. |
-| `--lat` | float | **Ya** | kembali ke `25.0330` | Lintang dalam derajat desimal (rumah/Asc/MC Barat). |
-| `--lon` | float | **Ya** | kembali ke `121.5654` | Bujur dalam derajat desimal. |
-| `--target` | string | Tidak | `"2025-01-01"` | `YYYY-MM-DD`; tanggal referensi periode keberuntungan 紫微 (運限參考日). |
-| `--json` | flag | Tidak | `False` (Markdown) | Kehadiran → mode JSON; ketiadaan → Markdown. Tidak ada nilai. |
+> **Breaking change (v1.1.0):** fallback diam-diam ke orang contoh saat ada flag yang hilang telah dihapus. Skrip yang mengandalkannya harus memberikan `--example`.
+
+| Flag | Tipe | Wajib | Format / aturan |
+|------|------|-------|---------------|
+| `--date` | string | **Ya** | `YYYY-M-D` (zero-padding opsional, mis. `1990-6-15`). Tanggal kalender nyata, tahun dalam rentang yang didukung **1900–2100**. |
+| `--time` | string | **Ya** | `H:M`, waktu lokal format 24 jam (zero-padding opsional, mis. `8:30`). |
+| `--tz` | float | **Ya** | Offset UTC termasuk DST (Taiwan = `8`), dalam `[-12, 14]`, finit. Ditulis ke kunci input `tz_offset`. |
+| `--lat` | float | **Ya** | Lintang dalam derajat desimal, dalam `[-90, 90]`, finit. |
+| `--lon` | float | **Ya** | Bujur dalam derajat desimal, dalam `[-180, 180]`, finit. |
+| `--gender` | string | **Ya** | Harus tepat `男` atau `女` (memengaruhi 紫微; yang lain → keluar `2`). |
+| `--example` | flag | Tidak | Menghitung orang contoh built-in. Saling eksklusif dengan keenam flag kelahiran (menggabungkannya → keluar `2`); boleh digabung dengan `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
+| `--name` | string | Tidak | Teks bebas; hanya digemakan ke output. Default `"範例"`. |
+| `--target` | string | Tidak | `YYYY-M-D`; tanggal referensi periode keberuntungan 紫微 (運限參考日), rentang 1900–2100 yang sama. Default `"2025-01-01"`. |
+| `--ziwei-day-divide` | string | Tidak | Aturan 晚子時: `forward` (default) menghitung 23:00-23:59 sebagai hari berikutnya; `current` menghitungnya sebagai hari yang sama. |
+| `--json` | flag | Tidak | Kehadiran → mode JSON; ketiadaan → Markdown. Tidak menerima nilai. |
 
 > Mesin **tidak** melakukan geocode tempat atau mencari zona waktu. Pemanggil harus mengonversi tempat → `lat`/`lon`/`tz` sendiri — dan zona waktu/DST adalah sumber kesalahan paling umum, jadi verifikasi offset UTC yang berlaku di tempat lahir dan tanggal lahir.
 
@@ -284,7 +288,7 @@ Selubung `--json` memiliki tujuh kunci tingkat atas, dalam urutan ini:
 | `input` | Gema input ternormalisasi: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (catatan `tz_offset`, bukan `tz`). |
 | `western` | String `system`, objek posisi `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
-| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (objek atau `null`). |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (selalu `{ decadal, yearly, age }` saat sukses — kegagalan horoscope menggagalkan seluruh permintaan secara eksplisit). |
 | `meta` | `{ engine, version, ephemeris }` — semua literal (`ephemeris: "astronomy-engine"`). |
 
 Untuk kontrak bidang lengkap — setiap kunci, tipe, dan protokol invokasi agen — lihat **[AGENTS.md](./AGENTS.md)**.
@@ -292,7 +296,7 @@ Untuk kontrak bidang lengkap — setiap kunci, tipe, dan protokol invokasi agen 
 ### Kekhususan bidang yang perlu diketahui
 
 - **`aspects` TIDAK terbatas dalam JSON.** Jalur JSON mengembalikan *setiap* aspek terdeteksi, diurutkan naik berdasarkan orb (terketat terlebih dahulu). Batas 10-item hanya ada dalam laporan Markdown.
-- **`ziwei.horoscope` best-effort dan dapat `null`.** Ini dibungkus di `try/except`; pada pengecualian apa pun serialisasi sebagai `null`. Ketika ada itu `{ decadal, yearly }`. (Sub-objek tersebut mengekspos struktur internal ekstra — `index`, `mutagen[]`, `stars[][]`, `yearly_dec_star`, dll. — melampaui placeholder terdokumentasi.)
+- **`ziwei.horoscope` bersifat all-or-nothing.** Saat sukses nilainya selalu `{ decadal, yearly, age }`; kegagalan sidecar/horoscope menggagalkan seluruh permintaan secara eksplisit (keluar `1` / HTTP `500`) — horoscope parsial atau `null` tidak pernah dikeluarkan dalam respons `"ok": true`. `stars` hanya muncul di bawah `decadal`/`yearly` (tidak pernah `age`); `yearlyDecStar` hanya di bawah `yearly`. `mutagen` adalah array nama bintang polos `[str, …4]` dalam urutan tetap 祿/權/科/忌 — **tidak berubah sejak `schema_version` `1.0`**. `schema_version` `1.1` adalah bump aditif yang kompatibel ke belakang: di samping `mutagen` yang tidak berubah, ia menambahkan `mutagenTyped` (tampilan bertipe `[{ "star", "type" }, …4]` dalam urutan yang sama) pada `decadal`/`yearly`/`age`, `decadal.ageRange` `[startAge, endAge]`, dan sub-objek `age` (小限 / batas minor tahunan, dapat bernilai `null`). Pemetaan posisional 祿/權/科/忌 dalam `mutagenTyped` invarian di seluruh 10 天干. (Sub-objek tersebut juga mengekspos struktur internal ekstra — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch`, dll. — melampaui placeholder terdokumentasi.)
 - **String bintang mengenkode terang + 四化.** Format adalah `name(brightness)[mutagen]`, dengan setiap bagian opsional — misalnya `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, atau plain `天機`. `adjective_stars` hanya nama polos (tidak ada terang/mutagen).
 
 ---

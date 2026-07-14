@@ -283,10 +283,9 @@ def build_json(inp):
     hd=human_design(inp,pos['太陽'])
     zw=ziwei(inp)
     order=['太陽','月亮','水星','金星','火星','木星','土星','天王星','海王星','冥王星','北交點','南交點']
-    try:
-        horoscope=dict(decadal=_safe(zw['dec']), yearly=_safe(zw['yr']), age=_safe(zw['age']))
-    except Exception:
-        horoscope=None
+    # all-or-nothing: horoscope construction failure fails the whole request
+    # loudly (--json envelope / HTTP 500) — never an "ok": true partial result.
+    horoscope=dict(decadal=_safe(zw['dec']), yearly=_safe(zw['yr']), age=_safe(zw['age']))
     return {
         "ok": True,
         "schema_version": "1.1",

@@ -22,7 +22,7 @@ De engine voert drie systemen uit tegen **hetzelfde geboortemoment**, zodat hun 
 |---------|-----------------------------------|------------------------|
 | **Western natal** (Tropical / Placidus) | Klassieke westerse astrologie — waar de planeten tegen de dierenriem stonden op het moment van uw geboorte, verdeeld in 12 huizen. | Ascendant + Midheaven, 12 planeten/punten (太陽 → 南交點) met teken, graad, huis en retrograde-vlag, alle 12 huiscuspden, en elk gedetecteerd aspect (合相/六分/四分/三分/對分) gesorteerd op nauwheid. |
 | **Human Design** (人類圖) | Een moderne synthese van astrologie, de I-Ching en het chakra-systeem. Beschrijft hoe uw energie via poorten, kanalen en centra is "bedrading". | Type, Authority, Profile, Definition, Incarnation Cross, de 88°-eerdere Design-datum, gedefinieerde/open centra, gedefinieerde kanalen, en per-planeet poort.lijn-activeringen voor zowel de Personality- als Design-grafieken. |
-| **Zi Wei Dou Shu** (紫微斗數) | Een traditioneel Chinees astrologiesysteem dat lot op een 12-paleis-bord in kaart brengt, bevolkt door benoemde sterren. | 五行局 (Five Elements Class), 命主 (ziel) / 身主 (lichaam), de 時辰 uur-index, en per-paleis-gegevens — ganzhi, 命/身-vlaggen, decennium-leeftijdsbereik, en hoofd-/neven-/bijvoeglijk sterren (met helderheid en 四化). Optioneel een best-effort 大限/流年 horoscoop. |
+| **Zi Wei Dou Shu** (紫微斗數) | Een traditioneel Chinees astrologiesysteem dat lot op een 12-paleis-bord in kaart brengt, bevolkt door benoemde sterren. | 五行局 (Five Elements Class), 命主 (ziel) / 身主 (lichaam), de 時辰 uur-index, en per-paleis-gegevens — ganzhi, 命/身-vlaggen, decennium-leeftijdsbereik, en hoofd-/neven-/bijvoeglijk sterren (met helderheid en 四化). Plus een 大限/流年/小限-horoscoop — de 四化 daarvan zijn een kale sterrennaam-array (`mutagen`) plus een additieve getypeerde `{star, type}`-weergave (`mutagenTyped`), en de 大限 bevat een leeftijdsbereik. |
 
 Type, Authority en Definition in Human Design zijn **niet hardgecodeerd** — zij worden afgeleid uit de connectiviteitsgrafiek van de gedefinieerde centra.
 
@@ -253,19 +253,23 @@ Ingekort reëel voorbeeld (arrays afgekapt tot 1–2 invoer; waarden woordelijk)
 
 ## CLI-vlaggen referentie
 
-Er zijn **geen `required=True` vlaggen** — argparse geeft nooit een fout op een ontbrekende. Het weglaten van `--date`/`--time`/`--tz`/`--lat`/`--lon` valt stilzwijgend terug op een ingebouwde voorbeeldpersoon (`範例`, geboren `2000-01-01 12:00`, UTC+8, Taipei 101). Voor een correct diagram moet je ze allemaal opgeven.
+Alle zes geboortevlaggen zijn **verplicht** — bij een ontbrekende vlag eindigt het programma met exit `2`, met usage op stderr en niets op stdout, zodat je het diagram van de voorbeeldpersoon nooit voor dat van jezelf kunt aanzien. Om de ingebouwde voorbeeldpersoon te bekijken (`範例`, geboren `2000-01-01 12:00`, UTC+8, Taipei 101), geef je expliciet `--example` op.
 
-| Vlag | Type | Vereist voor correct gebruik? | Standaard | Indeling / regel |
-|------|------|------|---------|---------------|
-| `--name` | string | Nee (cosmetisch) | `"範例"` | Vrije tekst; alleen in uitvoer weergegeven. |
-| `--gender` | string | Alleen voor Zi Wei | `"女"` | Moet exact `男` of `女` zijn (argparse `choices`; iets anders → exit `2`). |
-| `--date` | string | **Ja** | valt terug op `2000-01-01` | `YYYY-MM-DD`, gesplitst op `-`. Geen nul-pad vereist. |
-| `--time` | string | **Ja** | valt terug op `12:00` | `HH:MM`, 24-uurs lokale klok, gesplitst op `:`. |
-| `--tz` | float | **Ja** | valt terug op `8.0` | UTC-offset inclusief zomeruur (Taiwan = `8`). Geschreven naar invoersleutel `tz_offset`. |
-| `--lat` | float | **Ja** | valt terug op `25.0330` | Breedtegraad in decimale graden (westerse huizen/Asc/MC). |
-| `--lon` | float | **Ja** | valt terug op `121.5654` | Lengtegraad in decimale graden. |
-| `--target` | string | Nee | `"2025-01-01"` | `YYYY-MM-DD`; Zi Wei geluk-periode referentiedatum (運限參考日). |
-| `--json` | vlag | Nee | `False` (Markdown) | Aanwezigheid → JSON-modus; afwezigheid → Markdown. Neemt geen waarde. |
+> **Breaking change (v1.1.0):** de oude stilzwijgende terugval naar de voorbeeldpersoon bij ontbrekende vlaggen is verwijderd. Scripts die daarop vertrouwden, moeten `--example` meegeven.
+
+| Vlag | Type | Verplicht | Indeling / regel |
+|------|------|----------|---------------|
+| `--date` | string | **Ja** | `YYYY-M-D` (nul-padding optioneel, bijv. `1990-6-15`). Echte kalenderdatum, met het jaar binnen het ondersteunde venster **1900–2100**. |
+| `--time` | string | **Ja** | `H:M`, 24-uurs lokale kloktijd (nul-padding optioneel, bijv. `8:30`). |
+| `--tz` | float | **Ja** | UTC-offset inclusief zomertijd (Taiwan = `8`), binnen `[-12, 14]`, eindig. Geschreven naar invoersleutel `tz_offset`. |
+| `--lat` | float | **Ja** | Breedtegraad in decimale graden, binnen `[-90, 90]`, eindig. |
+| `--lon` | float | **Ja** | Lengtegraad in decimale graden, binnen `[-180, 180]`, eindig. |
+| `--gender` | string | **Ja** | Moet exact `男` of `女` zijn (beïnvloedt Zi Wei; iets anders → exit `2`). |
+| `--example` | vlag | Nee | Bereken de ingebouwde voorbeeldpersoon. Wederzijds exclusief met alle zes geboortevlaggen (combineren → exit `2`); mag wel gecombineerd worden met `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
+| `--name` | string | Nee | Vrije tekst; wordt alleen in de uitvoer geëchood. Standaard `"範例"`. |
+| `--target` | string | Nee | `YYYY-M-D`; Zi Wei geluksperiode-referentiedatum (運限參考日), zelfde venster 1900–2100. Standaard `"2025-01-01"`. |
+| `--ziwei-day-divide` | string | Nee | 晚子時-regel: `forward` (standaard) telt 23:00-23:59 als de volgende dag; `current` telt het als de huidige dag. |
+| `--json` | vlag | Nee | Aanwezigheid → JSON-modus; afwezigheid → Markdown. Neemt geen waarde. |
 
 > De engine voert **geen** geocodering uit of slaat tijdzones op. De oproeper moet plaats → `lat`/`lon`/`tz` zelf omzetten — en tijdzone/zomeruur is de meest voorkomende foutbron, dus verifieer de UTC-offset die van toepassing was op de geboorteplek en geboortedatum.
 
@@ -284,7 +288,7 @@ De `--json` envelop heeft zeven top-level sleutels, in deze volgorde:
 | `input` | Echo van genormaliseerde invoer: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (merk op `tz_offset`, niet `tz`). |
 | `western` | `system` string, `ascendant`/`midheaven` positieobjecten, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
-| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object of `null`). |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (bij succes altijd `{ decadal, yearly, age }` — een horoscope-fout laat het hele verzoek luid falen). |
 | `meta` | `{ engine, version, ephemeris }` — allemaal letterlijke waarden (`ephemeris: "astronomy-engine"`). |
 
 Voor het volledige veldcontract — elke sleutel, type en het agent-oproep-protocol — zie **[AGENTS.md](./AGENTS.md)**.
@@ -292,7 +296,7 @@ Voor het volledige veldcontract — elke sleutel, type en het agent-oproep-proto
 ### Veldbijzonderheden die het waard zijn om te kennen
 
 - **`aspects` zijn NIET beperkt in JSON.** Het JSON-pad retourneert *elk* gedetecteerd aspect, oplopend gesorteerd op orb (strakst eerst). De 10-item-limiet bestaat alleen in het Markdown-rapport.
-- **`ziwei.horoscope` is best-effort en kan `null` zijn.** Het wordt ingesloten in `try/except`; bij uitzondering wordt het geserialiseerd als `null`. Wanneer aanwezig is het `{ decadal, yearly }`. (Die sub-objecten stellen extra interne structuur bloot — `index`, `mutagen[]`, `stars[][]`, `yearly_dec_star`, enz. — voorbij de gedocumenteerde placeholder.)
+- **`ziwei.horoscope` is alles-of-niets.** Bij succes is het altijd `{ decadal, yearly, age }`; een sidecar-/horoscope-fout laat het hele verzoek luid falen (exit `1` / HTTP `500`) — een gedeeltelijke of `null` horoscope wordt nooit uitgezonden in een antwoord met `"ok": true`. `stars` verschijnt alleen onder `decadal`/`yearly` (nooit onder `age`); `yearlyDecStar` alleen onder `yearly`. `mutagen` is een kale array van sternamen `[str, …4]` in vaste 祿/權/科/忌-volgorde — **ongewijzigd sinds `schema_version` `1.0`**. `schema_version` `1.1` is een additieve, backward-compatibele bump: naast het ongewijzigde `mutagen` voegt het `mutagenTyped` toe (een getypeerde weergave `[{ "star", "type" }, …4]` in dezelfde volgorde) op `decadal`/`yearly`/`age`, plus `decadal.ageRange` `[startAge, endAge]` en het `age`-subobject (de 小限 / jaarlijkse kleine limiet, kan `null` zijn). De positionele 祿/權/科/忌-mapping in `mutagenTyped` is invariant over alle 10 天干. (Die sub-objecten stellen ook extra interne structuur bloot — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch`, enz. — voorbij de gedocumenteerde placeholder.)
 - **Star-strings coderen helderheid + 四化.** Indeling is `name(brightness)[mutagen]`, met elk onderdeel optioneel — bijv. `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, of gewoon `天機`. `adjective_stars` zijn alleen namen (geen helderheid/mutagen).
 
 ---

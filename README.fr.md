@@ -22,7 +22,7 @@ Le moteur exécute trois systèmes contre le **même moment de naissance**, de s
 |---------|----------------------------------|------------------------|
 | **Astrologie natale occidentale** (Tropical / Placidus) | L'astrologie occidentale classique — où se tenaient les planètes face au zodiaque à votre naissance, divisées en 12 maisons. | Ascendant + Milieu du ciel, 12 planètes/points (Soleil → Nœud sud) avec signe, degré, maison et indicateur rétrograde, les 12 cuspides de maison, et tous les aspects détectés (conjonction/sextile/carré/trigone/opposition) triés par précision. |
 | **人類圖 Human Design** | Une synthèse moderne de l'astrologie, du Yijing et du système des chakras. Décrit comment votre énergie est « câblée » via des portes, des canaux et des centres. | Type, Autorité, Profil, Définition, Croix d'Incarnation, la date Design datée 88° plus tôt, centres définis/ouverts, canaux définis, et activations de porte.ligne par planète pour les cartes Personnalité et Design. |
-| **紫微斗數 Zi Wei Dou Shu** | Un système d'astrologie chinoise traditionnel qui mappe le destin sur un plateau à 12 palais, peuplé d'étoiles nommées. | Classe des cinq éléments, Âme du destin / Corps du destin, index d'heure, et données par palais — ganzhi, indicateurs Âme/Corps, plage d'âge décennal, et étoiles majeure/mineure/adjectif (avec luminosité et mutations). Optionnellement un horoscope décennal/annuel au mieux-effort. |
+| **紫微斗數 Zi Wei Dou Shu** | Un système d'astrologie chinoise traditionnel qui mappe le destin sur un plateau à 12 palais, peuplé d'étoiles nommées. | Classe des cinq éléments, Âme du destin / Corps du destin, index d'heure, et données par palais — ganzhi, indicateurs Âme/Corps, plage d'âge décennal, et étoiles majeure/mineure/adjectif (avec luminosité et mutations). S'y ajoute un horoscope 大限/流年/小限 — ses 四化 sont un simple tableau de noms d'étoiles (`mutagen`) plus une vue typée additive `{star, type}` (`mutagenTyped`), et le 大限 porte une plage d'âge. |
 
 Type, Autorité et Définition dans Human Design ne sont **pas codés en dur** — ils sont dérivés du graphe de connectivité des centres définis.
 
@@ -253,19 +253,23 @@ Exemple réel élagué (les tableaux sont tronqués à 1–2 entrées ; les vale
 
 ## Référence des drapeaux CLI
 
-Il n'y a **pas de drapeaux `required=True`** — argparse ne génère jamais d'erreur sur un manquant. L'omission de `--date`/`--time`/`--tz`/`--lat`/`--lon` revient silencieusement à une personne exemple intégrée (`範例`, née `2000-01-01 12:00`, UTC+8, Taipei 101). Donc pour un graphique correct, fournissez-les tous.
+Les six drapeaux de naissance sont tous **obligatoires** — un drapeau manquant provoque une sortie avec le code `2`, l'usage sur stderr et rien sur stdout, de sorte que vous ne pouvez jamais prendre le graphique de la personne exemple pour le vôtre. Pour voir la personne exemple intégrée (`範例`, née le `2000-01-01 12:00`, UTC+8, Taipei 101), passez explicitement `--example`.
 
-| Drapeau | Type | Obligatoire pour une utilisation correcte ? | Par défaut | Format / règle |
-|---------|------|---------------------------------------------|-----------|-----------------|
-| `--name` | chaîne | Non (cosmétique) | `"範例"` | Texte libre ; renvoyé dans la sortie uniquement. |
-| `--gender` | chaîne | Seulement pour 紫微 | `"女"` | Doit être exactement `男` ou `女` (choix argparse ; autre chose → quitter `2`). |
-| `--date` | chaîne | **Oui** | revient à `2000-01-01` | `YYYY-MM-DD`, divisé sur `-`. Aucune exigence de remplissage zéro. |
-| `--time` | chaîne | **Oui** | revient à `12:00` | `HH:MM`, horloge 24 heures en heure locale, divisée sur `:`. |
-| `--tz` | float | **Oui** | revient à `8.0` | Décalage UTC incluant DST (Taiwan = `8`). Écrit dans la clé d'entrée `tz_offset`. |
-| `--lat` | float | **Oui** | revient à `25.0330` | Latitude en degrés décimaux (maisons occidentales/Asc/MC). |
-| `--lon` | float | **Oui** | revient à `121.5654` | Longitude en degrés décimaux. |
-| `--target` | chaîne | Non | `"2025-01-01"` | `YYYY-MM-DD` ; date de référence de la période chanceuse 紫微 (date de référence 運限). |
-| `--json` | drapeau | Non | `False` (Markdown) | Présence → mode JSON ; absence → Markdown. Ne prend pas de valeur. |
+> **Changement incompatible (v1.1.0) :** l'ancien repli silencieux vers la personne exemple en cas de drapeaux manquants a été supprimé. Les scripts qui s'y fiaient doivent passer `--example`.
+
+| Drapeau | Type | Obligatoire | Format / règle |
+|---------|------|-------------|-----------------|
+| `--date` | chaîne | **Oui** | `YYYY-M-D` (remplissage zéro optionnel, par ex. `1990-6-15`). Date calendaire réelle, année dans la fenêtre prise en charge **1900–2100**. |
+| `--time` | chaîne | **Oui** | `H:M`, horloge 24 heures en heure locale (remplissage zéro optionnel, par ex. `8:30`). |
+| `--tz` | float | **Oui** | Décalage UTC incluant DST (Taiwan = `8`), dans `[-12, 14]`, fini. Écrit dans la clé d'entrée `tz_offset`. |
+| `--lat` | float | **Oui** | Latitude en degrés décimaux, dans `[-90, 90]`, finie. |
+| `--lon` | float | **Oui** | Longitude en degrés décimaux, dans `[-180, 180]`, finie. |
+| `--gender` | chaîne | **Oui** | Doit être exactement `男` ou `女` (affecte 紫微 ; autre chose → quitter `2`). |
+| `--example` | drapeau | Non | Calcule la personne exemple intégrée. Mutuellement exclusif avec les six drapeaux de naissance (les combiner → quitter `2`) ; peut se combiner avec `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
+| `--name` | chaîne | Non | Texte libre ; renvoyé dans la sortie uniquement. Par défaut `"範例"`. |
+| `--target` | chaîne | Non | `YYYY-M-D` ; date de référence des périodes de chance 紫微 (運限參考日), même fenêtre 1900–2100. Par défaut `"2025-01-01"`. |
+| `--ziwei-day-divide` | chaîne | Non | Règle 晚子時 : `forward` (par défaut) compte 23:00-23:59 comme le jour suivant ; `current` le compte comme le jour courant. |
+| `--json` | drapeau | Non | Présence → mode JSON ; absence → Markdown. Ne prend pas de valeur. |
 
 > Le moteur ne géocode **pas** les lieux ni ne recherche les fuseaux horaires. L'appelant doit convertir lui-même lieu → `lat`/`lon`/`tz` — et le fuseau horaire/DST est la source d'erreur la plus courante, donc vérifiez le décalage UTC qui s'appliquait au lieu de naissance et à la date de naissance.
 
@@ -284,7 +288,7 @@ L'enveloppe `--json` a sept clés de haut niveau, dans cet ordre :
 | `input` | Écho des entrées normalisées : `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (notez `tz_offset`, pas `tz`). |
 | `western` | Chaîne `system`, objets de position `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
-| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (objet ou `null`). |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (toujours `{ decadal, yearly, age }` en cas de succès — un échec de l'horoscope fait échouer bruyamment toute la requête). |
 | `meta` | `{ engine, version, ephemeris }` — tous littéraux (`ephemeris: "astronomy-engine"`). |
 
 Pour le contrat complet — chaque clé, type et protocole d'invocation d'agent — voir **[AGENTS.md](./AGENTS.md)**.
@@ -292,7 +296,7 @@ Pour le contrat complet — chaque clé, type et protocole d'invocation d'agent 
 ### Particularités de champs à connaître
 
 - **`aspects` ne sont PAS plafonnés en JSON.** Le chemin JSON retourne *tous* les aspects détectés, triés par ordre croissant d'orbe (le plus serré d'abord). Le plafond de 10 éléments existe seulement dans le rapport Markdown.
-- **`ziwei.horoscope` est au mieux-effort et peut être `null`.** Il est enveloppé dans `try/except` ; en cas d'exception, il se sérialise comme `null`. Quand présent, c'est `{ decadal, yearly }`. (Ces sous-objets exposent une structure interne supplémentaire — `index`, `mutagen[]`, `stars[][]`, `yearly_dec_star`, etc. — au-delà du placeholder documenté.)
+- **`ziwei.horoscope` est tout-ou-rien.** En cas de succès, c'est toujours `{ decadal, yearly, age }` ; un échec du sidecar/horoscope fait échouer bruyamment toute la requête (sortie `1` / HTTP `500`) — un horoscope partiel ou `null` n'est jamais émis dans une réponse `"ok": true`. `stars` n'apparaît que sous `decadal`/`yearly` (jamais sous `age`) ; `yearlyDecStar` seulement sous `yearly`. `mutagen` est un simple tableau de noms d'étoiles `[str, …4]` dans l'ordre fixe 祿/權/科/忌 — **inchangé depuis `schema_version` `1.0`**. `schema_version` `1.1` est une évolution additive et rétrocompatible : à côté du `mutagen` inchangé, elle ajoute `mutagenTyped` (une vue typée `[{ "star", "type" }, …4]` dans le même ordre) sur `decadal`/`yearly`/`age`, `decadal.ageRange` `[startAge, endAge]`, et le sous-objet `age` (le 小限, la limite mineure annuelle, dont la valeur peut être `null`). Le mappage positionnel 祿/權/科/忌 de `mutagenTyped` est invariant pour les 10 天干. (Ces sous-objets exposent aussi une structure interne supplémentaire — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch`, etc. — au-delà du placeholder documenté.)
 - **Les chaînes d'étoiles codent luminosité + mutations.** Le format est `name(luminosité)[mutation]`, avec chaque partie optionnelle — par ex. `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, ou simple `天機`. `adjective_stars` sont des noms simples seulement (pas de luminosité/mutation).
 
 ---

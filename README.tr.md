@@ -22,7 +22,7 @@ Motor, **aynı doğum anına** karşı üç sistemi çalıştırır; böylece ç
 |--------|---------------------------|----------------------|
 | **Batı doğum haritacılığı** (Tropical / Placidus) | Klasik Batı yıldız bilimi — doğumunuzda gezegenlerin burç karşısında nerede olduğu, 12 eve bölünmüş. | Yükselen Burç + Orta Gök, 12 gezegen/nokta (太陽 → Güney Düğümü) işaret, derece, ev ve geriye dönüş işareti, tüm 12 ev ucu ve algılanan tüm yönler (konjunksiyon/sekstil/kare/trigon/karşıt) sıkılığa göre sıralanmış. |
 | **人類圖 Human Design** | Yıldız bilimi, I-Ching ve çakra sisteminin modern sentezi. Enerjinizin kapılar, kanallar ve merkezler aracılığıyla nasıl "kablolu" olduğunu açıklar. | Tip, Yetki, Profil, Tanım, İlahiyat Haçı, 88° önceki Tasarım tarihi, tanımlanan/açık merkezler, tanımlanan kanallar ve hem Kişilik hem de Tasarım haritaları için gezegen başına kapı.satır aktivasyonları. |
-| **紫微斗數 Zi Wei Dou Shu** | Kaderini 12 saraydaki bir tahtaya eşleyen geleneksel Çin yıldız bilimi sistemi, adlandırılmış yıldızlarla doldurulmuş. | 五行局 (Beş Element Sınıfı), 命主 (ruh) / 身主 (beden), 時辰 saat dizini ve saray başına veri — ganzhi, 命/身 işaretleri, onlu yaş aralığı ve ana/yan/sıfat yıldızlar (parlaklık ve 四化 ile). İsteğe bağlı olarak en iyi çaba 大限/流年 horoskopu. |
+| **紫微斗數 Zi Wei Dou Shu** | Kaderini 12 saraydaki bir tahtaya eşleyen geleneksel Çin yıldız bilimi sistemi, adlandırılmış yıldızlarla doldurulmuş. | 五行局 (Beş Element Sınıfı), 命主 (ruh) / 身主 (beden), 時辰 saat dizini ve saray başına veri — ganzhi, 命/身 işaretleri, onlu yaş aralığı ve ana/yan/sıfat yıldızlar (parlaklık ve 四化 ile). Ayrıca bir 大限/流年/小限 horoskopu içerir — 四化 verileri yalın bir yıldız adı dizisi (`mutagen`) artı ek türlenmiş `{star, type}` görünümü (`mutagenTyped`) olarak sunulur ve 大限 bir yaş aralığı taşır. |
 
 Human Design'da Tip, Yetki ve Tanım **sabit kodlanmamıştır** — tanımlanan merkezlerin bağlantı grafiğinden türetilir.
 
@@ -253,19 +253,23 @@ Kesilmiş gerçek örnek (diziler 1–2 giriş ile kesilmiş; değerler olduğu 
 
 ## CLI işaretleri başvurusu
 
-**Zorunlu işaret yok** — argparse eksik bir işarette asla hata vermez. `--date`/`--time`/`--tz`/`--lat`/`--lon` atlamamak, sessizce yerleşik bir örnek kişiye (`範例`, doğum `2000-01-01 12:00`, UTC+8, Taipei 101) geri döner. Doğru bir harita için hepsini sağlayın.
+Altı doğum işaretinin tümü **zorunludur** — eksik bir işaret, stderr'e kullanım bilgisi yazarak `2` koduyla çıkar ve stdout'a hiçbir şey yazmaz; böylece örnek kişinin haritasını asla kendi haritanız sanmazsınız. Yerleşik örnek kişiyi (`範例`, doğum `2000-01-01 12:00`, UTC+8, Taipei 101) görmek için `--example` işaretini açıkça geçirin.
 
-| İşaret | Tür | Doğru kullanım için gerekli? | Varsayılan | Biçim / kural |
-|--------|-----|-----------------------------|---------|-|
-| `--name` | dize | Hayır (kozmetik) | `"範例"` | Serbest metin; sadece çıktıya yankılanır. |
-| `--gender` | dize | Sadece 紫微 için | `"女"` | Kesinlikle `男` ya da `女` olmalıdır (argparse `choices`; başka bir şey → çıkış `2`). |
-| `--date` | dize | **Evet** | `2000-01-01`'e geri döner | `YYYY-MM-DD`, `-` üzerinde bölün. Sıfır doldurma gerekli değil. |
-| `--time` | dize | **Evet** | `12:00`'ye geri döner | `HH:MM`, 24 saat yerel saat, `:` üzerinde bölün. |
-| `--tz` | kayan | **Evet** | `8.0`'ye geri döner | UTC kaydırması DST dahil (Tayvan = `8`). Giriş anahtarı `tz_offset` yazılır. |
-| `--lat` | kayan | **Evet** | `25.0330`'ye geri döner | Ondalık derece cinsinden enlem (Batı evleri/Asc/MC). |
-| `--lon` | kayan | **Evet** | `121.5654`'ye geri döner | Ondalık derece cinsinden boylam. |
-| `--target` | dize | Hayır | `"2025-01-01"` | `YYYY-MM-DD`; 紫微 şans dönemi referans tarihi (運限參考日). |
-| `--json` | işaret | Hayır | `False` (Markdown) | Varlık → JSON modu; yokluk → Markdown. Değer almaz. |
+> **Kırıcı değişiklik (v1.1.0):** eksik işaretlerde örnek kişiye sessizce geri dönen eski davranış kaldırıldı. Buna dayanan betikler `--example` geçirmelidir.
+
+| İşaret | Tür | Zorunlu | Biçim / kural |
+|--------|-----|---------|---------------|
+| `--date` | dize | **Evet** | `YYYY-M-D` (sıfır doldurma isteğe bağlı, örn. `1990-6-15`). Gerçek bir takvim tarihi; yıl, desteklenen **1900–2100** aralığında olmalıdır. |
+| `--time` | dize | **Evet** | `H:M`, 24 saatlik yerel saat (sıfır doldurma isteğe bağlı, örn. `8:30`). |
+| `--tz` | kayan | **Evet** | DST dahil UTC kayması (Tayvan = `8`), `[-12, 14]` aralığında, sonlu. Girdi anahtarı `tz_offset` olarak yazılır. |
+| `--lat` | kayan | **Evet** | Ondalık derece cinsinden enlem, `[-90, 90]` aralığında, sonlu. |
+| `--lon` | kayan | **Evet** | Ondalık derece cinsinden boylam, `[-180, 180]` aralığında, sonlu. |
+| `--gender` | dize | **Evet** | Kesinlikle `男` ya da `女` olmalıdır (紫微'yi etkiler; başka bir şey → çıkış `2`). |
+| `--example` | işaret | Hayır | Yerleşik örnek kişiyi hesaplar. Altı doğum işaretinin tümüyle karşılıklı dışlayıcıdır (birleştirmek → çıkış `2`); `--name`, `--target`, `--ziwei-day-divide`, `--json` ile birleştirilebilir. |
+| `--name` | dize | Hayır | Serbest metin; sadece çıktıya yankılanır. Varsayılan `"範例"`. |
+| `--target` | dize | Hayır | `YYYY-M-D`; 紫微 şans dönemi referans tarihi (運限參考日), aynı 1900–2100 aralığı. Varsayılan `"2025-01-01"`. |
+| `--ziwei-day-divide` | dize | Hayır | 晚子時 kuralı: `forward` (varsayılan) 23:00-23:59'u ertesi gün sayar; `current` aynı gün sayar. |
+| `--json` | işaret | Hayır | Varlık → JSON modu; yokluk → Markdown. Değer almaz. |
 
 > Motor yerler coğrafya kodlaması yapmaz veya saat dilimlerini aramaz. Arayan, yeri → `lat`/`lon`/`tz` kendileri dönüştürmelidir — ve saat dilimi/DST en yaygın hata kaynağıdır; bu nedenle doğum yerinde ve doğum tarihinde geçerli olan UTC kaydırmasını doğrulayın.
 
@@ -284,7 +288,7 @@ Kesilmiş gerçek örnek (diziler 1–2 giriş ile kesilmiş; değerler olduğu 
 | `input` | Normalleştirilmiş girdilerin yankısı: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (`tz` değil `tz_offset` not). |
 | `western` | `system` dizesi, `ascendant`/`midheaven` konum nesneleri, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
-| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (nesne ya da `null`). |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (başarı durumunda her zaman `{ decadal, yearly, age }` — bir horoscope hatası tüm isteği gürültülü biçimde başarısız kılar). |
 | `meta` | `{ engine, version, ephemeris }` — tümü değişmezler (`ephemeris: "astronomy-engine"`). |
 
 Tam alan sözleşmesi için — her anahtar, tür ve ajan çağırma protokolü — bkz. **[AGENTS.md](./AGENTS.md)**.
@@ -292,7 +296,7 @@ Tam alan sözleşmesi için — her anahtar, tür ve ajan çağırma protokolü 
 ### Bilmekte değer olan alan tuhafları
 
 - **`aspects` JSON'da SINIRLANDI DEĞİL.** JSON yolu *her* algılanan yönü döndürür, orba göre artan sırada sıralanır (en sıkı ilk). 10 öğe sınırı yalnızca Markdown raporda vardır.
-- **`ziwei.horoscope` en iyi çaba ve `null` olabilir.** `try/except` ile sarılmıştır; herhangi bir istisna üzerine `null` olarak serileştirilir. Mevcut olduğunda `{ decadal, yearly }` dir. (Bu alt nesneler, belgelenen yer tutucuyu aşan ek iç yapıyı ortaya koyan — `index`, `mutagen[]`, `stars[][]`, `yearly_dec_star` vb.)
+- **`ziwei.horoscope` ya hep ya hiçtir.** Başarı durumunda her zaman `{ decadal, yearly, age }` biçimindedir; bir sidecar/horoscope hatası tüm isteği gürültülü biçimde başarısız kılar (çıkış `1` / HTTP `500`) — `"ok": true` bir yanıtta kısmi ya da `null` bir horoscope asla üretilmez. `stars` yalnızca `decadal`/`yearly` altında görünür (asla `age` altında değil); `yearlyDecStar` yalnızca `yearly` altında. `mutagen`, sabit 祿/權/科/忌 sırasında düz bir yıldız adı dizisidir `[str, …4]` — **`schema_version` `1.0`'dan beri değişmemiştir**. `schema_version` `1.1`, eklemeli ve geriye dönük uyumlu bir artıştır: değişmeyen `mutagen`'in yanına `decadal`/`yearly`/`age` üzerinde `mutagenTyped` (aynı sırada tipli bir görünüm `[{ "star", "type" }, …4]`), `decadal.ageRange` `[startAge, endAge]` ve `age` alt nesnesini (小限 / yıllık küçük limit; `null` olabilir) ekler. `mutagenTyped` içindeki konumsal 祿/權/科/忌 eşlemesi 10 天干'ın tümünde değişmezdir. (Bu alt nesneler ayrıca, belgelenen yer tutucunun ötesinde ek iç yapı da açığa çıkarır — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch` vb.)
 - **Yıldız dizgileri parlaklık + 四化 kodlar.** Biçim `name(brightness)[mutagen]`, her parça isteğe bağlı — örn. `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, ya da düz `天機`. `adjective_stars` sadece düz isimlerdir (parlaklık/mutagen yok).
 
 ---

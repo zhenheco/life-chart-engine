@@ -426,3 +426,19 @@ def test_requirements_use_astronomy_engine_without_pyswisseph():
     requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
     assert "pyswisseph" not in requirements
     assert "astronomy-engine>=2.1.19" in requirements
+
+
+def test_horoscope_failure_fails_the_whole_request_loudly(monkeypatch):
+    # all-or-nothing: a horoscope construction failure must never yield
+    # an "ok": true response with horoscope=None (silent partial result)
+    real_ziwei = chart_engine.ziwei
+
+    def ziwei_without_horoscope_keys(inp):
+        zw = real_ziwei(inp)
+        return {k: v for k, v in zw.items() if k not in ("dec", "yr", "age")}
+
+    monkeypatch.setattr(chart_engine, "ziwei", ziwei_without_horoscope_keys)
+    inp = dict(chart_engine.INPUT)
+
+    with pytest.raises(KeyError):
+        chart_engine.build_json(inp)

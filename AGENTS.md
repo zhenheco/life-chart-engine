@@ -161,10 +161,14 @@ On success, stdout is one JSON object:
       // 12 palaces
     ],
     "horoscope": {
-      // best-effort; whole object is null on failure. `mutagen` (unchanged
-      // since 1.0) is a bare star-name array in iztro's fixed 祿/權/科/忌
-      // (化祿,化權,化科,化忌) order. `mutagenTyped`, `decadal.ageRange`, and the
-      // `age` sub-object are additive in schema_version 1.1.
+      // All-or-nothing: a sidecar/horoscope failure aborts the WHOLE request
+      // (exit 1 / HTTP 500) — a partial or null horoscope is never emitted on
+      // failure. When the request succeeds this object is always
+      // { decadal, yearly, age }. `mutagen` (unchanged since 1.0) is a bare
+      // star-name array in iztro's fixed 祿/權/科/忌 (化祿,化權,化科,化忌) order.
+      // `mutagenTyped`, `decadal.ageRange`, and the `age` sub-object are the
+      // schema_version 1.1 additions; `stars` and `yearlyDecStar` predate 1.1
+      // (emitted since the iztro sidecar port) and are simply documented as of 1.1.
       "decadal": {
         "index": 9, "name": "大限",
         "heavenlyStem": "丁", "earthlyBranch": "亥",
@@ -172,14 +176,17 @@ On success, stdout is one JSON object:
         "palaceNames": [ /* 12 strings */ ],
         "mutagen": ["太陰", "天同", "天機", "巨門"],   // 1.0-unchanged bare strings, 祿/權/科/忌 order
         "mutagenTyped": [ { "star": "太陰", "type": "祿" }, { "star": "天同", "type": "權" },
-                          { "star": "天機", "type": "科" }, { "star": "巨門", "type": "忌" } ] // 1.1: typed view, same order
+                          { "star": "天機", "type": "科" }, { "star": "巨門", "type": "忌" } ], // 1.1: typed view, same order
+        "stars": [ [ /* per-palace horoscope-star name arrays, 12 entries */ ] ] // decadal/yearly ONLY (age has none); pre-1.1 field, documented as of 1.1
       },
       "yearly": {
         "index": 4, "name": "流年",
         "heavenlyStem": "甲", "earthlyBranch": "辰",
         "palaceNames": [ /* 12 strings */ ],
         "mutagen": ["廉貞", "破軍", "武曲", "太陽"],   // bare strings, 祿/權/科/忌 order
-        "mutagenTyped": [ { "star": str, "type": "祿|權|科|忌" } /* …4, same order */ ] // 1.1
+        "mutagenTyped": [ { "star": str, "type": "祿|權|科|忌" } /* …4, same order */ ], // 1.1
+        "stars": [ [ /* 12 per-palace arrays */ ] ],       // decadal/yearly ONLY; pre-1.1, documented as of 1.1
+        "yearlyDecStar": { /* 流年將前12神/歲前12神 star placements */ } // yearly ONLY; pre-1.1, documented as of 1.1
       },
       // 小限 (annual age-based minor limit); 1.1 addition, may be null
       "age": {
@@ -199,8 +206,11 @@ On success, stdout is one JSON object:
 
 - `western.aspects` is **not capped** (Markdown mode shows top 10). Cap downstream
   if needed.
-- `ziwei.horoscope` is serialized **best-effort** from iztro sidecar objects.
-  Treat it as optional. When present it is `{ decadal, yearly, age }`. Each
+- `ziwei.horoscope` is **all-or-nothing**: on success it is always
+  `{ decadal, yearly, age }`; a sidecar/horoscope failure fails the whole
+  request loudly (never a partial/null horoscope in a `"ok": true` response).
+  Field asymmetry: `stars` appears **only** under `decadal` and `yearly`
+  (never `age`), and `yearlyDecStar` **only** under `yearly`. Each
   `mutagen` is a **bare star-name array** `[str, …4]` in iztro's fixed
   祿/權/科/忌 order — **unchanged since `schema_version` `1.0`**, so 1.0
   consumers reading `mutagen` as strings keep working. `schema_version` `1.1` is
@@ -216,6 +226,9 @@ On success, stdout is one JSON object:
   star(brightness)[mutagen].
 - All ecliptic longitudes are degrees `[0,360)`. `deg`/`min` are the
   within-sign degree/minute.
+- `meta.version` (`"1.0"`) is the **engine's internal version string** and is
+  independent of both `schema_version` (`"1.1"`) and the PyPI package version
+  (`1.1.0`); consumers should branch on `schema_version` only.
 
 ---
 
