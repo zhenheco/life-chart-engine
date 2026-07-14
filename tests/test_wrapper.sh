@@ -16,6 +16,7 @@ run_and_assert() {
 
   set +e
   bash "$cmd_path" --json \
+    --gender 女 \
     --date 1990-06-15 --time 08:30 --tz 8 --lat 25.0 --lon 121.5 \
     --target 2025-01-01 >"$tmp_out"
   local status=$?

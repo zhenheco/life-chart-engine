@@ -335,20 +335,23 @@ It renders all three systems on one page and adds three conveniences:
 
 ## CLI flags reference
 
-There are **no `required=True` flags** — argparse never errors on a missing one. Omitting `--date`/`--time`/`--tz`/`--lat`/`--lon` silently falls back to a built-in example person (`範例`, born `2000-01-01 12:00`, UTC+8, Taipei 101). So for a correct chart, supply them all.
+All six birth flags are **required** — a missing flag exits `2` with usage on stderr and nothing on stdout, so you can never mistake the example person's chart for your own. To see the built-in example person (`範例`, born `2000-01-01 12:00`, UTC+8, Taipei 101), pass `--example` explicitly.
 
-| Flag | Type | Required for correct use? | Default | Format / rule |
-|------|------|---------------------------|---------|---------------|
-| `--name` | string | No (cosmetic) | `"範例"` | Free text; echoed into output only. |
-| `--gender` | string | Only for 紫微 | `"女"` | Must be exactly `男` or `女` (argparse `choices`; anything else → exit `2`). |
-| `--date` | string | **Yes** | falls back to `2000-01-01` | `YYYY-MM-DD`, split on `-`. No zero-pad requirement. |
-| `--time` | string | **Yes** | falls back to `12:00` | `HH:MM`, 24-hour local clock time, split on `:`. |
-| `--tz` | float | **Yes** | falls back to `8.0` | UTC offset including DST (Taiwan = `8`). Written to input key `tz_offset`. |
-| `--lat` | float | **Yes** | falls back to `25.0330` | Latitude in decimal degrees (Western houses/Asc/MC). |
-| `--lon` | float | **Yes** | falls back to `121.5654` | Longitude in decimal degrees. |
-| `--target` | string | No | `"2025-01-01"` | `YYYY-MM-DD`; 紫微 luck-period reference date (運限參考日). |
-| `--ziwei-day-divide` | string | No | `"forward"` | 晚子時 rule: `forward` counts 23:00-23:59 as next day; `current` counts it as current day. |
-| `--json` | flag | No | `False` (Markdown) | Presence → JSON mode; absence → Markdown. Takes no value. |
+> **Breaking change (v1.1.0):** the old silent fallback to the example person on missing flags has been removed. Scripts that relied on it should pass `--example`.
+
+| Flag | Type | Required | Format / rule |
+|------|------|----------|---------------|
+| `--date` | string | **Yes** | `YYYY-M-D` (zero-padding optional, e.g. `1990-6-15`). Real calendar date, year within the supported window **1900–2100**. |
+| `--time` | string | **Yes** | `H:M`, 24-hour local clock time (zero-padding optional, e.g. `8:30`). |
+| `--tz` | float | **Yes** | UTC offset including DST (Taiwan = `8`), within `[-12, 14]`, finite. Written to input key `tz_offset`. |
+| `--lat` | float | **Yes** | Latitude in decimal degrees, within `[-90, 90]`, finite. |
+| `--lon` | float | **Yes** | Longitude in decimal degrees, within `[-180, 180]`, finite. |
+| `--gender` | string | **Yes** | Must be exactly `男` or `女` (affects 紫微; anything else → exit `2`). |
+| `--example` | flag | No | Compute the built-in example person. Mutually exclusive with all six birth flags (combining → exit `2`); may combine with `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
+| `--name` | string | No | Free text; echoed into output only. Default `"範例"`. |
+| `--target` | string | No | `YYYY-M-D`; 紫微 luck-period reference date (運限參考日), same 1900–2100 window. Default `"2025-01-01"`. |
+| `--ziwei-day-divide` | string | No | 晚子時 rule: `forward` (default) counts 23:00-23:59 as next day; `current` counts it as current day. |
+| `--json` | flag | No | Presence → JSON mode; absence → Markdown. Takes no value. |
 
 > The engine does **not** geocode places or look up time zones. The caller must convert place → `lat`/`lon`/`tz` themselves — and timezone/DST is the most common source of error, so verify the UTC offset that applied at the birth place and birth date.
 

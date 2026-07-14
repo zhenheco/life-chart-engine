@@ -12,8 +12,10 @@ from pathlib import Path
 
 try:
     from . import ephemeris as eph
+    from .validation import validate_input
 except ImportError:
     import ephemeris as eph
+    from validation import validate_input
 
 # ====================== INPUT（改這裡即可） ======================
 INPUT = {
@@ -264,6 +266,17 @@ def run(inp):
         y=zw['yr']
         print(f"  ── 流年 {y.get('heavenlyStem','')}{y.get('earthlyBranch','')}（{inp['target']}）四化：{_sihua(y)}")
 
+
+def compose_markdown(inp):
+    from contextlib import redirect_stdout
+    from io import StringIO
+
+    buffer = StringIO()
+    with redirect_stdout(buffer):
+        run(inp)
+    return buffer.getvalue()
+
+
 def build_json(inp):
     jd,pos,retro,cusps,asc,mc,house_of = western(inp)
     asp=aspects(pos,asc,mc)
@@ -345,38 +358,69 @@ def build_json(inp):
         "meta": {"engine": "life-chart-engine", "version": "1.0", "ephemeris": "astronomy-engine"},
     }
 
-def _parse_args():
+def to_json_text(envelope):
+    return json.dumps(envelope, ensure_ascii=False, indent=2)
+
+
+def _parse_args(argv=None):
     import argparse
     p=argparse.ArgumentParser(description="三系統完整盤面引擎（西洋星盤+人類圖+紫微）")
     p.add_argument('--name', default=INPUT['name'])
-    p.add_argument('--gender', default=INPUT['gender'], choices=['男','女'])
+    p.add_argument('--gender', choices=['男','女'])
     p.add_argument('--date', help='西曆 YYYY-MM-DD')
     p.add_argument('--time', help='本地時鐘時間 HH:MM (24h)')
-    p.add_argument('--tz', type=float, help='出生地當時 UTC 時差（含夏令時，如台灣=8）')
-    p.add_argument('--lat', type=float, help='緯度')
-    p.add_argument('--lon', type=float, help='經度')
+    p.add_argument('--tz', help='出生地當時 UTC 時差（含夏令時，如台灣=8）')
+    p.add_argument('--lat', help='緯度')
+    p.add_argument('--lon', help='經度')
     p.add_argument('--target', default=INPUT['target'], help='紫微運限參考日 YYYY-MM-DD')
     p.add_argument('--ziwei-day-divide', default=INPUT['ziwei_day_divide'],
                    choices=['forward','current'], help='晚子時規則：forward=算次日, current=算當日')
+    p.add_argument('--example', action='store_true', help='使用內建範例出生資料')
     p.add_argument('--json', action='store_true', default=False)
-    a=p.parse_args()
-    inp=dict(INPUT)
-    inp['name']=a.name; inp['gender']=a.gender; inp['target']=a.target
-    inp['ziwei_day_divide']=a.ziwei_day_divide
-    if a.date: y,m,d=map(int,a.date.split('-')); inp['date']=(y,m,d)
-    if a.time: hh,mm=map(int,a.time.split(':')); inp['time']=(hh,mm)
-    if a.tz is not None: inp['tz_offset']=a.tz
-    if a.lat is not None: inp['lat']=a.lat
-    if a.lon is not None: inp['lon']=a.lon
+    a=p.parse_args(argv)
+    birth_fields = ('gender', 'date', 'time', 'tz', 'lat', 'lon')
+    supplied_birth_fields = [field for field in birth_fields if getattr(a, field) is not None]
+    if a.example and supplied_birth_fields:
+        flags = ', '.join(f"--{field}" for field in supplied_birth_fields)
+        p.error(f"--example cannot be combined with birth flags: {flags}")
+    if not a.example:
+        missing = [field for field in birth_fields if getattr(a, field) is None]
+        if missing:
+            p.error("the following arguments are required: " + ', '.join(f"--{field}" for field in missing))
+
+    if a.example:
+        date_value = '-'.join(map(str, INPUT['date']))
+        time_value = ':'.join(map(str, INPUT['time']))
+        gender, tz, lat, lon = INPUT['gender'], INPUT['tz_offset'], INPUT['lat'], INPUT['lon']
+    else:
+        date_value, time_value = a.date, a.time
+        gender, tz, lat, lon = a.gender, a.tz, a.lat, a.lon
+    raw = {
+        'name': a.name, 'gender': gender, 'date': date_value, 'time': time_value,
+        'tz': tz, 'lat': lat, 'lon': lon, 'target': a.target,
+        'ziwei_day_divide': a.ziwei_day_divide,
+    }
+    try:
+        inp = validate_input(raw)
+    except ValueError as exc:
+        field, separator, detail = str(exc).partition(':')
+        p.error(f"--{field}:{detail}" if separator else str(exc))
     return inp,a.json
 
-if __name__=='__main__':
-    inp,json_mode = _parse_args()
+
+def main(argv=None):
+    inp,json_mode = _parse_args(argv)
     if json_mode:
         try:
-            print(json.dumps(build_json(inp), ensure_ascii=False, indent=2))
+            sys.stdout.write(to_json_text(build_json(inp)) + "\n")
         except Exception as e:
-            print(json.dumps({"ok": False, "error": str(e), "schema_version": "1.1"}, ensure_ascii=False))
-            sys.exit(1)
+            envelope = {"ok": False, "error": str(e), "schema_version": "1.1"}
+            sys.stdout.write(to_json_text(envelope) + "\n")
+            return 1
     else:
-        run(inp)
+        sys.stdout.write(compose_markdown(inp))
+    return 0
+
+
+if __name__=='__main__':
+    sys.exit(main())

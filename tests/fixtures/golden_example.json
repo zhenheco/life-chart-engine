@@ -1,0 +1,1094 @@
+{
+  "ok": true,
+  "schema_version": "1.1",
+  "input": {
+    "name": "範例",
+    "gender": "女",
+    "date": "2000-01-01",
+    "time": "12:00",
+    "tz_offset": 8.0,
+    "lat": 25.033,
+    "lon": 121.5654,
+    "target": "2025-01-01"
+  },
+  "western": {
+    "system": "Tropical / Placidus / astronomy-engine",
+    "ascendant": {
+      "lon": 15.8752,
+      "sign": "牡羊",
+      "deg": 15,
+      "min": 53,
+      "label": "牡羊 15°53'"
+    },
+    "midheaven": {
+      "lon": 280.7525,
+      "sign": "摩羯",
+      "deg": 10,
+      "min": 45,
+      "label": "摩羯 10°45'"
+    },
+    "planets": [
+      {
+        "name": "太陽",
+        "retrograde": false,
+        "house": 9,
+        "lon": 280.0289,
+        "sign": "摩羯",
+        "deg": 10,
+        "min": 2,
+        "label": "摩羯 10°02'"
+      },
+      {
+        "name": "月亮",
+        "retrograde": false,
+        "house": 7,
+        "lon": 219.3081,
+        "sign": "天蠍",
+        "deg": 9,
+        "min": 18,
+        "label": "天蠍 09°18'"
+      },
+      {
+        "name": "水星",
+        "retrograde": false,
+        "house": 9,
+        "lon": 271.3704,
+        "sign": "摩羯",
+        "deg": 1,
+        "min": 22,
+        "label": "摩羯 01°22'"
+      },
+      {
+        "name": "金星",
+        "retrograde": false,
+        "house": 8,
+        "lon": 241.1623,
+        "sign": "射手",
+        "deg": 1,
+        "min": 10,
+        "label": "射手 01°10'"
+      },
+      {
+        "name": "火星",
+        "retrograde": false,
+        "house": 11,
+        "lon": 327.7053,
+        "sign": "水瓶",
+        "deg": 27,
+        "min": 42,
+        "label": "水瓶 27°42'"
+      },
+      {
+        "name": "木星",
+        "retrograde": false,
+        "house": 1,
+        "lon": 25.2408,
+        "sign": "牡羊",
+        "deg": 25,
+        "min": 14,
+        "label": "牡羊 25°14'"
+      },
+      {
+        "name": "土星",
+        "retrograde": true,
+        "house": 1,
+        "lon": 40.4029,
+        "sign": "金牛",
+        "deg": 10,
+        "min": 24,
+        "label": "金牛 10°24'"
+      },
+      {
+        "name": "天王星",
+        "retrograde": false,
+        "house": 11,
+        "lon": 314.7893,
+        "sign": "水瓶",
+        "deg": 14,
+        "min": 47,
+        "label": "水瓶 14°47'"
+      },
+      {
+        "name": "海王星",
+        "retrograde": false,
+        "house": 10,
+        "lon": 303.1836,
+        "sign": "水瓶",
+        "deg": 3,
+        "min": 11,
+        "label": "水瓶 03°11'"
+      },
+      {
+        "name": "冥王星",
+        "retrograde": false,
+        "house": 8,
+        "lon": 251.443,
+        "sign": "射手",
+        "deg": 11,
+        "min": 27,
+        "label": "射手 11°27'"
+      },
+      {
+        "name": "北交點",
+        "retrograde": true,
+        "house": 4,
+        "lon": 123.9698,
+        "sign": "獅子",
+        "deg": 3,
+        "min": 58,
+        "label": "獅子 03°58'"
+      },
+      {
+        "name": "南交點",
+        "retrograde": false,
+        "house": 10,
+        "lon": 303.9698,
+        "sign": "水瓶",
+        "deg": 3,
+        "min": 58,
+        "label": "水瓶 03°58'"
+      }
+    ],
+    "houses": [
+      {
+        "house": 1,
+        "lon": 15.8752,
+        "label": "牡羊 15°53'"
+      },
+      {
+        "house": 2,
+        "lon": 49.8547,
+        "label": "金牛 19°51'"
+      },
+      {
+        "house": 3,
+        "lon": 76.6157,
+        "label": "雙子 16°37'"
+      },
+      {
+        "house": 4,
+        "lon": 100.7525,
+        "label": "巨蟹 10°45'"
+      },
+      {
+        "house": 5,
+        "lon": 126.2805,
+        "label": "獅子 06°17'"
+      },
+      {
+        "house": 6,
+        "lon": 157.199,
+        "label": "處女 07°12'"
+      },
+      {
+        "house": 7,
+        "lon": 195.8752,
+        "label": "天秤 15°53'"
+      },
+      {
+        "house": 8,
+        "lon": 229.8547,
+        "label": "天蠍 19°51'"
+      },
+      {
+        "house": 9,
+        "lon": 256.6157,
+        "label": "射手 16°37'"
+      },
+      {
+        "house": 10,
+        "lon": 280.7525,
+        "label": "摩羯 10°45'"
+      },
+      {
+        "house": 11,
+        "lon": 306.2805,
+        "label": "水瓶 06°17'"
+      },
+      {
+        "house": 12,
+        "lon": 337.199,
+        "label": "雙魚 07°12'"
+      }
+    ],
+    "aspects": [
+      {
+        "a": "北交點",
+        "b": "南交點",
+        "type": "對分",
+        "orb": 0.0
+      },
+      {
+        "a": "土星",
+        "b": "天頂",
+        "type": "三分",
+        "orb": 0.3497
+      },
+      {
+        "a": "太陽",
+        "b": "土星",
+        "type": "三分",
+        "orb": 0.3739
+      },
+      {
+        "a": "太陽",
+        "b": "月亮",
+        "type": "六分",
+        "orb": 0.7208
+      },
+      {
+        "a": "太陽",
+        "b": "天頂",
+        "type": "合相",
+        "orb": 0.7236
+      },
+      {
+        "a": "海王星",
+        "b": "北交點",
+        "type": "對分",
+        "orb": 0.7862
+      },
+      {
+        "a": "海王星",
+        "b": "南交點",
+        "type": "合相",
+        "orb": 0.7862
+      },
+      {
+        "a": "天王星",
+        "b": "上升",
+        "type": "六分",
+        "orb": 1.0858
+      },
+      {
+        "a": "月亮",
+        "b": "土星",
+        "type": "對分",
+        "orb": 1.0947
+      },
+      {
+        "a": "月亮",
+        "b": "天頂",
+        "type": "六分",
+        "orb": 1.4444
+      },
+      {
+        "a": "金星",
+        "b": "海王星",
+        "type": "六分",
+        "orb": 2.0213
+      },
+      {
+        "a": "火星",
+        "b": "木星",
+        "type": "六分",
+        "orb": 2.4645
+      },
+      {
+        "a": "金星",
+        "b": "南交點",
+        "type": "六分",
+        "orb": 2.8075
+      },
+      {
+        "a": "金星",
+        "b": "北交點",
+        "type": "三分",
+        "orb": 2.8075
+      },
+      {
+        "a": "天王星",
+        "b": "冥王星",
+        "type": "六分",
+        "orb": 3.3463
+      },
+      {
+        "a": "金星",
+        "b": "火星",
+        "type": "四分",
+        "orb": 3.4569
+      },
+      {
+        "a": "水星",
+        "b": "火星",
+        "type": "六分",
+        "orb": 3.6651
+      },
+      {
+        "a": "土星",
+        "b": "天王星",
+        "type": "四分",
+        "orb": 4.3865
+      },
+      {
+        "a": "冥王星",
+        "b": "上升",
+        "type": "三分",
+        "orb": 4.4322
+      },
+      {
+        "a": "上升",
+        "b": "天頂",
+        "type": "四分",
+        "orb": 5.1226
+      },
+      {
+        "a": "月亮",
+        "b": "北交點",
+        "type": "四分",
+        "orb": 5.3384
+      },
+      {
+        "a": "月亮",
+        "b": "南交點",
+        "type": "四分",
+        "orb": 5.3384
+      },
+      {
+        "a": "月亮",
+        "b": "天王星",
+        "type": "四分",
+        "orb": 5.4812
+      },
+      {
+        "a": "太陽",
+        "b": "上升",
+        "type": "四分",
+        "orb": 5.8462
+      },
+      {
+        "a": "月亮",
+        "b": "海王星",
+        "type": "四分",
+        "orb": 6.1245
+      },
+      {
+        "a": "水星",
+        "b": "木星",
+        "type": "三分",
+        "orb": 6.1296
+      },
+      {
+        "a": "土星",
+        "b": "北交點",
+        "type": "四分",
+        "orb": 6.4331
+      },
+      {
+        "a": "土星",
+        "b": "南交點",
+        "type": "四分",
+        "orb": 6.4331
+      }
+    ]
+  },
+  "human_design": {
+    "type": "顯示生產者",
+    "authority": "情緒型權威",
+    "profile": "1/3",
+    "definition": "二分人",
+    "incarnation_cross": "右角度交叉（38/39 | 48/21）",
+    "design_date": "1999-10-06",
+    "defined_centers": [
+      "G",
+      "喉",
+      "情緒",
+      "意志",
+      "根",
+      "脾",
+      "薦骨"
+    ],
+    "open_centers": [
+      "邏輯",
+      "頭"
+    ],
+    "channels": [
+      "3-60",
+      "10-34",
+      "13-33",
+      "26-44",
+      "30-41"
+    ],
+    "gates": [
+      {
+        "planet": "☉",
+        "personality": {
+          "gate": 38,
+          "line": 1
+        },
+        "design": {
+          "gate": 48,
+          "line": 3
+        }
+      },
+      {
+        "planet": "⊕",
+        "personality": {
+          "gate": 39,
+          "line": 1
+        },
+        "design": {
+          "gate": 21,
+          "line": 3
+        }
+      },
+      {
+        "planet": "☊",
+        "personality": {
+          "gate": 31,
+          "line": 2
+        },
+        "design": {
+          "gate": 33,
+          "line": 4
+        }
+      },
+      {
+        "planet": "☋",
+        "personality": {
+          "gate": 41,
+          "line": 2
+        },
+        "design": {
+          "gate": 19,
+          "line": 4
+        }
+      },
+      {
+        "planet": "☾",
+        "personality": {
+          "gate": 44,
+          "line": 2
+        },
+        "design": {
+          "gate": 29,
+          "line": 3
+        }
+      },
+      {
+        "planet": "☿",
+        "personality": {
+          "gate": 10,
+          "line": 3
+        },
+        "design": {
+          "gate": 50,
+          "line": 5
+        }
+      },
+      {
+        "planet": "♀",
+        "personality": {
+          "gate": 34,
+          "line": 1
+        },
+        "design": {
+          "gate": 29,
+          "line": 4
+        }
+      },
+      {
+        "planet": "♂",
+        "personality": {
+          "gate": 30,
+          "line": 4
+        },
+        "design": {
+          "gate": 26,
+          "line": 5
+        }
+      },
+      {
+        "planet": "♃",
+        "personality": {
+          "gate": 42,
+          "line": 5
+        },
+        "design": {
+          "gate": 3,
+          "line": 6
+        }
+      },
+      {
+        "planet": "♄",
+        "personality": {
+          "gate": 24,
+          "line": 3
+        },
+        "design": {
+          "gate": 2,
+          "line": 3
+        }
+      },
+      {
+        "planet": "♅",
+        "personality": {
+          "gate": 13,
+          "line": 2
+        },
+        "design": {
+          "gate": 19,
+          "line": 6
+        }
+      },
+      {
+        "planet": "♆",
+        "personality": {
+          "gate": 41,
+          "line": 1
+        },
+        "design": {
+          "gate": 60,
+          "line": 6
+        }
+      },
+      {
+        "planet": "♇",
+        "personality": {
+          "gate": 9,
+          "line": 6
+        },
+        "design": {
+          "gate": 9,
+          "line": 3
+        }
+      }
+    ]
+  },
+  "ziwei": {
+    "five_elements_class": "土五局",
+    "soul": "破軍",
+    "body": "天同",
+    "hour_index": 6,
+    "palaces": [
+      {
+        "name": "財帛",
+        "ganzhi": "丙寅",
+        "flags": "",
+        "decadal_range": "85-94",
+        "major_stars": [
+          "武曲(得)[祿]",
+          "天相(廟)"
+        ],
+        "minor_stars": [
+          "左輔"
+        ],
+        "adjective_stars": [
+          "三台",
+          "天巫",
+          "天福"
+        ]
+      },
+      {
+        "name": "子女",
+        "ganzhi": "丁卯",
+        "flags": "",
+        "decadal_range": "95-104",
+        "major_stars": [
+          "太陽(廟)",
+          "天梁(廟)[科]"
+        ],
+        "minor_stars": [
+          "火星(利)"
+        ],
+        "adjective_stars": [
+          "恩光",
+          "天哭"
+        ]
+      },
+      {
+        "name": "夫妻",
+        "ganzhi": "戊辰",
+        "flags": "",
+        "decadal_range": "105-114",
+        "major_stars": [
+          "七殺(廟)"
+        ],
+        "minor_stars": [
+          "文昌(得)",
+          "鈴星(陷)"
+        ],
+        "adjective_stars": [
+          "天空"
+        ]
+      },
+      {
+        "name": "兄弟",
+        "ganzhi": "己巳",
+        "flags": "命",
+        "decadal_range": "115-124",
+        "major_stars": [
+          "天機(平)"
+        ],
+        "minor_stars": [
+          "天馬",
+          "地空",
+          "地劫",
+          "陀羅(陷)"
+        ],
+        "adjective_stars": [
+          "孤辰",
+          "蜚廉",
+          "破碎"
+        ]
+      },
+      {
+        "name": "命宮",
+        "ganzhi": "庚午",
+        "flags": "身",
+        "decadal_range": "5-14",
+        "major_stars": [
+          "紫微(廟)"
+        ],
+        "minor_stars": [
+          "祿存"
+        ],
+        "adjective_stars": [
+          "天喜",
+          "解神",
+          "陰煞"
+        ]
+      },
+      {
+        "name": "父母",
+        "ganzhi": "辛未",
+        "flags": "",
+        "decadal_range": "15-24",
+        "major_stars": [],
+        "minor_stars": [
+          "擎羊(廟)"
+        ],
+        "adjective_stars": [
+          "龍池",
+          "鳳閣",
+          "華蓋",
+          "天刑",
+          "年解"
+        ]
+      },
+      {
+        "name": "福德",
+        "ganzhi": "壬申",
+        "flags": "",
+        "decadal_range": "25-34",
+        "major_stars": [
+          "破軍(得)"
+        ],
+        "minor_stars": [
+          "天鉞"
+        ],
+        "adjective_stars": [
+          "封誥",
+          "天廚",
+          "月德",
+          "截路"
+        ]
+      },
+      {
+        "name": "田宅",
+        "ganzhi": "癸酉",
+        "flags": "",
+        "decadal_range": "35-44",
+        "major_stars": [],
+        "minor_stars": [],
+        "adjective_stars": [
+          "天貴",
+          "天才",
+          "天壽",
+          "天官",
+          "旬空",
+          "空亡",
+          "天虛"
+        ]
+      },
+      {
+        "name": "官祿",
+        "ganzhi": "甲戌",
+        "flags": "",
+        "decadal_range": "45-54",
+        "major_stars": [
+          "廉貞(利)",
+          "天府(廟)"
+        ],
+        "minor_stars": [
+          "文曲(陷)[忌]"
+        ],
+        "adjective_stars": [
+          "天月"
+        ]
+      },
+      {
+        "name": "僕役",
+        "ganzhi": "乙亥",
+        "flags": "",
+        "decadal_range": "55-64",
+        "major_stars": [
+          "太陰(廟)"
+        ],
+        "minor_stars": [],
+        "adjective_stars": [
+          "天姚",
+          "天傷"
+        ]
+      },
+      {
+        "name": "遷移",
+        "ganzhi": "丙子",
+        "flags": "",
+        "decadal_range": "65-74",
+        "major_stars": [
+          "貪狼(旺)[權]"
+        ],
+        "minor_stars": [
+          "右弼",
+          "天魁"
+        ],
+        "adjective_stars": [
+          "紅鸞",
+          "咸池",
+          "八座",
+          "台輔",
+          "天德"
+        ]
+      },
+      {
+        "name": "疾厄",
+        "ganzhi": "丁丑",
+        "flags": "",
+        "decadal_range": "75-84",
+        "major_stars": [
+          "天同(不)",
+          "巨門(不)"
+        ],
+        "minor_stars": [],
+        "adjective_stars": [
+          "寡宿",
+          "天使"
+        ]
+      }
+    ],
+    "horoscope": {
+      "decadal": {
+        "index": 6,
+        "name": "大限",
+        "heavenlyStem": "壬",
+        "earthlyBranch": "申",
+        "palaceNames": [
+          "遷移",
+          "疾厄",
+          "財帛",
+          "子女",
+          "夫妻",
+          "兄弟",
+          "命宮",
+          "父母",
+          "福德",
+          "田宅",
+          "官祿",
+          "僕役"
+        ],
+        "mutagen": [
+          "天梁",
+          "紫微",
+          "左輔",
+          "武曲"
+        ],
+        "mutagenTyped": [
+          {
+            "star": "天梁",
+            "type": "祿"
+          },
+          {
+            "star": "紫微",
+            "type": "權"
+          },
+          {
+            "star": "左輔",
+            "type": "科"
+          },
+          {
+            "star": "武曲",
+            "type": "忌"
+          }
+        ],
+        "stars": [
+          [
+            {
+              "name": "運昌",
+              "type": "soft",
+              "scope": "decadal"
+            },
+            {
+              "name": "運馬",
+              "type": "tianma",
+              "scope": "decadal"
+            }
+          ],
+          [
+            {
+              "name": "運魁",
+              "type": "soft",
+              "scope": "decadal"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "運鉞",
+              "type": "soft",
+              "scope": "decadal"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "運鸞",
+              "type": "flower",
+              "scope": "decadal"
+            }
+          ],
+          [],
+          [],
+          [
+            {
+              "name": "運陀",
+              "type": "tough",
+              "scope": "decadal"
+            }
+          ],
+          [
+            {
+              "name": "運祿",
+              "type": "lucun",
+              "scope": "decadal"
+            }
+          ],
+          [
+            {
+              "name": "運曲",
+              "type": "soft",
+              "scope": "decadal"
+            },
+            {
+              "name": "運羊",
+              "type": "tough",
+              "scope": "decadal"
+            }
+          ],
+          [
+            {
+              "name": "運喜",
+              "type": "flower",
+              "scope": "decadal"
+            }
+          ]
+        ],
+        "ageRange": [
+          25,
+          34
+        ]
+      },
+      "yearly": {
+        "index": 2,
+        "name": "流年",
+        "heavenlyStem": "甲",
+        "earthlyBranch": "辰",
+        "palaceNames": [
+          "夫妻",
+          "兄弟",
+          "命宮",
+          "父母",
+          "福德",
+          "田宅",
+          "官祿",
+          "僕役",
+          "遷移",
+          "疾厄",
+          "財帛",
+          "子女"
+        ],
+        "mutagen": [
+          "廉貞",
+          "破軍",
+          "武曲",
+          "太陽"
+        ],
+        "yearlyDecStar": {
+          "suiqian12": [
+            "弔客",
+            "病符",
+            "歲建",
+            "晦氣",
+            "喪門",
+            "貫索",
+            "官符",
+            "小耗",
+            "大耗",
+            "龍德",
+            "白虎",
+            "天德"
+          ],
+          "jiangqian12": [
+            "歲驛",
+            "息神",
+            "華蓋",
+            "劫煞",
+            "災煞",
+            "天煞",
+            "指背",
+            "咸池",
+            "月煞",
+            "亡神",
+            "將星",
+            "攀鞍"
+          ]
+        },
+        "mutagenTyped": [
+          {
+            "star": "廉貞",
+            "type": "祿"
+          },
+          {
+            "star": "破軍",
+            "type": "權"
+          },
+          {
+            "star": "武曲",
+            "type": "科"
+          },
+          {
+            "star": "太陽",
+            "type": "忌"
+          }
+        ],
+        "stars": [
+          [
+            {
+              "name": "流祿",
+              "type": "lucun",
+              "scope": "yearly"
+            },
+            {
+              "name": "流馬",
+              "type": "tianma",
+              "scope": "yearly"
+            }
+          ],
+          [
+            {
+              "name": "流羊",
+              "type": "tough",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流昌",
+              "type": "soft",
+              "scope": "yearly"
+            },
+            {
+              "name": "流喜",
+              "type": "flower",
+              "scope": "yearly"
+            }
+          ],
+          [
+            {
+              "name": "年解",
+              "type": "helper",
+              "scope": "yearly"
+            }
+          ],
+          [
+            {
+              "name": "流鉞",
+              "type": "soft",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流曲",
+              "type": "soft",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流鸞",
+              "type": "flower",
+              "scope": "yearly"
+            }
+          ],
+          [],
+          [
+            {
+              "name": "流魁",
+              "type": "soft",
+              "scope": "yearly"
+            },
+            {
+              "name": "流陀",
+              "type": "tough",
+              "scope": "yearly"
+            }
+          ]
+        ]
+      },
+      "age": {
+        "index": 10,
+        "nominalAge": 26,
+        "name": "小限",
+        "heavenlyStem": "丙",
+        "earthlyBranch": "子",
+        "palaceNames": [
+          "福德",
+          "田宅",
+          "官祿",
+          "僕役",
+          "遷移",
+          "疾厄",
+          "財帛",
+          "子女",
+          "夫妻",
+          "兄弟",
+          "命宮",
+          "父母"
+        ],
+        "mutagen": [
+          "天同",
+          "天機",
+          "文昌",
+          "廉貞"
+        ],
+        "mutagenTyped": [
+          {
+            "star": "天同",
+            "type": "祿"
+          },
+          {
+            "star": "天機",
+            "type": "權"
+          },
+          {
+            "star": "文昌",
+            "type": "科"
+          },
+          {
+            "star": "廉貞",
+            "type": "忌"
+          }
+        ]
+      }
+    }
+  },
+  "meta": {
+    "engine": "life-chart-engine",
+    "version": "1.0",
+    "ephemeris": "astronomy-engine"
+  }
+}

@@ -66,15 +66,23 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 
 | flag | type | required | format / rule |
 |------|------|:---:|---------------|
-| `--date` | string | yes | Gregorian `YYYY-MM-DD`. Convert lunar dates before calling. |
-| `--time` | string | yes | `HH:MM`, 24h, **local clock time** at birthplace. |
-| `--tz` | float | yes | UTC offset of the birthplace **at the moment of birth, including DST**. Taiwan after 1980 = `8`. |
-| `--lat` | float | yes | Latitude (city-level precision is enough). |
-| `--lon` | float | yes | Longitude. |
-| `--gender` | enum | for 紫微 | `男` or `女`. Only affects Zi Wei. |
+| `--date` | string | **yes** | Gregorian `YYYY-M-D` (zero-padding optional, e.g. `1990-6-15`). Must be a real calendar date with year in the supported window **1900–2100**. Convert lunar dates before calling. |
+| `--time` | string | **yes** | `H:M`, 24h, **local clock time** at birthplace (zero-padding optional, e.g. `8:30` or `8:5`). |
+| `--tz` | float | **yes** | UTC offset of the birthplace **at the moment of birth, including DST**, in `[-12, 14]`, finite. Taiwan after 1980 = `8`. |
+| `--lat` | float | **yes** | Latitude in `[-90, 90]`, finite (city-level precision is enough). |
+| `--lon` | float | **yes** | Longitude in `[-180, 180]`, finite. |
+| `--gender` | enum | **yes** | `男` or `女`. Affects Zi Wei; required so a wrong-gender chart can never be produced silently. |
+| `--example` | flag | no | Compute the built-in example person (`範例`, 2000-01-01 12:00, UTC+8, Taipei 101). **Mutually exclusive with all six birth flags** (combining → exit `2`). May combine with `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
 | `--name` | string | no | Display label only. |
-| `--target` | string | no | Zi Wei horoscope reference date `YYYY-MM-DD`. Pass today's date for current 大限/流年. |
+| `--target` | string | no | Zi Wei horoscope reference date `YYYY-M-D`, same 1900–2100 window. Pass today's date for current 大限/流年. |
 | `--ziwei-day-divide` | enum | no | Late 子 hour rule: `forward` (default, 23:00-23:59 counts as next day) or `current` (counts as current day). |
+
+> **Breaking change (v1.1.0):** the historical behaviour where omitted birth
+> flags silently fell back to the example person has been **removed**. All six
+> birth flags are now required (or pass `--example` explicitly); any missing
+> flag, malformed value, out-of-range value, or out-of-window year exits `2`
+> with usage on stderr and **empty stdout** — in `--json` mode too. This is a
+> CLI behaviour fix, not a JSON schema change (`schema_version` stays `1.1`).
 
 **Caller responsibilities (the agent, not the engine):**
 
@@ -211,7 +219,7 @@ On success, stdout is one JSON object:
 |:---:|---|---|
 | `0` | success | the JSON object with `"ok": true` |
 | `1` | runtime error (with `--json`) | `{ "ok": false, "error": "<message>", "schema_version": "1.1" }` |
-| `2` | argument error (argparse) | usage text on stderr |
+| `2` | argument/validation error (argparse) | **empty** (usage text goes to stderr) — includes missing required flags, malformed dates/times, out-of-range `tz`/`lat`/`lon`, years outside 1900–2100, and illegal `--example` combinations |
 
 Agents should branch on `ok` (and on exit code) before reading chart fields.
 
