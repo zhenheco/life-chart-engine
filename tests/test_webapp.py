@@ -5,7 +5,6 @@ The result page renders client-side, so assertions stay at API level:
 """
 
 import json
-import os
 import stat
 import subprocess
 import sys
