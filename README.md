@@ -408,6 +408,21 @@ Not every output carries the same confidence. Read each tier accordingly:
 
 ---
 
+## Use it as an MCP server (Claude Desktop / Claude Code)
+
+```bash
+pip install 'life-chart-engine[mcp]'
+```
+
+```jsonc
+// Claude Desktop config → mcpServers
+{ "life-chart-engine": { "command": "life-chart-mcp" } }
+```
+
+One tool — `compute_chart` — same inputs as the CLI flags, returns the full
+JSON envelope as text. Deterministic, offline, stdio-only. See
+[`AGENTS.md`](./AGENTS.md) §6 for the exact schema.
+
 ## Use it from an AI agent / Hermes
 
 The intended integration model is **self-install**, not SaaS.

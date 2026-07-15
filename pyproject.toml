@@ -27,6 +27,7 @@ mcp = ["mcp==1.28.1"]
 [project.scripts]
 life-chart = "life_chart_engine.chart_engine:main"
 life-chart-engine = "life_chart_engine.chart_engine:main"
+life-chart-mcp = "life_chart_engine.mcp_server:main"
 
 # NOTE: `pip install -e .` is unsupported — hatchling rejects dev-mode installs
 # when `sources` rewrites a prefix (scripts → life_chart_engine). Develop via

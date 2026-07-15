@@ -251,14 +251,46 @@ Agents should branch on `ok` (and on exit code) before reading chart fields.
 **Error transport matrix** — the *validation decision* is identical on every
 surface (same shared validator); only the carrier differs:
 
-| failure class | CLI | HTTP `/chart` |
-|---|---|---|
-| validation error (missing/malformed/out-of-range/out-of-window input) | exit `2`, empty stdout, usage on stderr | `400` + `detail` naming the field |
-| runtime error (Node sidecar failure, high-latitude Placidus, timeout) | exit `1` (`--json`: one `{"ok": false}` envelope; Markdown: message on stderr, empty stdout) | `500` + `{"ok": false, ...}` envelope |
+| failure class | CLI | HTTP `/chart` | MCP `compute_chart` |
+|---|---|---|---|
+| validation error (missing/malformed/out-of-range/out-of-window input) | exit `2`, empty stdout, usage on stderr | `400` + `detail` naming the field | `isError: true` + field-named message |
+| runtime error (Node sidecar failure, high-latitude Placidus, timeout) | exit `1` (`--json`: one `{"ok": false}` envelope; Markdown: message on stderr, empty stdout) | `500` + `{"ok": false, ...}` envelope | `isError: true` + message |
 
 ---
 
-## 6. Hermes / orchestrator integration
+## 6. MCP surface (`compute_chart`)
+
+Install the optional extra and register the stdio server:
+
+```bash
+pip install 'life-chart-engine[mcp]'   # pins mcp==1.28.1
+```
+
+Claude Desktop / Claude Code config:
+
+```jsonc
+{
+  "mcpServers": {
+    "life-chart-engine": { "command": "life-chart-mcp" }
+  }
+}
+```
+
+- One tool: `compute_chart`. Inputs mirror the HTTP `/chart` body exactly —
+  required `date`, `time`, `tz`, `lat`, `lon`, `gender`; optional `name`,
+  `target`, `ziwei_day_divide`. Validation is the same shared
+  `scripts/validation.py` (same ranges, same 1900–2100 window).
+- Success: a **single text content** whose bytes equal the CLI `--json` stdout
+  minus the trailing newline (shared serializer). Parse it as the §4 envelope.
+- Failures (validation or runtime) return `isError: true` with a message; the
+  server stays alive. stdio only — no network is opened by the server itself.
+- No-network proof boundary: the Python socket guard covers the Python
+  process; the Node sidecar child is proven statically (its two `.cjs`
+  sources contain no network primitives — enforced by a repo test).
+
+---
+
+## 7. Hermes / orchestrator integration
 
 This tool fits the **CLI + JSON** agent pattern directly:
 
@@ -278,7 +310,7 @@ This tool fits the **CLI + JSON** agent pattern directly:
 
 ---
 
-## 7. Minimal example
+## 8. Minimal example
 
 ```bash
 life-chart --json \

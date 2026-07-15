@@ -94,3 +94,31 @@ def test_installed_wheel_entry_points_work_outside_checkout(tmp_path: Path) -> N
         payload = json.loads(proc.stdout)
         assert payload["ok"] is True
         assert payload["schema_version"] == "1.1"
+
+
+def test_installed_wheel_mcp_entry_point_smoke(tmp_path: Path) -> None:
+    wheel = _build_wheel(tmp_path / "dist")
+    venv_dir = tmp_path / "venv"
+    subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True, capture_output=True)
+    pip = venv_dir / "bin" / "pip"
+
+    # without the extra: friendly install hint, no traceback
+    subprocess.run([str(pip), "install", str(wheel)], check=True, capture_output=True, text=True)
+    bare = subprocess.run(
+        [str(venv_dir / "bin" / "life-chart-mcp")],
+        cwd=tmp_path, capture_output=True, text=True, encoding="utf-8", timeout=60,
+    )
+    assert bare.returncode == 1
+    assert "pip install 'life-chart-engine[mcp]'" in bare.stderr
+    assert "Traceback" not in bare.stderr
+
+    # with the extra: server starts on stdio and exits cleanly on closed stdin
+    subprocess.run(
+        [str(pip), "install", f"life-chart-engine[mcp]@{wheel.as_uri()}"],
+        check=True, capture_output=True, text=True,
+    )
+    proc = subprocess.run(
+        [str(venv_dir / "bin" / "life-chart-mcp")],
+        cwd=tmp_path, input="", capture_output=True, text=True, encoding="utf-8", timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
