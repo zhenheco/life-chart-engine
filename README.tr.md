@@ -326,9 +326,9 @@ Her çıkış aynı güvene sahip değildir. Her katmanı uygun şekilde okuyun:
 
 Amaçlanan entegrasyon modeli SaaS değil, **self-install**dir.
 
-Bir kullanıcı bu depoyu URL'sini kopyalar ve **kendi** ajanı veya CLI'si (Claude Code, Hermes, bir komut dosyası vb.) bunu klonlar ve **kullanıcının makinesinde yerel olarak çalıştırır**. Hesaplama, kullanıcı tarafında gerçekleşir. Çağrılacak barındırılan bir uç nokta yok, hesap yok ve **SaaS entegrasyonu gerekli değil** — motor, durumsuz, deterministik, çevrimdışı bir alt süreçtir.
+Bir kullanıcı bu depoyu URL'sini kopyalar ve **kendi** ajanı veya CLI'si (Claude Code, Hermes, bir komut dosyası vb.) bunu klonlar ve **kullanıcının makinesinde yerel olarak çalıştırır**. Hesaplama, kullanıcı tarafında gerçekleşir. **Bu depo** barındırılan bir uç nokta sunmaz, hesap gerektirmez ve **SaaS entegrasyonu gerekli değildir** — motor, durumsuz, deterministik, çevrimdışı bir alt süreçtir. (Tarayıcı tercih edenler için bu motor üzerine kurulu ayrı bir [barındırılan ürün](https://life.aicycle.cc) mevcuttur — bu ayrı bir hizmettir, bu deponun parçası değildir.)
 
-Yayıncı bunu bir ağ hizmeti olarak işletmez. MIT kapsamında yerel kullanım, değiştirme, dağıtım ve barındırılan kullanım `LICENSE` koşullarıyla serbesttir.
+**Bu deponun kendisi** bir ağ hizmeti olarak işletilmez. MIT kapsamında yerel kullanım, değiştirme, dağıtım ve barındırılan kullanım `LICENSE` koşullarıyla serbesttir.
 
 Ajanlar için, sözleşme basittir: `--json` alt işlemini venv Python'u repo çalışma dizininde gönderin, stdout'u JSON olarak ayrıştırın, `ok` (ve çıkış kodu) üzerinde dal ve yapılandırılmış nesneyi devraleçin. Temizlik gerekli değil — durumsuz. Tam CLI + JSON sözleşmesi **[AGENTS.md](./AGENTS.md)** içinde yaşar.
 

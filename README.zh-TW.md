@@ -48,6 +48,14 @@ curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/ins
 
 安裝到 `~/.life-chart-engine`（可用 `LIFE_CHART_DIR` 覆寫）。不需要 `sudo`，不做系統層級變更 — 它只會 clone repo、建立隔離的 CPython 3.12 venv，並產生固定版本的 iztro Node bundle。需要 `git`、[`uv`](https://docs.astral.sh/uv/) 和 **Node.js ≥ 18**（支援/測試版本為 18 與 24 — 紫微斗數透過 Node sidecar 執行；缺少它時每次排盤請求都會大聲失敗，而不是默默丟掉第三套系統）。可隨時重新執行以更新到最新版本。
 
+### 免 clone 試用（PyPI）
+
+```bash
+uvx life-chart-engine --example --json
+```
+
+> 自 **v1.1.0 起於 PyPI 提供**；尚未發佈時請用上方安裝腳本。`uv` 會自動配置 CPython 3.12；仍需 Node.js ≥ 18。也可 `pip install life-chart-engine`（限 CPython 3.12）。
+
 ### 從原始碼
 
 ```bash
@@ -102,6 +110,12 @@ Zi Wei 使用由 `scripts/build-iztro-bundle.sh` 產生並固定版本的 Node b
 ```
 iztro@2.5.8
 ```
+
+---
+
+## 託管版本
+
+不想安裝任何東西？**[life.aicycle.cc](https://life.aicycle.cc)** 是基於本引擎的獨立託管產品——在瀏覽器輸入一份出生資料，直接閱讀三套系統。引擎倉庫本身維持純離線計算核心（無帳戶、無分析、無網路）；產品面的一切都在託管服務那邊。
 
 ---
 
@@ -326,9 +340,9 @@ iztro@2.5.8
 
 預期的整合模型是**自行安裝**，不是 SaaS。
 
-一個使用者複製這個倉庫的 URL，並讓**他們自己的**代理或 CLI (Claude Code、Hermes、一個指令碼等) 在使用者的機器上**本地複製和執行它**。計算發生在使用者一側。沒有託管端點可以呼叫、沒有帳戶、**沒有 SaaS 整合必需** — 引擎是一個無狀態、確定性、離線的子程序。
+一個使用者複製這個倉庫的 URL，並讓**他們自己的**代理或 CLI (Claude Code、Hermes、一個指令碼等) 在使用者的機器上**本地複製和執行它**。計算發生在使用者一側。本倉庫不提供託管端點、不需帳戶、**不需 SaaS 整合** — 引擎是一個無狀態、確定性、離線的子程序。（偏好瀏覽器的使用者可用基於本引擎的獨立託管產品 [life.aicycle.cc](https://life.aicycle.cc)——它是獨立服務，不屬於本倉庫。）
 
-發佈者不營運此工具作為網路服務。依 MIT 條款，本地使用、修改、散布與託管使用都可以，細節見 `LICENSE`。
+本倉庫本身不作為網路服務營運。依 MIT 條款，本地使用、修改、散布與託管使用都可以，細節見 `LICENSE`。
 
 對於代理，合約很簡單：在倉庫工作目錄中用虛擬環境 Python 分派 `--json` 子程序，將 stdout 解析為 JSON，根據 `ok` (和退出碼) 分支，然後交付結構化物件。無需清理 — 它是無狀態的。完整的 CLI + JSON 合約在 **[AGENTS.md](./AGENTS.md)** 中。
 

@@ -326,9 +326,9 @@ Nicht jede Ausgabe trägt das gleiche Vertrauen. Lies jede Stufe entsprechend:
 
 Das beabsichtigte Integrationmodell ist **Self-Install**, nicht SaaS.
 
-Ein Benutzer kopiert die URL dieses Repos und **sein eigener** Agent oder CLI (Claude Code, Hermes, ein Skript etc.) klont es und führt es **lokal auf der Maschine des Benutzers** aus. Die Berechnung findet auf der Seite des Benutzers statt. Es gibt keinen gehosteten Endpoint aufzurufen, keinen Account und **keine SaaS-Integration erforderlich** — das Engine ist ein zustandsloses, deterministisches, offlines Subprocess.
+Ein Benutzer kopiert die URL dieses Repos und **sein eigener** Agent oder CLI (Claude Code, Hermes, ein Skript etc.) klont es und führt es **lokal auf der Maschine des Benutzers** aus. Die Berechnung findet auf der Seite des Benutzers statt. Dieses Repo stellt keinen gehosteten Endpoint bereit, braucht keinen Account und **erfordert keine SaaS-Integration** — das Engine ist ein zustandsloses, deterministisches, offlines Subprocess. (Für alle, die einen Browser bevorzugen, gibt es ein separates [gehostetes Produkt](https://life.aicycle.cc), das auf dieser Engine aufbaut — ein eigenständiger Dienst, nicht Teil dieses Repos.)
 
-Der Herausgeber betreibt es nicht als Netzwerkdienst. Unter MIT sind lokale Nutzung, Änderung, Verbreitung und gehostete Nutzung gemäß `LICENSE` erlaubt.
+Dieses Repo selbst wird nicht als Netzwerkdienst betrieben. Unter MIT sind lokale Nutzung, Änderung, Verbreitung und gehostete Nutzung gemäß `LICENSE` erlaubt.
 
 Für Agenten ist der Vertrag einfach: dispatch den `--json` Subprocess mit dem venv Python im Repo-Workdir, parse stdout als JSON, verzweige auf `ok` (und den Exit-Code), dann übergebe das strukturierte Objekt. Keine Bereinigung erforderlich — es ist zustandslos. Der vollständige CLI + JSON-Vertrag lebt in **[AGENTS.md](./AGENTS.md)**.
 

@@ -49,3 +49,13 @@ def test_workflow_installs_and_runs_packaging_dry_run() -> None:
     assert "pytest build twine==6.1.0 mcp==1.28.1" in workflow
     assert re.search(r"\.venv/bin/python -m build --outdir dist-ci", workflow)
     assert re.search(r"\.venv/bin/python -m twine check dist-ci/\*", workflow)
+
+
+def test_workflow_runs_on_main_push_without_cancelling_main_runs() -> None:
+    workflow = _workflow_text()
+
+    assert re.search(r"(?m)^\s+push:\n\s+branches: \[main\]", workflow)
+    assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in workflow
+    # push 事件必須 per-SHA group：同 group 的 pending run 會被新 run 取代（即使
+    # cancel-in-progress false），共用 refs/heads/main 會讓中間 commit 的 run 被 cancel
+    assert "group: qa-gate-${{ github.event.pull_request.number || github.sha }}" in workflow

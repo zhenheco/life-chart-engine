@@ -326,9 +326,9 @@ Non ogni output ha la stessa fiducia. Leggi ogni livello di conseguenza:
 
 Il modello di integrazione inteso è **auto-installazione**, non SaaS.
 
-Un utente copia l'URL di questo repository, e **il suo proprio** agente o CLI (Claude Code, Hermes, uno script, ecc.) lo clona e lo esegue **localmente sulla macchina dell'utente**. Il calcolo avviene dal lato dell'utente. Non c'è endpoint ospitato da chiamare, nessun account, e **nessun integrazione SaaS richiesta** — il motore è un subprocess stateless, deterministico, offline.
+Un utente copia l'URL di questo repository, e **il suo proprio** agente o CLI (Claude Code, Hermes, uno script, ecc.) lo clona e lo esegue **localmente sulla macchina dell'utente**. Il calcolo avviene dal lato dell'utente. Questo repository non espone alcun endpoint ospitato, non richiede account, e **nessuna integrazione SaaS è richiesta** — il motore è un subprocess stateless, deterministico, offline. (Esiste un [prodotto ospitato](https://life.aicycle.cc) separato costruito su questo motore per chi preferisce un browser — è un servizio distinto, non fa parte di questo repository.)
 
-Il publisher non lo gestisce come servizio di rete. Con MIT, uso locale, modifica, distribuzione e uso in hosting sono consentiti secondo `LICENSE`.
+Questo repository in sé non è gestito come servizio di rete. Con MIT, uso locale, modifica, distribuzione e uso in hosting sono consentiti secondo `LICENSE`.
 
 Per gli agenti, il contratto è semplice: dispatch il subprocess `--json` con il Python del venv nel workdir del repo, analizza stdout come JSON, fa branching su `ok` (e il codice di uscita), quindi consegna l'oggetto strutturato. Non è necessaria pulizia — è stateless. Il contratto CLI + JSON completo vive in **[AGENTS.md](./AGENTS.md)**.
 

@@ -326,9 +326,9 @@ Niet elke uitvoer draagt hetzelfde vertrouwen. Lees elke laag dienovereenkomstig
 
 Het beoogde integratie-model is **self-install**, niet SaaS.
 
-Een gebruiker kopieert deze repo's URL, en **hun eigen** agent of CLI (Claude Code, Hermes, een script, enz.) klont het en voert het **lokaal op de machine van de gebruiker** uit. De berekening gebeurt aan de zijde van de gebruiker. Er is geen gehoste eindpunt om aan te roepen, geen account, en **geen SaaS-integratie vereist** — de engine is een stateless, deterministisch, offline subproces.
+Een gebruiker kopieert deze repo's URL, en **hun eigen** agent of CLI (Claude Code, Hermes, een script, enz.) klont het en voert het **lokaal op de machine van de gebruiker** uit. De berekening gebeurt aan de zijde van de gebruiker. Deze repo biedt geen gehost eindpunt, vereist geen account en **geen SaaS-integratie** — de engine is een stateless, deterministisch, offline subproces. (Er bestaat een apart [gehost product](https://life.aicycle.cc) gebouwd op deze engine voor wie liever een browser gebruikt — dat is een afzonderlijke dienst, geen onderdeel van deze repo.)
 
-De uitgever exploiteert het niet als netwerkdienst. Onder MIT zijn lokaal gebruik, wijziging, distributie en gehost gebruik toegestaan volgens `LICENSE`.
+Deze repo zelf wordt niet als netwerkdienst geëxploiteerd. Onder MIT zijn lokaal gebruik, wijziging, distributie en gehost gebruik toegestaan volgens `LICENSE`.
 
 Voor agents is het contract eenvoudig: verzend het `--json` subproces met de venv Python in de repo workdir, parse stdout als JSON, vertakkingen op `ok` (en de exit-code), en geef het gestructureerde object af. Geen opschoning nodig — het is stateless. Het volledige CLI + JSON-contract staat in **[AGENTS.md](./AGENTS.md)**.
 

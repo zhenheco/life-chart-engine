@@ -326,9 +326,9 @@ Nie każde wyjście ma taką samą pewność. Przeczytaj każdy poziom odpowiedn
 
 Zamierzonym modelem integracji jest **samodzielna instalacja**, nie SaaS.
 
-Użytkownik kopiuje URL tego repozytorium i **jego własny** agent lub CLI (Claude Code, Hermes, skrypt itp.) klonuje go i uruchamia **lokalnie na maszynie użytkownika**. Obliczenia odbywają się po stronie użytkownika. Nie ma hostowanego punktu końcowego do wywoływania, bez konta i **bez wymaganej integracji SaaS** — silnik jest stateless, deterministycznym, offline'owym podprocesem.
+Użytkownik kopiuje URL tego repozytorium i **jego własny** agent lub CLI (Claude Code, Hermes, skrypt itp.) klonuje go i uruchamia **lokalnie na maszynie użytkownika**. Obliczenia odbywają się po stronie użytkownika. To repozytorium nie udostępnia hostowanego punktu końcowego, nie wymaga konta i **nie wymaga integracji SaaS** — silnik jest stateless, deterministycznym, offline'owym podprocesem. (Dla osób preferujących przeglądarkę istnieje osobny [hostowany produkt](https://life.aicycle.cc) zbudowany na tym silniku — to odrębna usługa, nie część tego repozytorium.)
 
-Wydawca nie prowadzi tego jako usługi sieciowej. Na MIT lokalne użycie, modyfikacje, dystrybucja i użycie hostowane są dozwolone zgodnie z `LICENSE`.
+Samo to repozytorium nie jest prowadzone jako usługa sieciowa. Na MIT lokalne użycie, modyfikacje, dystrybucja i użycie hostowane są dozwolone zgodnie z `LICENSE`.
 
 Dla agentów kontrakt jest prosty: wyślij subprocess `--json` z venv Pythonem w katalogi roboczym repozytorium, przeanalizuj stdout jako JSON, rozgałęź na `ok` (i kod wyjścia), a następnie przekaż strukturalny obiekt. Czyszczenie nie jest potrzebne — jest stateless. Pełny kontrakt CLI + JSON znajduje się w **[AGENTS.md](./AGENTS.md)**.
 

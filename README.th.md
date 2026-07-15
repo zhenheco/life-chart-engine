@@ -326,9 +326,9 @@ Flags การเกิดทั้งหกตัวเป็น **ข้อ�
 
 การรวมแบบ intended ถูก **self-install** ไม่ใช่ SaaS
 
-ผู้ใช้คัดลอก repo URL นี้ และ **ของตัวเอง** agent หรือ CLI (Claude Code Hermes a script ฯลฯ) clones มัน และรัน มัน **locally บนเครื่องของผู้ใช้** การคำนวณเกิดขึ้นบนด้านผู้ใช้ ไม่มี hosted endpoint ไป call ไม่มี account และ **ไม่จำเป็นต้องมี SaaS integration** — เครื่องมือเป็น stateless กำหนดได้ offline subprocess
+ผู้ใช้คัดลอก repo URL นี้ และ **ของตัวเอง** agent หรือ CLI (Claude Code Hermes a script ฯลฯ) clones มัน และรัน มัน **locally บนเครื่องของผู้ใช้** การคำนวณเกิดขึ้นบนด้านผู้ใช้ **repo นี้** ไม่มี hosted endpoint ให้เรียก ไม่ต้องมี account และ **ไม่จำเป็นต้องมี SaaS integration** — เอนจินเป็น stateless กำหนดได้ offline subprocess (สำหรับผู้ที่ชอบใช้ผ่านเบราว์เซอร์ มี[ผลิตภัณฑ์แบบโฮสต์](https://life.aicycle.cc)แยกต่างหากที่สร้างบนเอนจินนี้ — เป็นบริการคนละตัว ไม่ใช่ส่วนหนึ่งของ repo นี้)
 
-ผู้เผยแพร่ไม่ได้เปิดใช้งานเป็นบริการเครือข่าย ภายใต้ MIT การใช้ภายในเครื่อง การแก้ไข การแจกจ่าย และการโฮสต์ทำได้ตามเงื่อนไขใน `LICENSE`
+repo นี้เองไม่ได้ถูกดำเนินการเป็นบริการเครือข่าย ภายใต้ MIT การใช้ภายในเครื่อง การแก้ไข การแจกจ่าย และการโฮสต์ทำได้ตามเงื่อนไขใน `LICENSE`
 
 สำหรับตัวแทน สัญญาเรียบง่าย: dispatch subprocess `--json` กับ venv Python ใน repo workdir parse stdout เป็น JSON branch บน `ok` (และ exit code) จากนั้นส่งต่อ object ที่ได้รับการจัดโครงสร้าง ไม่ต้องการการทำความสะอาด — มันเป็น stateless สัญญา CLI + JSON เต็มอยู่ใน **[AGENTS.md](./AGENTS.md)**
 

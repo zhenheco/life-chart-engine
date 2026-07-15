@@ -326,9 +326,9 @@ Engine अभी verified **CPython 3.12** runtime पर चलता है।
 
 इच्छित integration मॉडल है **self-install**, SaaS नहीं।
 
-एक उपयोगकर्ता इस रिपो की URL कॉपी करता है, और **उनके स्वयं के** एजेंट या CLI (Claude Code, Hermes, एक script, आदि) इसे क्लोन करता है और इसे **स्थानीय रूप से उपयोगकर्ता की machine पर चलाता है**। compute उपयोगकर्ता की ओर से होता है। कॉल करने के लिए कोई hosted endpoint नहीं है, कोई account नहीं है, और **कोई SaaS integration आवश्यक नहीं है** — इंजन एक stateless, deterministic, offline subprocess है।
+एक उपयोगकर्ता इस रिपो की URL कॉपी करता है, और **उनके स्वयं के** एजेंट या CLI (Claude Code, Hermes, एक script, आदि) इसे क्लोन करता है और इसे **स्थानीय रूप से उपयोगकर्ता की machine पर चलाता है**। compute उपयोगकर्ता की ओर से होता है। यह रिपो कोई hosted endpoint expose नहीं करता, कोई account आवश्यक नहीं है, और **कोई SaaS integration आवश्यक नहीं है** — इंजन एक stateless, deterministic, offline subprocess है। (जो लोग browser पसंद करते हैं, उनके लिए इस इंजन पर बना एक अलग [hosted product](https://life.aicycle.cc) मौजूद है — यह एक अलग service है, इस रिपो का हिस्सा नहीं।)
 
-प्रकाशक इसे network service के रूप में operate नहीं करता। MIT के तहत local use, modification, distribution और hosted use `LICENSE` की शर्तों पर allowed हैं।
+यह रिपो स्वयं network service के रूप में operate नहीं किया जाता। MIT के तहत local use, modification, distribution और hosted use `LICENSE` की शर्तों पर allowed हैं।
 
 एजेंटों के लिए, contract सरल है: workerdir में रिपो वenv Python के साथ `--json` subprocess को dispatch करें, stdout को JSON के रूप में parse करें, `ok` (और exit code) पर branch करें, फिर structured ऑब्जेक्ट को hand off करें। कोई cleanup आवश्यक नहीं — यह stateless है। पूर्ण CLI + JSON contract **[AGENTS.md](./AGENTS.md)** में रहता है।
 

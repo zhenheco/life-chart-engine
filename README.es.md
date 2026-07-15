@@ -326,9 +326,9 @@ No todas las salidas llevan la misma confianza. Lee cada nivel en consecuencia:
 
 El modelo de integración previsto es **autoinstalación**, no SaaS.
 
-Un usuario copia la URL de este repositorio, y **su propio** agente o CLI (Claude Code, Hermes, un script, etc.) lo clona y lo ejecuta **localmente en la máquina del usuario**. El cómputo sucede en el lado del usuario. No hay punto final alojado para llamar, sin cuenta, y **no se requiere integración SaaS** — el motor es un subproceso sin estado, determinista, sin conexión.
+Un usuario copia la URL de este repositorio, y **su propio** agente o CLI (Claude Code, Hermes, un script, etc.) lo clona y lo ejecuta **localmente en la máquina del usuario**. El cómputo sucede en el lado del usuario. Este repositorio no expone ningún punto final alojado, no necesita cuenta, y **no requiere integración SaaS** — el motor es un subproceso sin estado, determinista, sin conexión. (Existe un [producto alojado](https://life.aicycle.cc) independiente construido sobre este motor para quienes prefieren un navegador — es un servicio distinto, no forma parte de este repositorio.)
 
-El publicador no lo opera como servicio de red. Bajo MIT, el uso local, la modificación, la distribución y el uso hospedado están permitidos según los términos de `LICENSE`.
+Este repositorio en sí no se opera como servicio de red. Bajo MIT, el uso local, la modificación, la distribución y el uso hospedado están permitidos según los términos de `LICENSE`.
 
 Para agentes, el contrato es simple: envía el subproceso `--json` con el Python del venv en el directorio de trabajo del repositorio, analiza stdout como JSON, rama en `ok` (y el código de salida), entonces entrega el objeto estructurado. No se necesita limpieza — es sin estado. El contrato CLI + JSON completo vive en **[AGENTS.md](./AGENTS.md)**.
 

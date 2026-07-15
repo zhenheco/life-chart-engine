@@ -7,6 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
+[![QA Gate](https://github.com/zhenheco/life-chart-engine/actions/workflows/qa-gate.yml/badge.svg?branch=main)](https://github.com/zhenheco/life-chart-engine/actions/workflows/qa-gate.yml)
+
+![life-chart-engine demo](./docs/demo.gif)
 
 `life-chart-engine` is a small, offline command-line tool. You give it one person's birth data — date, time, timezone, and place coordinates — and it computes three independent chart systems in one pass, then emits either a human-readable Markdown report or a structured JSON object for programs and AI agents to consume.
 
@@ -47,6 +50,14 @@ curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/ins
 ```
 
 Installs into `~/.life-chart-engine` (override with `LIFE_CHART_DIR`). No `sudo`, no system-wide changes — it only clones the repo, builds an isolated CPython 3.12 venv, and uses the checked-in iztro Node bundle. Requires `git`, [`uv`](https://docs.astral.sh/uv/), and **Node.js ≥ 18** (supported/tested on 18 and 24 — 紫微斗數 runs via a Node sidecar; without it every chart request fails loudly rather than silently dropping the third system). Re-run any time to update to the latest version.
+
+### Try without cloning (PyPI)
+
+```bash
+uvx life-chart-engine --example --json
+```
+
+> Available from **v1.1.0 on PyPI**. If the package isn't published yet, use the installer above. `uv` provisions CPython 3.12 automatically; Node.js ≥ 18 still required. `pip install life-chart-engine` also works but needs CPython 3.12 specifically.
 
 ### From source
 
@@ -102,6 +113,12 @@ Zi Wei uses the checked-in `vendor/iztro.cjs` bundle. Maintainers regenerate it 
 iztro@2.5.8
 esbuild@0.28.1
 ```
+
+---
+
+## Hosted version
+
+Don't want to install anything? **[life.aicycle.cc](https://life.aicycle.cc)** is a separate, maintained hosted product built on this engine — enter one birth record in the browser and read all three systems. The engine repo itself stays a pure offline compute core (no accounts, no analytics, no network); everything product-side lives in the hosted service.
 
 ---
 
@@ -427,9 +444,9 @@ JSON envelope as text. Deterministic, offline, stdio-only. See
 
 The intended integration model is **self-install**, not SaaS.
 
-A user copies this repo's URL, and **their own** agent or CLI (Claude Code, Hermes, a script, etc.) clones it and runs it **locally on the user's machine**. The compute happens on the user's side. There is no hosted endpoint to call, no account, and **no SaaS integration required** — the engine is a stateless, deterministic, offline subprocess.
+A user copies this repo's URL, and **their own** agent or CLI (Claude Code, Hermes, a script, etc.) clones it and runs it **locally on the user's machine**. The compute happens on the user's side. This repo exposes no hosted endpoint, needs no account, and requires **no SaaS integration** — the engine is a stateless, deterministic, offline subprocess. (A separate [hosted product](https://life.aicycle.cc) built on this engine exists for people who prefer a browser — it is a distinct service, not part of this repo.)
 
-The publisher does not operate it as a network service. Under MIT, local use, modification, distribution, and hosted use are allowed under the terms in `LICENSE`.
+This repo itself is not operated as a network service. Under MIT, local use, modification, distribution, and hosted use are allowed under the terms in `LICENSE`.
 
 For agents, the contract is simple: dispatch the installed `life-chart --json` wrapper when available, or fall back to the venv Python command in the repo workdir, parse stdout as JSON, branch on `ok` (and the exit code), then hand off the structured object. No cleanup needed — it is stateless. The full CLI + JSON contract lives in **[AGENTS.md](./AGENTS.md)**.
 

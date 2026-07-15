@@ -326,9 +326,9 @@ Pas chaque sortie ne porte la même confiance. Lisez chaque niveau en conséquen
 
 Le modèle d'intégration prévu est **l'auto-installation**, pas SaaS.
 
-Un utilisateur copie l'URL du repo, et **son propre** agent ou CLI (Claude Code, Hermes, un script, etc.) le clone et l'exécute **localement sur la machine de l'utilisateur**. Le calcul se fait du côté de l'utilisateur. Il n'y a pas d'endpoint hébergé à appeler, pas de compte, et **aucune intégration SaaS requise** — le moteur est un sous-processus sans état, déterministe, hors ligne.
+Un utilisateur copie l'URL du repo, et **son propre** agent ou CLI (Claude Code, Hermes, un script, etc.) le clone et l'exécute **localement sur la machine de l'utilisateur**. Le calcul se fait du côté de l'utilisateur. **Ce repo** n'expose aucun endpoint hébergé, ne nécessite aucun compte, et **aucune intégration SaaS n'est requise** — le moteur est un sous-processus sans état, déterministe, hors ligne. (Un [produit hébergé](https://life.aicycle.cc) distinct, construit sur ce moteur, existe pour ceux qui préfèrent un navigateur — c'est un service séparé, qui ne fait pas partie de ce repo.)
 
-L'éditeur ne l'exploite pas comme service réseau. Sous MIT, l'usage local, la modification, la distribution et l'usage hébergé sont autorisés selon les termes de `LICENSE`.
+**Ce repo lui-même** n'est pas exploité comme service réseau. Sous MIT, l'usage local, la modification, la distribution et l'usage hébergé sont autorisés selon les termes de `LICENSE`.
 
 Pour les agents, le contrat est simple : dispatcher le sous-processus `--json` avec le Python du venv dans le répertoire du repo, analyser stdout en tant que JSON, bifurquer sur `ok` (et le code de sortie), puis remettre l'objet structuré. Aucun nettoyage nécessaire — c'est sans état. Le contrat CLI + JSON complet se trouve dans **[AGENTS.md](./AGENTS.md)**.
 

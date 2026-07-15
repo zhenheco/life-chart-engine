@@ -326,9 +326,9 @@ Nem toda saída carrega a mesma confiança. Leia cada nível de acordo:
 
 O modelo de integração pretendido é **auto-instalar**, não SaaS.
 
-Um usuário copia a URL deste repositório, e **seu próprio** agente ou CLI (Claude Code, Hermes, um script, etc.) o clona e executa **localmente na máquina do usuário**. A computação acontece do lado do usuário. Não há endpoint hospedado para chamar, nenhuma conta, e **nenhuma integração SaaS necessária** — o motor é um subprocess offline, estateless e determinístico.
+Um usuário copia a URL deste repositório, e **seu próprio** agente ou CLI (Claude Code, Hermes, um script, etc.) o clona e executa **localmente na máquina do usuário**. A computação acontece do lado do usuário. Este repositório não expõe endpoint hospedado, não exige conta, e **nenhuma integração SaaS é necessária** — o motor é um subprocess offline, estateless e determinístico. (Existe um [produto hospedado](https://life.aicycle.cc) separado, construído sobre este motor, para quem prefere um navegador — é um serviço distinto, não faz parte deste repositório.)
 
-O publicador não o opera como serviço de rede. Sob MIT, uso local, modificação, distribuição e uso hospedado são permitidos conforme `LICENSE`.
+Este repositório em si não é operado como serviço de rede. Sob MIT, uso local, modificação, distribuição e uso hospedado são permitidos conforme `LICENSE`.
 
 Para agentes, o contrato é simples: despache o subprocess `--json` com o Python do venv no workdir do repositório, analise stdout como JSON, ramifique em `ok` (e o código de saída), depois passe o objeto estruturado. Nenhuma limpeza necessária — é stateless. O contrato CLI + JSON completo vive em **[AGENTS.md](./AGENTS.md)**.
 

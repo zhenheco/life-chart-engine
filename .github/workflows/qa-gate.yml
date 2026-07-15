@@ -3,14 +3,16 @@ name: QA Gate
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: qa-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: qa-gate-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   tests:

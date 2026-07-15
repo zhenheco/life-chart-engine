@@ -326,9 +326,9 @@ Tidak setiap keluaran membawa kepercayaan yang sama. Baca setiap tingkat sesuai:
 
 Model integrasi yang dimaksud adalah **instalasi-sendiri**, bukan SaaS.
 
-Pengguna menyalin URL repo ini, dan **mereka sendiri** agen atau CLI (Claude Code, Hermes, skrip, dll.) mengkloningnya dan menjalankannya **secara lokal di mesin pengguna**. Komputasi terjadi di sisi pengguna. Tidak ada titik akhir yang dihosting untuk dipanggil, tidak ada akun, dan **tidak ada integrasi SaaS yang diperlukan** — mesin adalah subprocess stateless, deterministik, offline.
+Pengguna menyalin URL repo ini, dan **mereka sendiri** agen atau CLI (Claude Code, Hermes, skrip, dll.) mengkloningnya dan menjalankannya **secara lokal di mesin pengguna**. Komputasi terjadi di sisi pengguna. Repo ini tidak menyediakan titik akhir yang dihosting, tidak memerlukan akun, dan **tidak memerlukan integrasi SaaS** — mesin adalah subprocess stateless, deterministik, offline. (Ada [produk hosting](https://life.aicycle.cc) terpisah yang dibangun di atas mesin ini bagi yang lebih suka browser — itu layanan tersendiri, bukan bagian dari repo ini.)
 
-Penerbit tidak mengoperasikannya sebagai layanan jaringan. Di bawah MIT, penggunaan lokal, modifikasi, distribusi, dan penggunaan hosting diizinkan sesuai `LICENSE`.
+Repo ini sendiri tidak dioperasikan sebagai layanan jaringan. Di bawah MIT, penggunaan lokal, modifikasi, distribusi, dan penggunaan hosting diizinkan sesuai `LICENSE`.
 
 Untuk agen, kontraknya sederhana: dispatch subprocess `--json` dengan Python venv di workdir repo, parse stdout sebagai JSON, cabang di `ok` (dan kode keluar), lalu serahkan objek terstruktur. Tidak perlu pembersihan — stateless. Kontrak CLI + JSON lengkap ada di **[AGENTS.md](./AGENTS.md)**.
 
