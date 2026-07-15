@@ -289,7 +289,9 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
 
 ### HTTP service
 
-The optional FastAPI wrapper exposes the same JSON contract over HTTP:
+The optional FastAPI wrapper exposes the same JSON contract over HTTP. It runs
+from a **source checkout** (`bash setup.sh` installs FastAPI/Uvicorn); the PyPI
+wheel ships only the CLI and MCP entry points, not `server.py`:
 
 ```bash
 uvicorn server:app --host 0.0.0.0 --port 8000

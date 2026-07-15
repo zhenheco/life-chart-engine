@@ -166,6 +166,26 @@ def test_pdf_with_mocked_browser_yields_pdf_bytes(server, monkeypatch, tmp_path)
     assert body.startswith(b"%PDF")
 
 
+def test_pdf_timeout_after_browser_writes_file_yields_pdf_bytes(
+    server, monkeypatch, tmp_path
+):
+    fake = tmp_path / "fake-browser"
+    fake.write_text(
+        "#!/bin/sh\n"
+        'for a in "$@"; do case "$a" in --print-to-pdf=*) out="${a#--print-to-pdf=}";; esac; done\n'
+        'printf "%%PDF-1.4 fake" > "$out"\n'
+        "exec sleep 10\n"
+    )
+    fake.chmod(fake.stat().st_mode | stat.S_IEXEC)
+    monkeypatch.setattr(webapp, "find_browser", lambda: str(fake))
+    monkeypatch.setattr(webapp, "PDF_PRINT_TIMEOUT_SECONDS", 2)
+
+    status, ctype, body = _post(server, "/api/pdf", GOOD)
+    assert status == 200
+    assert ctype == "application/pdf"
+    assert body.startswith(b"%PDF")
+
+
 def _browser_can_print():
     """Probe: can the discovered browser actually headless-print here?
 

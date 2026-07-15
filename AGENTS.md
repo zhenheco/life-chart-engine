@@ -53,7 +53,9 @@ life-chart --json \
 - Pass `--json` for the structured contract below. Omit it for human Markdown.
 - The process prints **exactly one JSON object to stdout** and nothing else.
 
-Optional HTTP wrapper:
+Optional HTTP wrapper (source checkout only — the PyPI wheel ships the CLI and
+MCP entry points, not `server.py`; run `bash setup.sh` first to install
+FastAPI/Uvicorn):
 
 ```bash
 uvicorn server:app --host 0.0.0.0 --port 8000

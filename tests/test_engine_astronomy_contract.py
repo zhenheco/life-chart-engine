@@ -425,7 +425,8 @@ def test_runtime_and_test_sources_do_not_import_swisseph():
 def test_requirements_use_astronomy_engine_without_pyswisseph():
     requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
     assert "pyswisseph" not in requirements
-    assert "astronomy-engine>=2.1.19" in requirements
+    # 精確 pin 與 pyproject 一致：golden fixtures 依賴 byte-exact 輸出
+    assert "astronomy-engine==2.1.19" in requirements
 
 
 def test_horoscope_failure_fails_the_whole_request_loudly(monkeypatch):

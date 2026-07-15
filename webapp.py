@@ -24,6 +24,7 @@ from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ENGINE = os.path.join(HERE, "scripts", "chart_engine.py")
+PDF_PRINT_TIMEOUT_SECONDS = 90
 
 
 def _resolve_venv_python():
@@ -668,12 +669,16 @@ def compute_pdf(params):
                 "--no-first-run", "--no-default-browser-check",
                 "--user-data-dir=" + os.path.join(tmp, "ud"),
                 "--print-to-pdf=" + pdf_p, url]
-        r = subprocess.run(args, capture_output=True, timeout=90)
+        r = subprocess.run(args, capture_output=True, timeout=PDF_PRINT_TIMEOUT_SECONDS)
         if not os.path.exists(pdf_p):
             return None, "PDF 產生失敗：" + r.stderr.decode("utf-8", "replace")[:400]
         with open(pdf_p, "rb") as f:
             return f.read(), None
     except subprocess.TimeoutExpired:
+        # Chrome may finish writing the PDF but fail to exit in some macOS sandboxes.
+        if os.path.exists(pdf_p) and os.path.getsize(pdf_p) > 0:
+            with open(pdf_p, "rb") as f:
+                return f.read(), None
         return None, "PDF 產生逾時"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

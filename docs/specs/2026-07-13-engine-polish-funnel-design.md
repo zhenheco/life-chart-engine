@@ -229,12 +229,12 @@
 - 不在本 repo 放 hosted 產品的價格、漏斗、行銷、分析內容。
 - life-web 程式變更不在本 spec slices 內（並行工作線，見 Further Notes）。
 - 廣告投放執行、社群發文執行。
-- py3.13+、其餘 15 譯本 hosted 段、Node 版本主動探測（follow-up）。
+- py3.13+、其餘 15 譯本 hosted 段、Node 版本主動探測、Linux golden fixtures（byte-identity guard 目前 `golden_platform.txt`=darwin，Linux CI 上不執行）（follow-up）。
 
 ## Further Notes
 
-- **公私分離鐵則**：本 repo 公開；商業內容一律在 workspace `Life/marketing/`。
-- **並行工作線（不由 /go 執行，同等 TDD＋cross-review 紀律）**：life-web 量測層（Pixel＋事件＋CAPI）、真卡驗證（HITL）、行銷素材與排程（attended）。
+- **公私分離鐵則**：本 repo 公開；商業／行銷內容一律在私有 workspace，不進本 repo。
+- **並行工作線**：hosted 產品側工作於私有 workspace 追蹤，不由本 repo 的 /go 執行。
 - **server.py 註記**：變更＝驗證搬遷＋刻意 400 hardening＋Node-500 測試；Hetzner 部署不受影響。
 - **發佈順序約束**：HN/Reddit「一行安裝」宣稱以 Slice 10 完成為前提。
 - 已知風險：`mcp` SDK 演進快（== pin＋最小 API 面）；hatchling sources 映射一次性定案；vhs GIF best-effort；年份窗擴充需權威農曆源比對（未排程）。
