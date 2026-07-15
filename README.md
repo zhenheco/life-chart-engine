@@ -301,8 +301,10 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 - `POST /chart` accepts JSON keys matching the CLI flags: `date`, `time`, `tz`,
   `lat`, `lon`, `gender`, optional `name`, optional `target`, optional
   `ziwei_day_divide`.
-- If `ENGINE_API_KEY` is set, requests to `/chart` must include
-  `X-Engine-Key: <value>` or they return `401`.
+- Auth is fail-closed: with `ENGINE_API_KEY` set, `/chart` requests must include
+  `X-Engine-Key: <value>` or they return `401`; **without** it every `/chart`
+  request returns `503` unless `ENGINE_ALLOW_OPEN=1` is set (local/dev only).
+  `GET /health` is always open.
 
 For Hetzner Docker+Caddy deployment, see **[DEPLOY-HETZNER.md](./DEPLOY-HETZNER.md)**.
 
