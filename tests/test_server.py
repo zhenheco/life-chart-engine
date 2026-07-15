@@ -299,3 +299,116 @@ def test_sentry_deploy_contract_documents_runtime_env():
     assert "SENTRY_DSN" in deploy_doc
     assert "SENTRY_ENVIRONMENT" in deploy_doc
     assert "SENTRY_RELEASE" in deploy_doc
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("tz", 20), ("tz", -12.5), ("lat", 95), ("lat", -90.5), ("lon", 200), ("lon", -181)],
+)
+def test_out_of_range_numeric_values_return_400(server_client, field, value):
+    client, calls = server_client
+
+    response = client.post("/chart", json={**BODY, field: value})
+
+    assert response.status_code == 400
+    assert field in response.json()["detail"]
+    assert calls == []
+
+
+@pytest.mark.parametrize("payload_field", ["tz", "lat", "lon"])
+def test_nonfinite_values_return_400(server_client, payload_field):
+    client, calls = server_client
+
+    string_inf = client.post("/chart", json={**BODY, payload_field: "1e999"})
+    raw = {**BODY, payload_field: "__NAN__"}
+    import json as _json
+
+    nan_body = _json.dumps(raw, ensure_ascii=False).replace('"__NAN__"', "NaN")
+    literal_nan = client.post(
+        "/chart", content=nan_body, headers={"content-type": "application/json"}
+    )
+
+    assert string_inf.status_code == 400
+    assert payload_field in string_inf.json()["detail"]
+    assert literal_nan.status_code == 400
+    assert payload_field in literal_nan.json()["detail"]
+    assert calls == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("date", "1899-12-31"),
+        ("date", "2101-01-01"),
+        ("target", "1899-12-31"),
+        ("target", "2101-01-01"),
+    ],
+)
+def test_out_of_window_years_return_400(server_client, field, value):
+    client, calls = server_client
+
+    response = client.post("/chart", json={**BODY, field: value})
+
+    assert response.status_code == 400
+    assert field in response.json()["detail"]
+    assert calls == []
+
+
+def test_cli_and_http_reject_the_same_validation_decisions(server_client):
+    import subprocess
+
+    client, calls = server_client
+    root = Path(__file__).resolve().parents[1]
+    script = root / "scripts" / "chart_engine.py"
+    rejected = [
+        ("tz", "20"),
+        ("lat", "95"),
+        ("date", "1899-12-31"),
+        ("target", "2101-01-01"),
+        ("time", "25:99"),
+    ]
+    for field, value in rejected:
+        http = client.post("/chart", json={**BODY, field: value})
+        assert http.status_code == 400, (field, value)
+
+        argv = [sys.executable, str(script), "--json"]
+        cli_body = {**BODY, field: value}
+        for k, v in cli_body.items():
+            argv += [f"--{k}", str(v)]
+        cli = subprocess.run(argv, cwd=root, capture_output=True, text=True, encoding="utf-8")
+        assert cli.returncode == 2, (field, value, cli.stderr)
+        assert cli.stdout == ""
+        assert f"--{field}" in cli.stderr, (field, value, cli.stderr)
+    assert calls == []
+
+
+def test_non_string_ziwei_day_divide_returns_400_not_500(server_client):
+    client, calls = server_client
+
+    response = client.post("/chart", json={**BODY, "ziwei_day_divide": ["forward"]})
+
+    assert response.status_code == 400
+    assert "ziwei_day_divide" in response.json()["detail"]
+    assert calls == []
+
+
+def test_name_is_always_forwarded_as_string(server_client):
+    client, calls = server_client
+
+    null_name = client.post("/chart", json={**BODY, "name": None})
+    dict_name = client.post("/chart", json={**BODY, "name": 42})
+
+    assert null_name.status_code == 200
+    assert dict_name.status_code == 200
+    assert calls[0]["name"] == "範例"
+    assert calls[1]["name"] == "42"
+
+
+def test_non_string_gender_returns_400_not_500(server_client):
+    client, calls = server_client
+
+    response = client.post("/chart", json={**BODY, "gender": ["女"]})
+
+    assert response.status_code == 400
+    assert "gender" in response.json()["detail"]
+    assert calls == []

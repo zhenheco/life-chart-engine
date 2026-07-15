@@ -11,7 +11,9 @@ life-chart-engine — 本機網頁表單 (localhost only)
 可用系統 Python 或 venv Python 啟動 (server 只用標準庫；算盤一律用 venv)。
 """
 import json
+import re
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
@@ -22,10 +24,20 @@ from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ENGINE = os.path.join(HERE, "scripts", "chart_engine.py")
-# venv python (Windows 路徑優先，找不到再退回 Unix 佈局)
-VENV_PY = os.path.join(HERE, ".venv", "Scripts", "python.exe")
-if not os.path.exists(VENV_PY):
-    VENV_PY = os.path.join(HERE, ".venv", "bin", "python")
+PDF_PRINT_TIMEOUT_SECONDS = 90
+
+
+def _resolve_venv_python():
+    """LIFE_VENV（venv 目錄）優先；Windows Scripts 與 Unix bin 佈局皆試。"""
+    venv_dir = os.environ.get("LIFE_VENV") or os.path.join(HERE, ".venv")
+    for candidate in (os.path.join(venv_dir, "Scripts", "python.exe"),
+                      os.path.join(venv_dir, "bin", "python")):
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+VENV_PY = _resolve_venv_python() or os.path.join(HERE, ".venv", "bin", "python")
 
 PAGE = r"""<!DOCTYPE html>
 <html lang="zh-Hant">
@@ -495,6 +507,12 @@ def compute(params):
     p = subprocess.run(args, capture_output=True, env=env)
     out = p.stdout.decode("utf-8", "replace")
     err = p.stderr.decode("utf-8", "replace")
+    if p.returncode == 2:
+        # 參數層錯誤：只解析最後的 error: 行（usage 區塊含所有 flag，不能全文掃）
+        error_line = next((ln for ln in reversed(err.splitlines()) if "error:" in ln), "")
+        flags = sorted(set(re.findall(r"--(?:date|time|tz|lat|lon|gender|target|ziwei-day-divide)\b", error_line)))
+        hint = "、".join(flags) if flags else "出生資料"
+        return {"ok": False, "error": f"輸入欄位缺失或無效（{hint}）。請確認出生日期、時間、時區、經緯度與性別都已填寫且格式正確。"}
     if p.returncode != 0:
         return {"ok": False, "error": (err or out or "engine failed").strip()[:600]}
     try:
@@ -609,12 +627,24 @@ def render_report_html(d):
 def find_browser():
     pf = os.environ.get("ProgramFiles", r"C:\Program Files")
     pfx = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
-    for c in (os.path.join(pf, r"Microsoft\Edge\Application\msedge.exe"),
-              os.path.join(pfx, r"Microsoft\Edge\Application\msedge.exe"),
-              os.path.join(pf, r"Google\Chrome\Application\chrome.exe"),
-              os.path.join(pfx, r"Google\Chrome\Application\chrome.exe")):
+    candidates = [
+        # Windows
+        os.path.join(pf, r"Microsoft\Edge\Application\msedge.exe"),
+        os.path.join(pfx, r"Microsoft\Edge\Application\msedge.exe"),
+        os.path.join(pf, r"Google\Chrome\Application\chrome.exe"),
+        os.path.join(pfx, r"Google\Chrome\Application\chrome.exe"),
+        # macOS
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    ]
+    for c in candidates:
         if os.path.exists(c):
             return c
+    # Linux：PATH 探測
+    for name in ("google-chrome", "chromium", "chromium-browser", "microsoft-edge"):
+        found = shutil.which(name)
+        if found:
+            return found
     return None
 
 
@@ -632,16 +662,23 @@ def compute_pdf(params):
         pdf_p = os.path.join(tmp, "report.pdf")
         with open(html_p, "w", encoding="utf-8") as f:
             f.write(render_report_html(d))
-        url = "file:///" + html_p.replace("\\", "/")
-        args = [browser, "--headless=new", "--disable-gpu", "--no-pdf-header-footer",
+        url = pathlib.Path(html_p).as_uri()  # 跨平台 file: URL（舊寫法在 POSIX 產生 file://// 四斜線，Chrome 會掛死）
+        # 注意：Chrome 150 的 --headless=new 在 macOS 會掛死；legacy --headless
+        # 在 Chrome/Edge 皆可列印，維持 legacy 模式。
+        args = [browser, "--headless", "--disable-gpu", "--no-pdf-header-footer",
+                "--no-first-run", "--no-default-browser-check",
                 "--user-data-dir=" + os.path.join(tmp, "ud"),
                 "--print-to-pdf=" + pdf_p, url]
-        r = subprocess.run(args, capture_output=True, timeout=90)
+        r = subprocess.run(args, capture_output=True, timeout=PDF_PRINT_TIMEOUT_SECONDS)
         if not os.path.exists(pdf_p):
             return None, "PDF 產生失敗：" + r.stderr.decode("utf-8", "replace")[:400]
         with open(pdf_p, "rb") as f:
             return f.read(), None
     except subprocess.TimeoutExpired:
+        # Chrome may finish writing the PDF but fail to exit in some macOS sandboxes.
+        if os.path.exists(pdf_p) and os.path.getsize(pdf_p) > 0:
+            with open(pdf_p, "rb") as f:
+                return f.read(), None
         return None, "PDF 產生逾時"
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -692,16 +729,33 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, pdf, "application/pdf")
 
 
+def create_server(port=0):
+    """建立（未啟動的）server；回傳的 srv.server_port 為實際綁定埠。
+
+    venv python 不存在時在這裡就 loud fail，而非等到第一個請求。
+    """
+    global VENV_PY
+    resolved = _resolve_venv_python()
+    if resolved is None:
+        venv_dir = os.environ.get("LIFE_VENV") or os.path.join(HERE, ".venv")
+        raise RuntimeError(
+            "找不到 venv python（LIFE_VENV=%s，查找目錄 %s）— 請先跑 setup.sh 建立 venv"
+            % (os.environ.get("LIFE_VENV", "<unset>"), venv_dir))
+    VENV_PY = resolved
+    return ThreadingHTTPServer(("127.0.0.1", port), Handler)
+
+
 def main():
     port = 8765
     if "--port" in sys.argv:
         port = int(sys.argv[sys.argv.index("--port") + 1])
-    if not os.path.exists(VENV_PY):
-        print("error: 找不到 venv python:", VENV_PY)
-        print("請先跑 setup（venv + 依賴）。")
+    try:
+        srv = create_server(port)
+    except RuntimeError as e:
+        print("error:", e)
         sys.exit(1)
+    port = srv.server_port
     url = "http://127.0.0.1:%d/" % port
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print("Life Chart 網頁已啟動：", url)
     print("（只在本機 127.0.0.1 監聽；Ctrl+C 結束）")
     try:

@@ -5,7 +5,8 @@
 # native dependency constraint is gone, so this can be revisited after checking
 # the remaining dependencies and deployment image.
 
-astronomy-engine>=2.1.19
+# 精確 pin：golden fixtures 依賴 byte-exact 輸出，任何 astronomy-engine 升版都要重驗 fixtures
+astronomy-engine==2.1.19
 fastapi==0.139.0
 # Security pin for FastAPI's Starlette runtime dependency.
 starlette==1.3.1

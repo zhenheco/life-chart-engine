@@ -22,7 +22,7 @@ Nó được xây dựng cho những người muốn **tính toán biểu đồ 
 |--------|----------------------------|------------------------|
 | **Chiêm tinh phương Tây** (Tropical / Placidus) | Chiêm tinh phương Tây cổ điển — các hành tinh nằm ở đâu so với hoàng đạo vào thời sinh của bạn, chia thành 12 cung. | Ascendant + Midheaven, 12 hành tinh/điểm (太陽 → 南交點) với ký hiệu, độ, cung và cờ tuần hành ngược, tất cả 12 cạnh cung, và mọi khía cạnh được phát hiện (合相/六分/四分/三分/對分) được sắp xếp theo độ chặt chẽ. |
 | **人類圖 Human Design** | Một sự tổng hợp hiện đại của chiêm tinh, Dịch Kinh, và hệ thống chakra. Mô tả cách năng lượng của bạn "được dây dợi" thông qua các cổng, kênh và trung tâm. | Loại, Authority, Profile, Definition, Incarnation Cross, ngày Design sớm hơn 88°, các trung tâm xác định/mở, các kênh xác định, và các kích hoạt cổng.dòng trên bản đồ cho cả hai biểu đồ Personality và Design. |
-| **紫微斗數 Zi Wei Dou Shu** | Một hệ thống chiêm tinh truyền thống của Trung Quốc ánh xạ vận mệnh vào bảng 12 cung, được điền bằng các ngôi sao có tên. | 五行局 (Five Elements Class), 命主 (linh hồn) / 身主 (thân thể), chỉ số 時辰 giờ, và dữ liệu cho mỗi cung — ganzhi, cờ 命/身, phạm vi tuổi thập kỷ, và các ngôi sao chính/phụ/tính từ (có độ sáng và 四化). Tùy chọn là một biểu đồ 大限/流年 nỗ lực tốt nhất. |
+| **紫微斗數 Zi Wei Dou Shu** | Một hệ thống chiêm tinh truyền thống của Trung Quốc ánh xạ vận mệnh vào bảng 12 cung, được điền bằng các ngôi sao có tên. | 五行局 (Five Elements Class), 命主 (linh hồn) / 身主 (thân thể), chỉ số 時辰 giờ, và dữ liệu cho mỗi cung — ganzhi, cờ 命/身, phạm vi tuổi thập kỷ, và các ngôi sao chính/phụ/tính từ (có độ sáng và 四化). Ngoài ra còn có một biểu đồ vận hạn 大限/流年/小限 — 四化 của nó là một mảng tên sao thuần (`mutagen`) cộng với một khung nhìn có kiểu bổ sung `{star, type}` (`mutagenTyped`), và 大限 kèm theo phạm vi tuổi. |
 
 Type, Authority, và Definition trong Human Design **không được hardcode** — chúng được bắt nguồn từ biểu đồ kết nối của các trung tâm xác định.
 
@@ -46,7 +46,7 @@ Type, Authority, và Definition trong Human Design **không được hardcode** 
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Cài vào `~/.life-chart-engine` (ghi đè bằng `LIFE_CHART_DIR`). Không `sudo`, không thay đổi toàn hệ thống — chỉ clone repo, tạo venv CPython 3.12 cô lập, và sinh bundle Node iztro đã ghim. Cần `git`, [`uv`](https://docs.astral.sh/uv/), và Node.js/npm. Chạy lại bất cứ lúc nào để cập nhật lên phiên bản mới nhất.
+Cài vào `~/.life-chart-engine` (ghi đè bằng `LIFE_CHART_DIR`). Không `sudo`, không thay đổi toàn hệ thống — chỉ clone repo, tạo venv CPython 3.12 cô lập, và sinh bundle Node iztro đã ghim. Cần `git`, [`uv`](https://docs.astral.sh/uv/), và **Node.js ≥ 18** (hỗ trợ/đã kiểm thử trên 18 và 24 — 紫微斗數 chạy qua một sidecar Node; thiếu nó, mọi yêu cầu tính biểu đồ sẽ thất bại rõ ràng thay vì âm thầm bỏ mất hệ thống thứ ba). Chạy lại bất cứ lúc nào để cập nhật lên phiên bản mới nhất.
 
 ### Từ nguồn
 
@@ -253,19 +253,23 @@ Mẫu thực được cắt ngắn (mảng bị cắt ngắn thành 1–2 mục;
 
 ## Tham khảo cờ CLI
 
-Không có cờ `required=True` — argparse không bao giờ lỗi trên một cờ bị thiếu. Bỏ qua `--date`/`--time`/`--tz`/`--lat`/`--lon` sẽ yên tĩnh quay lại một người ví dụ được tích hợp (`範例`, sinh `2000-01-01 12:00`, UTC+8, Taipei 101). Vì vậy, để có biểu đồ chính xác, hãy cung cấp tất cả.
+Cả sáu cờ khai sinh đều **bắt buộc** — thiếu một cờ sẽ thoát `2` với hướng dẫn sử dụng trên stderr và không có gì trên stdout, nên bạn không bao giờ có thể nhầm biểu đồ của người ví dụ với biểu đồ của chính mình. Để xem người ví dụ tích hợp sẵn (`範例`, sinh `2000-01-01 12:00`, UTC+8, Taipei 101), hãy truyền `--example` một cách tường minh.
 
-| Cờ | Kiểu | Yêu cầu để sử dụng chính xác? | Mặc định | Định dạng / quy tắc |
-|------|------|---------------------------|---------|---------------|
-| `--name` | string | Không (trang trí) | `"範例"` | Văn bản miễn phí; được lặp lại vào đầu ra chỉ. |
-| `--gender` | string | Chỉ cho 紫微 | `"女"` | Phải chính xác là `男` hoặc `女` (argparse `choices`; bất cứ điều gì khác → thoát `2`). |
-| `--date` | string | **Có** | quay lại `2000-01-01` | `YYYY-MM-DD`, chia tách trên `-`. Không yêu cầu zero-pad. |
-| `--time` | string | **Có** | quay lại `12:00` | `HH:MM`, đồng hồ địa phương 24 giờ, chia tách trên `:`. |
-| `--tz` | float | **Có** | quay lại `8.0` | Offset UTC bao gồm DST (Taiwan = `8`). Được viết vào khóa đầu vào `tz_offset`. |
-| `--lat` | float | **Có** | quay lại `25.0330` | Vĩ độ theo độ thập phân (các cung/Asc/MC phương Tây). |
-| `--lon` | float | **Có** | quay lại `121.5654` | Kinh độ theo độ thập phân. |
-| `--target` | string | Không | `"2025-01-01"` | `YYYY-MM-DD`; ngày tham chiếu kỳ may mắn 紫微 (運限參考日). |
-| `--json` | flag | Không | `False` (Markdown) | Có mặt → chế độ JSON; vắng mặt → Markdown. Không có giá trị. |
+> **Thay đổi phá vỡ tương thích (v1.1.0):** cơ chế âm thầm quay về người ví dụ khi thiếu cờ đã bị loại bỏ. Các script từng dựa vào hành vi cũ này nên truyền `--example`.
+
+| Cờ | Kiểu | Bắt buộc | Định dạng / quy tắc |
+|------|------|----------|---------------|
+| `--date` | string | **Có** | `YYYY-M-D` (zero-padding tùy chọn, ví dụ `1990-6-15`). Ngày dương lịch hợp lệ, năm nằm trong khoảng được hỗ trợ **1900–2100**. |
+| `--time` | string | **Có** | `H:M`, giờ địa phương theo đồng hồ 24 giờ (zero-padding tùy chọn, ví dụ `8:30`). |
+| `--tz` | float | **Có** | Offset UTC bao gồm DST (Đài Loan = `8`), trong khoảng `[-12, 14]`, hữu hạn. Được ghi vào khóa đầu vào `tz_offset`. |
+| `--lat` | float | **Có** | Vĩ độ theo độ thập phân, trong khoảng `[-90, 90]`, hữu hạn. |
+| `--lon` | float | **Có** | Kinh độ theo độ thập phân, trong khoảng `[-180, 180]`, hữu hạn. |
+| `--gender` | string | **Có** | Phải chính xác là `男` hoặc `女` (ảnh hưởng đến 紫微; bất kỳ giá trị nào khác → thoát `2`). |
+| `--example` | flag | Không | Tính biểu đồ của người ví dụ tích hợp sẵn. Loại trừ lẫn nhau với cả sáu cờ khai sinh (kết hợp → thoát `2`); có thể kết hợp với `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
+| `--name` | string | Không | Văn bản tự do; chỉ được lặp lại vào đầu ra. Mặc định `"範例"`. |
+| `--target` | string | Không | `YYYY-M-D`; ngày tham chiếu vận hạn 紫微 (運限參考日), cùng khoảng 1900–2100. Mặc định `"2025-01-01"`. |
+| `--ziwei-day-divide` | string | Không | Quy tắc 晚子時: `forward` (mặc định) tính 23:00-23:59 là ngày hôm sau; `current` tính là ngày hiện tại. |
+| `--json` | flag | Không | Có mặt → chế độ JSON; vắng mặt → Markdown. Không nhận giá trị. |
 
 > Động cơ **không** geocode các địa điểm hoặc tìm kiếm múi giờ. Người gọi phải tự chuyển đổi địa điểm → `lat`/`lon`/`tz` — và múi giờ/DST là nguồn lỗi phổ biến nhất, vì vậy hãy xác minh offset UTC áp dụng tại nơi sinh và ngày sinh.
 
@@ -284,7 +288,7 @@ Phong bì `--json` có bảy khóa cấp cao nhất, theo thứ tự này:
 | `input` | Echo của đầu vào được chuẩn hóa: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (lưu ý `tz_offset`, không phải `tz`). |
 | `western` | Chuỗi `system`, các đối tượng vị trí `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
-| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object hoặc `null`). |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (luôn là `{ decadal, yearly, age }` khi thành công — một lỗi horoscope làm toàn bộ yêu cầu thất bại rõ ràng). |
 | `meta` | `{ engine, version, ephemeris }` — tất cả các chữ (`ephemeris: "astronomy-engine"`). |
 
 Đối với hợp đồng trường đầy đủ — mọi khóa, kiểu, và giao thức gọi agent — xem **[AGENTS.md](./AGENTS.md)**.
@@ -292,7 +296,7 @@ Phong bì `--json` có bảy khóa cấp cao nhất, theo thứ tự này:
 ### Các tính năng trường đáng biết
 
 - **`aspects` KHÔNG được capped ở JSON.** Đường dẫn JSON trả về *mọi* khía cạnh được phát hiện, được sắp xếp tăng dần theo orb (chặt chẽ nhất trước tiên). Giới hạn 10 mục chỉ tồn tại trong báo cáo Markdown.
-- **`ziwei.horoscope` là best-effort và có thể là `null`.** Nó được bao bọc trong `try/except`; trên bất kỳ ngoại lệ nào nó tuần tự hóa như `null`. Khi có mặt nó là `{ decadal, yearly }`. (Các đối tượng phụ đó tiếp xúc cấu trúc nội bộ bổ sung — `index`, `mutagen[]`, `stars[][]`, `yearly_dec_star`, v.v. — vượt quá trình giữ chỗ được ghi chép.)
+- **`ziwei.horoscope` là all-or-nothing (tất cả hoặc không có gì).** Khi thành công nó luôn là `{ decadal, yearly, age }`; một lỗi sidecar/horoscope làm toàn bộ yêu cầu thất bại rõ ràng (thoát `1` / HTTP `500`) — một horoscope thiếu khóa hoặc `null` không bao giờ được phát ra trong một phản hồi `"ok": true`. `stars` chỉ xuất hiện dưới `decadal`/`yearly` (không bao giờ dưới `age`); `yearlyDecStar` chỉ xuất hiện dưới `yearly`. `mutagen` là một mảng tên sao thuần `[str, …4]` theo thứ tự cố định 祿/權/科/忌 — **không thay đổi kể từ `schema_version` `1.0`**. `schema_version` `1.1` là một bản nâng bổ sung, tương thích ngược: bên cạnh `mutagen` giữ nguyên, nó thêm `mutagenTyped` (dạng có kiểu `[{ "star", "type" }, …4]` theo cùng thứ tự) trên `decadal`/`yearly`/`age`, `decadal.ageRange` `[startAge, endAge]`, và đối tượng con `age` (小限 / tiểu hạn hàng năm, giá trị có thể là `null`). Ánh xạ theo vị trí 祿/權/科/忌 trong `mutagenTyped` là bất biến trên cả 10 天干. (Các đối tượng con đó cũng để lộ cấu trúc nội bộ bổ sung — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch`, v.v. — vượt ra ngoài phần giữ chỗ đã được ghi chép.)
 - **Chuỗi sao mã hóa độ sáng + 四化.** Định dạng là `name(brightness)[mutagen]`, với mỗi phần tùy chọn — ví dụ `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, hoặc trơn `天機`. `adjective_stars` chỉ là tên đơn giản (không có độ sáng/mutagen).
 
 ---
@@ -336,7 +340,7 @@ Dán khối này trực tiếp vào Claude Code, ChatGPT, hoặc bất kỳ agen
 Thiết lập và sử dụng "life-chart-engine" — một CLI tính toán biểu đồ sinh phương Tây +
 Human Design + Zi Wei Dou Shu (紫微斗數) từ dữ liệu sinh.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Tính toán biểu đồ và đọc stdout dưới dạng JSON:

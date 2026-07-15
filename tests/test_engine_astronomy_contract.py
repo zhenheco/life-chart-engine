@@ -5,6 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -15,6 +17,9 @@ import chart_engine  # noqa: E402
 BASELINE = ROOT / "tests" / "fixtures" / "ephemeris_baseline.json"
 SCRIPT = ROOT / "scripts" / "chart_engine.py"
 PY = sys.executable
+GOLDEN_JSON = ROOT / "tests" / "fixtures" / "golden_example.json"
+GOLDEN_MARKDOWN = ROOT / "tests" / "fixtures" / "golden_example.md"
+GOLDEN_PLATFORM = (ROOT / "tests" / "fixtures" / "golden_platform.txt").read_text().strip()
 BASE_ARGS = [
     PY,
     str(SCRIPT),
@@ -92,6 +97,172 @@ def run_json(*args, text=True):
         text=text,
         encoding="utf-8" if text else None,
     )
+
+
+@pytest.mark.parametrize("json_mode", [False, True])
+@pytest.mark.parametrize("missing_flag", ["--date", "--time", "--tz", "--lat", "--lon", "--gender"])
+def test_cli_reports_each_missing_birth_flag_without_stdout(missing_flag, json_mode):
+    args = BASE_ARGS[2:]
+    missing_index = args.index(missing_flag)
+    args = args[:missing_index] + args[missing_index + 2 :]
+    if json_mode:
+        args.append("--json")
+
+    result = subprocess.run(
+        [PY, str(SCRIPT), *args],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert missing_flag in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    [
+        ("--date", "1_990-06-15"),
+        ("--date", "1990-13-45"),
+        ("--date", "1991-02-29"),
+        ("--date", "1899-12-31"),
+        ("--date", "2101-01-01"),
+        ("--time", "25:99"),
+        ("--time", "8: 5"),
+        ("--tz", "20"),
+        ("--tz", "nan"),
+        ("--tz", "inf"),
+        ("--lat", "95"),
+        ("--lat", "-inf"),
+        ("--lon", "200"),
+        ("--lon", "nan"),
+        ("--target", "1990-13-45"),
+        ("--target", "1991-02-29"),
+        ("--target", "1899-12-31"),
+        ("--target", "2101-01-01"),
+    ],
+)
+def test_cli_rejects_invalid_birth_values_through_argparse(flag, value):
+    args = BASE_ARGS[2:]
+    value_index = args.index(flag) + 1
+    args[value_index] = value
+
+    result = subprocess.run(
+        [PY, str(SCRIPT), *args, "--json"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert flag in result.stderr
+
+
+def test_cli_accepts_and_normalizes_unpadded_dates_times_and_window_boundaries():
+    for birth_date, target, expected_date, expected_time in [
+        ("1990-6-15", "2025-1-1", "1990-06-15", "08:05"),
+        ("1900-1-1", "1900-1-1", "1900-01-01", "08:05"),
+        ("2100-12-31", "2100-12-31", "2100-12-31", "08:05"),
+    ]:
+        args = BASE_ARGS[2:]
+        args[args.index("--date") + 1] = birth_date
+        args[args.index("--time") + 1] = "8:5"
+        args[args.index("--target") + 1] = target
+        result = run_json(PY, str(SCRIPT), *args)
+        assert result.returncode == 0, result.stderr or result.stdout
+        payload = json.loads(result.stdout)
+        assert payload["input"]["date"] == expected_date
+        assert payload["input"]["time"] == expected_time
+        assert payload["input"]["target"] == target.replace("-1-1", "-01-01")
+
+
+@pytest.mark.parametrize(
+    ("birth_flag", "value"),
+    [
+        ("--date", "2000-01-01"),
+        ("--time", "12:00"),
+        ("--tz", "8"),
+        ("--lat", "25.033"),
+        ("--lon", "121.5654"),
+        ("--gender", "女"),
+    ],
+)
+def test_example_rejects_birth_flag_combinations(birth_flag, value):
+    result = subprocess.run(
+        [PY, str(SCRIPT), "--example", birth_flag, value, "--json"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "--example" in result.stderr
+    assert birth_flag in result.stderr
+
+
+def test_example_accepts_non_birth_overrides():
+    result = run_json(
+        PY,
+        str(SCRIPT),
+        "--example",
+        "--name",
+        "Renamed",
+        "--target",
+        "2026-01-02",
+        "--ziwei-day-divide",
+        "current",
+    )
+    assert result.returncode == 0, result.stderr or result.stdout
+    payload = json.loads(result.stdout)
+    assert payload["input"]["name"] == "Renamed"
+    assert payload["input"]["target"] == "2026-01-02"
+
+
+@pytest.mark.skipif(
+    sys.platform != GOLDEN_PLATFORM,
+    reason="byte identity is only meaningful on the platform where goldens were captured "
+    f"(fixtures captured on {GOLDEN_PLATFORM}; regenerate on linux to enable in CI)",
+)
+@pytest.mark.parametrize(
+    ("extra_args", "fixture"),
+    [(["--json"], GOLDEN_JSON), ([], GOLDEN_MARKDOWN)],
+)
+def test_example_matches_pre_change_golden_bytes(extra_args, fixture):
+    result = subprocess.run(
+        [PY, str(SCRIPT), "--example", *extra_args],
+        cwd=ROOT,
+        capture_output=True,
+    )
+    assert result.returncode == 0, result.stderr.decode("utf-8")
+    assert result.stdout == fixture.read_bytes()
+
+
+def test_main_accepts_argv_and_json_stdout_uses_the_shared_serializer(monkeypatch, capsys):
+    envelope = {"ok": True, "schema_version": "1.1", "sentinel": "盤"}
+    monkeypatch.setattr(chart_engine, "build_json", lambda _inp: envelope)
+
+    exit_code = chart_engine.main([*BASE_ARGS[2:], "--json"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 0
+    assert captured.out == chart_engine.to_json_text(envelope) + "\n"
+    assert captured.err == ""
+
+
+def test_main_buffers_markdown_before_one_stdout_write(monkeypatch):
+    writes = []
+    monkeypatch.setattr(chart_engine, "compose_markdown", lambda _inp: "complete chart\n")
+    monkeypatch.setattr(chart_engine.sys.stdout, "write", writes.append)
+
+    exit_code = chart_engine.main(BASE_ARGS[2:])
+
+    assert exit_code == 0
+    assert writes == ["complete chart\n"]
 
 
 def test_contract_literals_and_shape_match_baseline():
@@ -175,9 +346,9 @@ def test_cli_exit_codes_fallback_and_deterministic_output():
     assert payload["meta"]["ephemeris"] == "astronomy-engine"
     assert payload["western"]["system"] == "Tropical / Placidus / astronomy-engine"
 
-    fallback = run_json(PY, str(SCRIPT))
-    assert fallback.returncode == 0, fallback.stderr or fallback.stdout
-    assert json.loads(fallback.stdout)["input"]["date"] == "2000-01-01"
+    example = run_json(PY, str(SCRIPT), "--example")
+    assert example.returncode == 0, example.stderr or example.stdout
+    assert json.loads(example.stdout)["input"]["date"] == "2000-01-01"
 
     invalid_arg = subprocess.run(
         [PY, str(SCRIPT), "--gender", "x"],
@@ -254,4 +425,21 @@ def test_runtime_and_test_sources_do_not_import_swisseph():
 def test_requirements_use_astronomy_engine_without_pyswisseph():
     requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
     assert "pyswisseph" not in requirements
-    assert "astronomy-engine>=2.1.19" in requirements
+    # 精確 pin 與 pyproject 一致：golden fixtures 依賴 byte-exact 輸出
+    assert "astronomy-engine==2.1.19" in requirements
+
+
+def test_horoscope_failure_fails_the_whole_request_loudly(monkeypatch):
+    # all-or-nothing: a horoscope construction failure must never yield
+    # an "ok": true response with horoscope=None (silent partial result)
+    real_ziwei = chart_engine.ziwei
+
+    def ziwei_without_horoscope_keys(inp):
+        zw = real_ziwei(inp)
+        return {k: v for k, v in zw.items() if k not in ("dec", "yr", "age")}
+
+    monkeypatch.setattr(chart_engine, "ziwei", ziwei_without_horoscope_keys)
+    inp = dict(chart_engine.INPUT)
+
+    with pytest.raises(KeyError):
+        chart_engine.build_json(inp)

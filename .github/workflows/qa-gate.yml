@@ -3,19 +3,24 @@ name: QA Gate
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: qa-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: qa-gate-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   tests:
-    name: Tests
+    name: Tests (node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 24]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,19 +33,24 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install -r requirements.txt pytest
+          .venv/bin/python -m pip install -r requirements.txt pytest build twine==6.1.0 mcp==1.28.1
 
       - name: Run pytest
         run: .venv/bin/python -m pytest .github/scripts/qa_gate_workflow_test.py tests
 
       - name: Run wrapper smoke
         run: bash tests/test_wrapper.sh
+
+      - name: Build distribution dry-run
+        run: |
+          .venv/bin/python -m build --outdir dist-ci
+          .venv/bin/python -m twine check dist-ci/*
 
   automerge-gate:
     name: automerge-gate

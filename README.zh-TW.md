@@ -22,7 +22,7 @@
 |--------|--------------------------|---------|
 | **西洋本命** (Tropical / Placidus) | 經典西洋星座占星學 — 你出生時行星相對於黃道帶的位置，分為 12 宮。 | 上升點 + 中天，12 個行星/重要點 (太陽 → 南交點) 附帶星座、度數、宮位和逆行旗標，所有 12 個宮位尖度，以及每個偵測到的相位 (合相/六分/四分/三分/對分) 按精度排序。 |
 | **人類圖 Human Design** | 占星學、易經和脈輪系統的現代綜合。描述你的能量如何透過閘門、通道和能量中心「連接」。 | 類型、權威、角色、定義、輪迴交叉、88° 之前的設計日期、已定義/開放的能量中心、已定義的通道，以及人格圖和設計圖的每顆行星閘門.線啟動。 |
-| **紫微斗數 Zi Wei Dou Shu** | 傳統中式占星系統，將命運映射到一個 12 宮盤上，填入具名星曜。 | 五行局、命主/身主、時辰指數，以及每宮的資料 — 天干地支、命/身旗標、年代範圍、主星/次星/輔星 (附帶廟陷和四化)。選擇性提供盡力而為的大限/流年運勢。 |
+| **紫微斗數 Zi Wei Dou Shu** | 傳統中式占星系統，將命運映射到一個 12 宮盤上，填入具名星曜。 | 五行局、命主/身主、時辰指數，以及每宮的資料 — 天干地支、命/身旗標、年代範圍、主星/次星/輔星 (附帶廟陷和四化)。並包含大限/流年/小限運勢 — 其四化提供純星名陣列 (`mutagen`) 與附加的帶類型 `{star, type}` 檢視 (`mutagenTyped`)，且大限帶有年齡範圍。 |
 
 人類圖中的類型、權威和定義**不是硬編碼的** — 它們來自已定義能量中心的連接圖。
 
@@ -46,7 +46,15 @@
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-安裝到 `~/.life-chart-engine`（可用 `LIFE_CHART_DIR` 覆寫）。不需要 `sudo`，不做系統層級變更 — 它只會 clone repo、建立隔離的 CPython 3.12 venv，並產生固定版本的 iztro Node bundle。需要 `git`、[`uv`](https://docs.astral.sh/uv/) 和 Node.js/npm。可隨時重新執行以更新到最新版本。
+安裝到 `~/.life-chart-engine`（可用 `LIFE_CHART_DIR` 覆寫）。不需要 `sudo`，不做系統層級變更 — 它只會 clone repo、建立隔離的 CPython 3.12 venv，並產生固定版本的 iztro Node bundle。需要 `git`、[`uv`](https://docs.astral.sh/uv/) 和 **Node.js ≥ 18**（支援/測試版本為 18 與 24 — 紫微斗數透過 Node sidecar 執行；缺少它時每次排盤請求都會大聲失敗，而不是默默丟掉第三套系統）。可隨時重新執行以更新到最新版本。
+
+### 免 clone 試用（PyPI）
+
+```bash
+uvx life-chart-engine --example --json
+```
+
+> 自 **v1.1.0 起於 PyPI 提供**；尚未發佈時請用上方安裝腳本。`uv` 會自動配置 CPython 3.12；仍需 Node.js ≥ 18。也可 `pip install life-chart-engine`（限 CPython 3.12）。
 
 ### 從原始碼
 
@@ -102,6 +110,12 @@ Zi Wei 使用由 `scripts/build-iztro-bundle.sh` 產生並固定版本的 Node b
 ```
 iztro@2.5.8
 ```
+
+---
+
+## 託管版本
+
+不想安裝任何東西？**[life.aicycle.cc](https://life.aicycle.cc)** 是基於本引擎的獨立託管產品——在瀏覽器輸入一份出生資料，直接閱讀三套系統。引擎倉庫本身維持純離線計算核心（無帳戶、無分析、無網路）；產品面的一切都在託管服務那邊。
 
 ---
 
@@ -253,21 +267,25 @@ iztro@2.5.8
 
 ## CLI 旗標參考
 
-**沒有 `required=True` 旗標** — argparse 對於缺少的旗標永遠不會出錯。省略 `--date`/`--time`/`--tz`/`--lat`/`--lon` 會無聲地回退到一個內建的範例人 (`範例`，生於 `2000-01-01 12:00`，UTC+8，台北 101)。所以為了正確的圖表，提供所有旗標。
+六個出生旗標**全部必填** — 缺任何一個都會以退出碼 `2` 結束，usage 訊息印在 stderr、stdout 完全空白，因此你絕不會把範例人的命盤誤認成自己的。想看內建範例人（`範例`，生於 `2000-01-01 12:00`，UTC+8，台北 101），請顯式傳入 `--example`。
 
-| 旗標 | 型別 | 正確使用必需？ | 預設值 | 格式 / 規則 |
-|------|------|-------------|--------|-----------|
-| `--name` | 字串 | 否 (裝飾用) | `"範例"` | 自由文字；只回應到輸出中。 |
-| `--gender` | 字串 | 僅對紫微 | `"女"` | 必須正好是 `男` 或 `女` (argparse `choices`；其他任何東西 → 退出 `2`)。 |
-| `--date` | 字串 | **是** | 回退到 `2000-01-01` | `YYYY-MM-DD`，以 `-` 分割。無零填充要求。 |
-| `--time` | 字串 | **是** | 回退到 `12:00` | `HH:MM`，24 小時當地時鐘時間，以 `:` 分割。 |
-| `--tz` | 浮點數 | **是** | 回退到 `8.0` | UTC 偏移量包括夏令時 (台灣 = `8`)。寫入輸入鍵 `tz_offset`。 |
-| `--lat` | 浮點數 | **是** | 回退到 `25.0330` | 緯度，十進位度 (西洋宮位/上升/中天)。 |
-| `--lon` | 浮點數 | **是** | 回退到 `121.5654` | 經度，十進位度。 |
-| `--target` | 字串 | 否 | `"2025-01-01"` | `YYYY-MM-DD`；紫微運限參考日期 (運限參考日)。 |
-| `--json` | 旗標 | 否 | `False` (Markdown) | 有無 → JSON 模式；無 → Markdown。不帶值。 |
+> **Breaking change（v1.1.0）：**舊版在缺旗標時會無聲回退到範例人，此行為已移除。依賴該行為的腳本請改傳 `--example`。
 
-> 引擎**不**進行地理編碼或查詢時區。呼叫者必須自己轉換地點 → `lat`/`lon`/`tz` — 時區/夏令時是最常見的錯誤來源，所以驗證在出生地和出生日期適用的 UTC 偏移量。
+| 旗標 | 型別 | 必填 | 格式 / 規則 |
+|------|------|------|-----------|
+| `--date` | 字串 | **是** | `YYYY-M-D`（零填充可省略，例如 `1990-6-15`）。必須是真實曆法日期，年份須落在支援範圍 **1900–2100** 內。 |
+| `--time` | 字串 | **是** | `H:M`，24 小時制當地時鐘時間（零填充可省略，例如 `8:30`）。 |
+| `--tz` | 浮點數 | **是** | UTC 偏移量，含夏令時（台灣 = `8`），須在 `[-12, 14]` 內且為有限值。寫入輸入鍵 `tz_offset`。 |
+| `--lat` | 浮點數 | **是** | 緯度，十進位度，須在 `[-90, 90]` 內且為有限值。 |
+| `--lon` | 浮點數 | **是** | 經度，十進位度，須在 `[-180, 180]` 內且為有限值。 |
+| `--gender` | 字串 | **是** | 必須正好是 `男` 或 `女`（影響紫微；其他任何值 → 退出 `2`）。 |
+| `--example` | 旗標 | 否 | 以內建範例人排盤。與六個出生旗標互斥（同時使用 → 退出 `2`）；可與 `--name`、`--target`、`--ziwei-day-divide`、`--json` 併用。 |
+| `--name` | 字串 | 否 | 自由文字；只回顯到輸出中。預設 `"範例"`。 |
+| `--target` | 字串 | 否 | `YYYY-M-D`；紫微運限參考日，同樣須在 1900–2100 範圍內。預設 `"2025-01-01"`。 |
+| `--ziwei-day-divide` | 字串 | 否 | 晚子時規則：`forward`（預設）把 23:00-23:59 算入次日；`current` 算入當日。 |
+| `--json` | 旗標 | 否 | 有此旗標 → JSON 模式；無 → Markdown。不帶值。 |
+
+> 引擎**不**進行地理編碼或查詢時區。呼叫者必須自己把地點轉成 `lat`/`lon`/`tz` — 時區/夏令時是最常見的錯誤來源，請驗證出生地在出生日期當天實際適用的 UTC 偏移量。
 
 ---
 
@@ -284,7 +302,7 @@ iztro@2.5.8
 | `input` | 標準化輸入的回應：`name`、`gender`、`date`、`time`、`tz_offset`、`lat`、`lon`、`target` (注意 `tz_offset`，不是 `tz`)。 |
 | `western` | `system` 字串、`ascendant`/`midheaven` 位置物件、`planets[]`、`houses[]` (×12)、`aspects[]`。 |
 | `human_design` | `type`、`authority`、`profile`、`definition`、`incarnation_cross`、`design_date`、`defined_centers[]`、`open_centers[]`、`channels[]`、`gates[]`。 |
-| `ziwei` | `five_elements_class`、`soul`、`body`、`hour_index`、`palaces[]`、`horoscope` (物件或 `null`)。 |
+| `ziwei` | `five_elements_class`、`soul`、`body`、`hour_index`、`palaces[]`、`horoscope`（成功時恆為 `{ decadal, yearly, age }` — horoscope 失敗會讓整個請求大聲失敗）。 |
 | `meta` | `{ engine, version, ephemeris }` — 全部字面值 (`ephemeris: "astronomy-engine"`). |
 
 對於完整欄位合約 — 每個鍵、型別和代理呼叫協議 — 參看 **[AGENTS.md](./AGENTS.md)**。
@@ -292,7 +310,7 @@ iztro@2.5.8
 ### 值得知道的欄位怪異性
 
 - **`aspects` 在 JSON 中**不**被限制**。JSON 路徑返回*每個*偵測到的相位，按軌度昇序排序 (最精密優先)。10 項上限僅存在於 Markdown 報告中。
-- **`ziwei.horoscope` 是盡力而為的，可能是 `null`**。它被包裝在 `try/except` 中；任何異常時它序列化為 `null`。當存在時它是 `{ decadal, yearly }`。(那些子物件展示額外的內部結構 — `index`、`mutagen[]`、`stars[][]`、`yearly_dec_star` 等 — 超越記錄的佔位符。)
+- **`ziwei.horoscope` 是 all-or-nothing。** 成功時恆為 `{ decadal, yearly, age }`；sidecar/horoscope 失敗會讓整個請求大聲失敗（退出碼 `1` / HTTP `500`）— `"ok": true` 的回應中絕不會出現部分或 `null` 的 horoscope。`stars` 只出現在 `decadal`/`yearly` 之下（`age` 沒有）；`yearlyDecStar` 只出現在 `yearly` 之下。`mutagen` 是純星曜名稱陣列 `[str, …4]`，固定按祿/權/科/忌順序排列 — **自 `schema_version` `1.0` 起未變**。`schema_version` `1.1` 是向後相容的加法式升版：在 `mutagen` 不動的前提下，於 `decadal`/`yearly`/`age` 新增 `mutagenTyped`（帶型別視圖 `[{ "star", "type" }, …4]`，順序相同），並新增 `decadal.ageRange` `[startAge, endAge]` 與 `age` 子物件（即小限，其值可為 `null`）。`mutagenTyped` 中祿/權/科/忌的位置對應在全部 10 個天干下不變。（這些子物件也會暴露超出文件佔位符的額外內部結構 — `index`、`palaceNames[]`、`heavenlyStem`/`earthlyBranch` 等。）
 - **星曜字串編碼廟陷 + 四化。** 格式是 `name(brightness)[mutagen]`，每部分可選 — 例如 `紫微(廟)[祿]`、`紫微(廟)`、`天機[祿]` 或普通 `天機`。`adjective_stars` 只是普通名稱 (無廟陷/四化)。
 
 ---
@@ -322,9 +340,9 @@ iztro@2.5.8
 
 預期的整合模型是**自行安裝**，不是 SaaS。
 
-一個使用者複製這個倉庫的 URL，並讓**他們自己的**代理或 CLI (Claude Code、Hermes、一個指令碼等) 在使用者的機器上**本地複製和執行它**。計算發生在使用者一側。沒有託管端點可以呼叫、沒有帳戶、**沒有 SaaS 整合必需** — 引擎是一個無狀態、確定性、離線的子程序。
+一個使用者複製這個倉庫的 URL，並讓**他們自己的**代理或 CLI (Claude Code、Hermes、一個指令碼等) 在使用者的機器上**本地複製和執行它**。計算發生在使用者一側。本倉庫不提供託管端點、不需帳戶、**不需 SaaS 整合** — 引擎是一個無狀態、確定性、離線的子程序。（偏好瀏覽器的使用者可用基於本引擎的獨立託管產品 [life.aicycle.cc](https://life.aicycle.cc)——它是獨立服務，不屬於本倉庫。）
 
-發佈者不營運此工具作為網路服務。依 MIT 條款，本地使用、修改、散布與託管使用都可以，細節見 `LICENSE`。
+本倉庫本身不作為網路服務營運。依 MIT 條款，本地使用、修改、散布與託管使用都可以，細節見 `LICENSE`。
 
 對於代理，合約很簡單：在倉庫工作目錄中用虛擬環境 Python 分派 `--json` 子程序，將 stdout 解析為 JSON，根據 `ok` (和退出碼) 分支，然後交付結構化物件。無需清理 — 它是無狀態的。完整的 CLI + JSON 合約在 **[AGENTS.md](./AGENTS.md)** 中。
 
@@ -336,7 +354,7 @@ iztro@2.5.8
 設定並使用 "life-chart-engine" — 一個從出生資料計算西洋本命星盤 +
 人類圖 + 紫微斗數 (Zi Wei Dou Shu) 的 CLI。
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. 計算一個圖表並將 stdout 讀為 JSON：

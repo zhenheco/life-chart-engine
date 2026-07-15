@@ -1,3 +1,47 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "life-chart-engine"
+version = "1.1.0"
+description = "Deterministic offline engine computing Western natal, Human Design, and Zi Wei Dou Shu (紫微斗數) charts from one birth record — CLI + JSON for humans and AI agents."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "ZHENHEAI LLC" }]
+keywords = ["astrology", "human-design", "ziwei", "natal-chart", "deterministic", "ai-agents"]
+classifiers = [
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+  "Topic :: Utilities",
+]
+requires-python = ">=3.12,<3.13"
+dependencies = ["astronomy-engine==2.1.19"]
+
+[project.urls]
+Repository = "https://github.com/zhenheco/life-chart-engine"
+
+[project.optional-dependencies]
+mcp = ["mcp==1.28.1"]
+
+[project.scripts]
+life-chart = "life_chart_engine.chart_engine:main"
+life-chart-engine = "life_chart_engine.chart_engine:main"
+life-chart-mcp = "life_chart_engine.mcp_server:main"
+
+# NOTE: `pip install -e .` is unsupported — hatchling rejects dev-mode installs
+# when `sources` rewrites a prefix (scripts → life_chart_engine). Develop via
+# `bash setup.sh` (.venv) instead; a follow-up may rename the directory.
+[tool.hatch.build.targets.wheel]
+packages = ["scripts"]
+exclude = ["scripts/build-iztro-bundle.sh"]
+
+[tool.hatch.build.targets.wheel.sources]
+"scripts" = "life_chart_engine"
+
+[tool.hatch.build.targets.wheel.force-include]
+"vendor/iztro.cjs" = "life_chart_engine/vendor/iztro.cjs"
+
 [tool.ruff]
 target-version = "py312"
 

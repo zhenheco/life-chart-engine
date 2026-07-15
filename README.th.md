@@ -22,7 +22,7 @@
 |--------|----------------------------|------------------------|
 | **Western natal** (Tropical / Placidus) | ดาราศาสตร์ตะวันตกแบบคลาสสิก — ที่ดาวเคราะห์นั่งเทียบกับจักรราศี ณ วัยเกิดของคุณ หารด้วยบ้าน 12 หลัง | Ascendant + Midheaven ดาวเคราะห์/จุด 12 ดวง (พระอาทิตย์ → โหนดใต้) ที่มีลักษณะ องศา บ้าน และสัญญาณ retrograde ลัอบอลแนน บ้านทั้ง 12 หลัง และด้านที่ตรวจพบทุกอย่าง (ผสม/หกเหลี่ยม/สี่เหลี่ยม/สามเหลี่ยม/ตรงข้าม) เรียงลำดับตามความเป็นไปได้ |
 | **Human Design (人類圖)** | การสังเคราะห์สมัยใหม่ของดาราศาสตร์ I Ching และระบบจักรเปิด อธิบายว่า "สายไฟ" พลังงานของคุณผ่านเกต ช่องทาง และศูนย์ | ประเภท อำนาจ โปรไฟล์ คำจำกัดความ Incarnation Cross วันที่ Design ที่เร็วกว่า 88° ศูนย์กำหนด/เปิด ช่องทางกำหนด และเกต activation ของดาวเคราะห์ต่อ personality และแผนภูมิ Design |
-| **Zi Wei Dou Shu (紫微斗數)** | ระบบดาราศาสตร์จีนดั้งเดิมที่จับคู่โชคชะตา ลงบน 12 พระราชวัง เต็มไปด้วยดาวชื่อ | Five Elements Class (五行局) Soul (命主) / Body (身主) ดัชนี hour (時辰) และข้อมูลต่อพระราชวัง — ganzhi, Soul/Body flags ช่วงอายุ decade และ stars หลัก/รอง/สมณฑ (ที่มีความเจิ่ม และ 四化) ตัวเลือกที่ดีที่สุด horoscope ทศวรรษ/ประจำปี |
+| **Zi Wei Dou Shu (紫微斗數)** | ระบบดาราศาสตร์จีนดั้งเดิมที่จับคู่โชคชะตา ลงบน 12 พระราชวัง เต็มไปด้วยดาวชื่อ | Five Elements Class (五行局) Soul (命主) / Body (身主) ดัชนี hour (時辰) และข้อมูลต่อพระราชวัง — ganzhi, Soul/Body flags ช่วงอายุ decade และ stars หลัก/รอง/สมณฑ (ที่มีความเจิ่ม และ 四化) พร้อมด้วย horoscope ทศวรรษ/ประจำปี |
 
 Type Authority และ Definition ใน Human Design **ไม่ได้รหัสแบบ hardcode** — ได้มาจากกราฟการเชื่อมต่อของศูนย์กำหนด
 
@@ -46,7 +46,7 @@ Type Authority และ Definition ใน Human Design **ไม่ได้ร�
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-ติดตั้งลง `~/.life-chart-engine` (override ด้วย `LIFE_CHART_DIR`) ไม่ใช้ `sudo` ไม่เปลี่ยนทั้งระบบ — แค่ clone repo, สร้าง CPython 3.12 venv แบบ isolated และ generate pinned iztro Node bundle ต้องมี `git`, [`uv`](https://docs.astral.sh/uv/) และ Node.js/npm รันซ้ำเมื่อไรก็ได้เพื่อ update เป็น version ล่าสุด
+ติดตั้งลง `~/.life-chart-engine` (override ด้วย `LIFE_CHART_DIR`) ไม่ใช้ `sudo` ไม่เปลี่ยนทั้งระบบ — แค่ clone repo, สร้าง CPython 3.12 venv แบบ isolated และ generate pinned iztro Node bundle ต้องมี `git`, [`uv`](https://docs.astral.sh/uv/) และ **Node.js ≥ 18** (รองรับ/ทดสอบบน 18 และ 24 — 紫微斗數 รันผ่าน Node sidecar หากไม่มี ทุกคำขอ chart จะล้มเหลวแบบแจ้งชัดเจน แทนที่จะเงียบ ๆ ตัดระบบที่สามทิ้ง) รันซ้ำเมื่อไรก็ได้เพื่อ update เป็น version ล่าสุด
 
 ### จากแหล่ง
 
@@ -253,19 +253,23 @@ iztro@2.5.8
 
 ## ข้อมูลอ้างอิง CLI flags
 
-ไม่มี `required=True` flags — argparse ไม่เคยผิดพลาดหากไม่มี ละเว้น `--date`/`--time`/`--tz`/`--lat`/`--lon` silently fall back ไปที่บุคคลตัวอย่าง built-in (`範例` เกิด `2000-01-01 12:00` UTC+8 Taipei 101) ดังนั้นสำหรับแผนภูมิที่ถูกต้อง ให้จัดหาทั้งหมด
+Flags การเกิดทั้งหกตัวเป็น **ข้อมูลจำเป็น** — ขาด flag ใดก็ตามจะออกด้วย exit `2` พร้อมข้อความ usage บน stderr และไม่มีอะไรบน stdout เลย คุณจึงไม่มีทางเข้าใจผิดว่าแผนภูมิของบุคคลตัวอย่างเป็นของคุณเอง หากต้องการดูบุคคลตัวอย่าง built-in (`範例` เกิด `2000-01-01 12:00` UTC+8 Taipei 101) ให้ระบุ `--example` อย่างชัดเจน
 
-| Flag | ประเภท | ต้องใช้สำหรับการใช้งานที่ถูกต้องหรือไม่ | ค่าเริ่มต้น | รูปแบบ / กฎ |
-|------|------|---------------------------|---------|---------------|
-| `--name` | string | ไม่ (cosmetic) | `"範例"` | ข้อความฟรี; echo เข้าสู่เอาต์พุตเท่านั้น |
-| `--gender` | string | เพียง Zi Wei เท่านั้น | `"女"` | ต้องถูกต้องแน่นอน `男` หรือ `女` (argparse `choices`; อื่น ๆ → ออก `2`) |
-| `--date` | string | **ใช่** | fall back ไปที่ `2000-01-01` | `YYYY-MM-DD` แยก `-` ไม่จำเป็น zero-pad |
-| `--time` | string | **ใช่** | fall back ไปที่ `12:00` | `HH:MM` 24-hour local clock time แยก `:` |
-| `--tz` | float | **ใช่** | fall back ไปที่ `8.0` | UTC offset รวม DST (Taiwan = `8`) เขียนไปที่ input key `tz_offset` |
-| `--lat` | float | **ใช่** | fall back ไปที่ `25.0330` | Latitude ในองศาทศนิยม (Western houses/Asc/MC) |
-| `--lon` | float | **ใช่** | fall back ไปที่ `121.5654` | Longitude ในองศาทศนิยม |
-| `--target` | string | ไม่ | `"2025-01-01"` | `YYYY-MM-DD`; Zi Wei luck-period reference date (運限參考日) |
-| `--json` | flag | ไม่ | `False` (Markdown) | Presence → JSON mode; absence → Markdown ไม่ใช้ค่า |
+> **Breaking change (v1.1.0):** พฤติกรรมเดิมที่ fall back ไปยังบุคคลตัวอย่างแบบเงียบ ๆ เมื่อขาด flags ถูกลบออกแล้ว สคริปต์ที่เคยพึ่งพาพฤติกรรมนี้ควรส่ง `--example`
+
+| Flag | ประเภท | จำเป็น | รูปแบบ / กฎ |
+|------|------|----------|---------------|
+| `--date` | string | **ใช่** | `YYYY-M-D` (zero-pad ไม่บังคับ เช่น `1990-6-15`) ต้องเป็นวันที่จริงตามปฏิทิน ปีอยู่ในช่วงที่รองรับ **1900–2100** |
+| `--time` | string | **ใช่** | `H:M` เวลาท้องถิ่นแบบ 24 ชั่วโมง (zero-pad ไม่บังคับ เช่น `8:30`) |
+| `--tz` | float | **ใช่** | UTC offset รวม DST (ไต้หวัน = `8`) อยู่ในช่วง `[-12, 14]` และเป็นค่า finite เขียนไปที่ input key `tz_offset` |
+| `--lat` | float | **ใช่** | Latitude ในองศาทศนิยม อยู่ในช่วง `[-90, 90]` และเป็นค่า finite |
+| `--lon` | float | **ใช่** | Longitude ในองศาทศนิยม อยู่ในช่วง `[-180, 180]` และเป็นค่า finite |
+| `--gender` | string | **ใช่** | ต้องเป็น `男` หรือ `女` เท่านั้น (มีผลต่อ Zi Wei; ค่าอื่น → exit `2`) |
+| `--example` | flag | ไม่ | คำนวณบุคคลตัวอย่าง built-in ใช้ร่วมกับ flags การเกิดทั้งหกตัวไม่ได้ (ใช้ร่วมกัน → exit `2`) แต่ใช้ร่วมกับ `--name`, `--target`, `--ziwei-day-divide`, `--json` ได้ |
+| `--name` | string | ไม่ | ข้อความอิสระ; echo เข้าสู่เอาต์พุตเท่านั้น ค่าเริ่มต้น `"範例"` |
+| `--target` | string | ไม่ | `YYYY-M-D`; วันที่อ้างอิง luck-period ของ Zi Wei (運限參考日) อยู่ในช่วง 1900–2100 เดียวกัน ค่าเริ่มต้น `"2025-01-01"` |
+| `--ziwei-day-divide` | string | ไม่ | กฎ 晚子時: `forward` (ค่าเริ่มต้น) นับ 23:00-23:59 เป็นวันถัดไป; `current` นับเป็นวันเดียวกัน |
+| `--json` | flag | ไม่ | มี flag → โหมด JSON; ไม่มี → Markdown ไม่รับค่า |
 
 > เครื่องมือทำ **ไม่** geocode สถานที่หรือค้นหาเขตเวลา ผู้เรียกต้องแปลง place → `lat`/`lon`/`tz` ตัวเอง — และเขตเวลา/DST คือแหล่งข้อผิดพลาดทั่วไปที่สุด ดังนั้นตรวจสอบ UTC offset ที่ใช้ที่สถานที่เกิด และวันเกิด
 
@@ -284,7 +288,7 @@ iztro@2.5.8
 | `input` | Echo ของเนื้อหาที่ปกติ: `name` `gender` `date` `time` `tz_offset` `lat` `lon` `target` (หมายเหตุ `tz_offset` ไม่ใช่ `tz`) |
 | `western` | `system` string `ascendant`/`midheaven` position objects `planets[]` `houses[]` (×12) `aspects[]` |
 | `human_design` | `type` `authority` `profile` `definition` `incarnation_cross` `design_date` `defined_centers[]` `open_centers[]` `channels[]` `gates[]` |
-| `ziwei` | `five_elements_class` `soul` `body` `hour_index` `palaces[]` `horoscope` (วัตถุหรือ `null`) |
+| `ziwei` | `five_elements_class` `soul` `body` `hour_index` `palaces[]` `horoscope` (เมื่อสำเร็จเป็น `{ decadal, yearly, age }` เสมอ — หาก horoscope ล้มเหลว คำขอทั้งหมดจะล้มเหลวอย่างชัดเจน) |
 | `meta` | `{ engine, version, ephemeris }` — ตัวอักษร (`ephemeris: "astronomy-engine"`). |
 
 สำหรับสัญญาฟิลด์เต็ม — ทุก key ประเภท และโปรโตคอลการเรียกใช้ตัวแทน — ดู **[AGENTS.md](./AGENTS.md)**
@@ -292,7 +296,7 @@ iztro@2.5.8
 ### Field quirks น่ารู้
 
 - **`aspects` ไม่ได้ capped ใน JSON** path JSON ส่งคืน *ทุก* ด้านที่ตรวจพบ เรียงลำดับจากน้อยไปมากตามหมอบ (แน่นที่สุดที่สาม) cap 10-item มีเพียงในรายงาน Markdown
-- **`ziwei.horoscope` คือ best-effort และอาจเป็น `null`** มันถูก wrap ใน `try/except`; ในข้อยกเว้นใด ๆ มันเป็นอนุกรม `null` เมื่อมีอยู่ มันคือ `{ decadal, yearly }` (sub-objects เหล่านั้นเปิดโครงสร้างภายในพิเศษ — `index` `mutagen[]` `stars[][]` `yearly_dec_star` ฯลฯ — เกินกว่าตัวจำหน่ายที่บันทึกไว้)
+- **`ziwei.horoscope` เป็นแบบ all-or-nothing** เมื่อสำเร็จจะเป็น `{ decadal, yearly, age }` เสมอ; หาก sidecar/horoscope ล้มเหลว คำขอทั้งหมดจะล้มเหลวอย่างชัดเจน (exit `1` / HTTP `500`) — จะไม่มีการปล่อย horoscope แบบบางส่วนหรือ `null` ใน response ที่ `"ok": true` เด็ดขาด `stars` ปรากฏเฉพาะใต้ `decadal`/`yearly` (ไม่เคยอยู่ใต้ `age`); `yearlyDecStar` อยู่ใต้ `yearly` เท่านั้น `mutagen` เป็น array ชื่อดาวล้วน `[str, …4]` ในลำดับ 祿/權/科/忌 คงที่ — **ไม่เปลี่ยนแปลงตั้งแต่ `schema_version` `1.0`** ส่วน `schema_version` `1.1` เป็นการ bump แบบ additive ที่ backward-compatible: นอกเหนือจาก `mutagen` ที่ไม่เปลี่ยน ยังเพิ่ม `mutagenTyped` (มุมมองแบบ typed `[{ "star", "type" }, …4]` ในลำดับเดียวกัน) บน `decadal`/`yearly`/`age`, เพิ่ม `decadal.ageRange` `[startAge, endAge]` และ sub-object `age` (小限 / annual minor limit ซึ่งค่าอาจเป็น `null`) การจับคู่ตำแหน่ง 祿/權/科/忌 ใน `mutagenTyped` คงที่สำหรับ 天干 ทั้ง 10 (sub-objects เหล่านั้นยังเปิดเผยโครงสร้างภายในเพิ่มเติม — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch` ฯลฯ — เกินกว่า placeholder ที่บันทึกไว้)
 - **สตริง Star เข้ารหัสความเจิ่ม + 四化** รูปแบบคือ `name(brightness)[mutagen]` กับแต่ละส่วน optional — เช่น `紫微(廟)[祿]` `紫微(廟)` `天機[祿]` หรือแค่ `天機` `adjective_stars` เป็นชื่อเรียบร้อยเท่านั้น (ไม่มีความเจิ่ม/mutagen)
 
 ---
@@ -322,9 +326,9 @@ iztro@2.5.8
 
 การรวมแบบ intended ถูก **self-install** ไม่ใช่ SaaS
 
-ผู้ใช้คัดลอก repo URL นี้ และ **ของตัวเอง** agent หรือ CLI (Claude Code Hermes a script ฯลฯ) clones มัน และรัน มัน **locally บนเครื่องของผู้ใช้** การคำนวณเกิดขึ้นบนด้านผู้ใช้ ไม่มี hosted endpoint ไป call ไม่มี account และ **ไม่จำเป็นต้องมี SaaS integration** — เครื่องมือเป็น stateless กำหนดได้ offline subprocess
+ผู้ใช้คัดลอก repo URL นี้ และ **ของตัวเอง** agent หรือ CLI (Claude Code Hermes a script ฯลฯ) clones มัน และรัน มัน **locally บนเครื่องของผู้ใช้** การคำนวณเกิดขึ้นบนด้านผู้ใช้ **repo นี้** ไม่มี hosted endpoint ให้เรียก ไม่ต้องมี account และ **ไม่จำเป็นต้องมี SaaS integration** — เอนจินเป็น stateless กำหนดได้ offline subprocess (สำหรับผู้ที่ชอบใช้ผ่านเบราว์เซอร์ มี[ผลิตภัณฑ์แบบโฮสต์](https://life.aicycle.cc)แยกต่างหากที่สร้างบนเอนจินนี้ — เป็นบริการคนละตัว ไม่ใช่ส่วนหนึ่งของ repo นี้)
 
-ผู้เผยแพร่ไม่ได้เปิดใช้งานเป็นบริการเครือข่าย ภายใต้ MIT การใช้ภายในเครื่อง การแก้ไข การแจกจ่าย และการโฮสต์ทำได้ตามเงื่อนไขใน `LICENSE`
+repo นี้เองไม่ได้ถูกดำเนินการเป็นบริการเครือข่าย ภายใต้ MIT การใช้ภายในเครื่อง การแก้ไข การแจกจ่าย และการโฮสต์ทำได้ตามเงื่อนไขใน `LICENSE`
 
 สำหรับตัวแทน สัญญาเรียบง่าย: dispatch subprocess `--json` กับ venv Python ใน repo workdir parse stdout เป็น JSON branch บน `ok` (และ exit code) จากนั้นส่งต่อ object ที่ได้รับการจัดโครงสร้าง ไม่ต้องการการทำความสะอาด — มันเป็น stateless สัญญา CLI + JSON เต็มอยู่ใน **[AGENTS.md](./AGENTS.md)**
 
@@ -336,7 +340,7 @@ iztro@2.5.8
 Set up and use "life-chart-engine" — a CLI that computes a Western natal chart +
 Human Design + Zi Wei Dou Shu (紫微斗數) from birth data.
 
-1. Install (needs `git`, `uv`, and Node.js/npm; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
+1. Install (needs `git`, `uv`, and Node.js ≥ 18; if uv is missing: curl -LsSf https://astral.sh/uv/install.sh | sh):
    curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 
 2. Compute a chart and read stdout as JSON:

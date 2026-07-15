@@ -7,6 +7,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB.svg)](#why-cpython-312-specifically)
 [![No telemetry · offline](https://img.shields.io/badge/no%20telemetry-offline-green.svg)](#faq)
+[![QA Gate](https://github.com/zhenheco/life-chart-engine/actions/workflows/qa-gate.yml/badge.svg?branch=main)](https://github.com/zhenheco/life-chart-engine/actions/workflows/qa-gate.yml)
+
+![life-chart-engine demo](./docs/demo.gif)
 
 `life-chart-engine` is a small, offline command-line tool. You give it one person's birth data — date, time, timezone, and place coordinates — and it computes three independent chart systems in one pass, then emits either a human-readable Markdown report or a structured JSON object for programs and AI agents to consume.
 
@@ -22,7 +25,7 @@ The engine runs three systems against the **same birth moment**, so their output
 |--------|----------------------------|------------------------|
 | **Western natal** (Tropical / Placidus) | Classical Western astrology — where the planets sat against the zodiac at your birth, divided into 12 houses. | Ascendant + Midheaven, 12 planets/points (太陽 → 南交點) with sign, degree, house and retrograde flag, all 12 house cusps, and every detected aspect (合相/六分/四分/三分/對分) sorted by tightness. |
 | **人類圖 Human Design** | A modern synthesis of astrology, the I-Ching, and the chakra system. Describes how your energy is "wired" via gates, channels, and centers. | Type, Authority, Profile, Definition, Incarnation Cross, the 88°-earlier Design date, defined/open centers, defined channels, and per-planet gate.line activations for both the Personality and Design charts. |
-| **紫微斗數 Zi Wei Dou Shu** | A traditional Chinese astrology system that maps fate onto a 12-palace board, populated by named stars. | 五行局 (Five Elements Class), 命主 (soul) / 身主 (body), the 時辰 hour index, and per-palace data — ganzhi, 命/身 flags, decadal age range, and major/minor/adjective stars (with brightness and 四化). Optionally a best-effort 大限/流年/小限 horoscope — its 四化 are a bare star-name array (`mutagen`) plus an additive typed `{star, type}` view (`mutagenTyped`), and the 大限 carries an age range. |
+| **紫微斗數 Zi Wei Dou Shu** | A traditional Chinese astrology system that maps fate onto a 12-palace board, populated by named stars. | 五行局 (Five Elements Class), 命主 (soul) / 身主 (body), the 時辰 hour index, and per-palace data — ganzhi, 命/身 flags, decadal age range, and major/minor/adjective stars (with brightness and 四化). Plus a 大限/流年/小限 horoscope — its 四化 are a bare star-name array (`mutagen`) plus an additive typed `{star, type}` view (`mutagenTyped`), and the 大限 carries an age range. |
 
 Type, Authority, and Definition in Human Design are **not hardcoded** — they are derived from the connectivity graph of the defined centers.
 
@@ -46,7 +49,15 @@ This engine does the real math instead of approximating or calling out to a serv
 curl -fsSL https://raw.githubusercontent.com/zhenheco/life-chart-engine/main/install.sh | bash
 ```
 
-Installs into `~/.life-chart-engine` (override with `LIFE_CHART_DIR`). No `sudo`, no system-wide changes — it only clones the repo, builds an isolated CPython 3.12 venv, and uses the checked-in iztro Node bundle. Requires `git`, [`uv`](https://docs.astral.sh/uv/), and Node.js. Re-run any time to update to the latest version.
+Installs into `~/.life-chart-engine` (override with `LIFE_CHART_DIR`). No `sudo`, no system-wide changes — it only clones the repo, builds an isolated CPython 3.12 venv, and uses the checked-in iztro Node bundle. Requires `git`, [`uv`](https://docs.astral.sh/uv/), and **Node.js ≥ 18** (supported/tested on 18 and 24 — 紫微斗數 runs via a Node sidecar; without it every chart request fails loudly rather than silently dropping the third system). Re-run any time to update to the latest version.
+
+### Try without cloning (PyPI)
+
+```bash
+uvx life-chart-engine --example --json
+```
+
+> Available from **v1.1.0 on PyPI**. If the package isn't published yet, use the installer above. `uv` provisions CPython 3.12 automatically; Node.js ≥ 18 still required. `pip install life-chart-engine` also works but needs CPython 3.12 specifically.
 
 ### From source
 
@@ -55,6 +66,8 @@ git clone https://github.com/zhenheco/life-chart-engine.git
 cd life-chart-engine
 bash setup.sh
 ```
+
+> Development note: `pip install -e .` is not supported (the build maps `scripts/` → the `life_chart_engine` package, which hatchling's dev mode can't rewrite). Use the `setup.sh` venv for development.
 
 ### What `setup.sh` does
 
@@ -100,6 +113,12 @@ Zi Wei uses the checked-in `vendor/iztro.cjs` bundle. Maintainers regenerate it 
 iztro@2.5.8
 esbuild@0.28.1
 ```
+
+---
+
+## Hosted version
+
+Don't want to install anything? **[life.aicycle.cc](https://life.aicycle.cc)** is a separate, maintained hosted product built on this engine — enter one birth record in the browser and read all three systems. The engine repo itself stays a pure offline compute core (no accounts, no analytics, no network); everything product-side lives in the hosted service.
 
 ---
 
@@ -270,7 +289,9 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
 
 ### HTTP service
 
-The optional FastAPI wrapper exposes the same JSON contract over HTTP:
+The optional FastAPI wrapper exposes the same JSON contract over HTTP. It runs
+from a **source checkout** (`bash setup.sh` installs FastAPI/Uvicorn); the PyPI
+wheel ships only the CLI and MCP entry points, not `server.py`:
 
 ```bash
 uvicorn server:app --host 0.0.0.0 --port 8000
@@ -280,8 +301,10 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 - `POST /chart` accepts JSON keys matching the CLI flags: `date`, `time`, `tz`,
   `lat`, `lon`, `gender`, optional `name`, optional `target`, optional
   `ziwei_day_divide`.
-- If `ENGINE_API_KEY` is set, requests to `/chart` must include
-  `X-Engine-Key: <value>` or they return `401`.
+- Auth is fail-closed: with `ENGINE_API_KEY` set, `/chart` requests must include
+  `X-Engine-Key: <value>` or they return `401`; **without** it every `/chart`
+  request returns `503` unless `ENGINE_ALLOW_OPEN=1` is set (local/dev only).
+  `GET /health` is always open.
 
 For Hetzner Docker+Caddy deployment, see **[DEPLOY-HETZNER.md](./DEPLOY-HETZNER.md)**.
 
@@ -335,20 +358,25 @@ It renders all three systems on one page and adds three conveniences:
 
 ## CLI flags reference
 
-There are **no `required=True` flags** — argparse never errors on a missing one. Omitting `--date`/`--time`/`--tz`/`--lat`/`--lon` silently falls back to a built-in example person (`範例`, born `2000-01-01 12:00`, UTC+8, Taipei 101). So for a correct chart, supply them all.
+All six birth flags are **required** — a missing flag exits `2` with usage on stderr and nothing on stdout, so you can never mistake the example person's chart for your own. To see the built-in example person (`範例`, born `2000-01-01 12:00`, UTC+8, Taipei 101), pass `--example` explicitly.
 
-| Flag | Type | Required for correct use? | Default | Format / rule |
-|------|------|---------------------------|---------|---------------|
-| `--name` | string | No (cosmetic) | `"範例"` | Free text; echoed into output only. |
-| `--gender` | string | Only for 紫微 | `"女"` | Must be exactly `男` or `女` (argparse `choices`; anything else → exit `2`). |
-| `--date` | string | **Yes** | falls back to `2000-01-01` | `YYYY-MM-DD`, split on `-`. No zero-pad requirement. |
-| `--time` | string | **Yes** | falls back to `12:00` | `HH:MM`, 24-hour local clock time, split on `:`. |
-| `--tz` | float | **Yes** | falls back to `8.0` | UTC offset including DST (Taiwan = `8`). Written to input key `tz_offset`. |
-| `--lat` | float | **Yes** | falls back to `25.0330` | Latitude in decimal degrees (Western houses/Asc/MC). |
-| `--lon` | float | **Yes** | falls back to `121.5654` | Longitude in decimal degrees. |
-| `--target` | string | No | `"2025-01-01"` | `YYYY-MM-DD`; 紫微 luck-period reference date (運限參考日). |
-| `--ziwei-day-divide` | string | No | `"forward"` | 晚子時 rule: `forward` counts 23:00-23:59 as next day; `current` counts it as current day. |
-| `--json` | flag | No | `False` (Markdown) | Presence → JSON mode; absence → Markdown. Takes no value. |
+> **Breaking change (v1.1.0):** the old silent fallback to the example person on missing flags has been removed. Scripts that relied on it should pass `--example`.
+
+| Flag | Type | Required | Format / rule |
+|------|------|----------|---------------|
+| `--date` | string | **Yes** | `YYYY-M-D` (zero-padding optional, e.g. `1990-6-15`). Real calendar date, year within the supported window **1900–2100**. |
+| `--time` | string | **Yes** | `H:M`, 24-hour local clock time (zero-padding optional, e.g. `8:30`). |
+| `--tz` | float | **Yes** | UTC offset including DST (Taiwan = `8`), within `[-12, 14]`, finite. Written to input key `tz_offset`. |
+| `--lat` | float | **Yes** | Latitude in decimal degrees, within `[-90, 90]`, finite. |
+| `--lon` | float | **Yes** | Longitude in decimal degrees, within `[-180, 180]`, finite. |
+| `--gender` | string | **Yes** | Must be exactly `男` or `女` (affects 紫微; anything else → exit `2`). |
+| `--example` | flag | No | Compute the built-in example person. Mutually exclusive with all six birth flags (combining → exit `2`); may combine with `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
+| `--name` | string | No | Free text; echoed into output only. Default `"範例"`. |
+| `--target` | string | No | `YYYY-M-D`; 紫微 luck-period reference date (運限參考日), same 1900–2100 window. Default `"2025-01-01"`. |
+| `--ziwei-day-divide` | string | No | 晚子時 rule: `forward` (default) counts 23:00-23:59 as next day; `current` counts it as current day. |
+| `--json` | flag | No | Presence → JSON mode; absence → Markdown. Takes no value. |
+
+> **Install-path note (Linux/macOS):** `pip install --user life-chart-engine` and the git `install.sh` both place a `life-chart` executable at `~/.local/bin/life-chart` — installing both means the later one silently overwrites the symlink/script. Pick one method (or use `uvx`, which is unaffected). On Windows, pip user-installs go to the Python `Scripts\` directory instead and do not collide with `install.sh` (which is POSIX-only).
 
 > The engine does **not** geocode places or look up time zones. The caller must convert place → `lat`/`lon`/`tz` themselves — and timezone/DST is the most common source of error, so verify the UTC offset that applied at the birth place and birth date.
 
@@ -367,7 +395,7 @@ The `--json` envelope has seven top-level keys, in this order:
 | `input` | Echo of normalized inputs: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (note `tz_offset`, not `tz`). |
 | `western` | `system` string, `ascendant`/`midheaven` position objects, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |
-| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (object or `null`; when present `{ decadal, yearly, age }`). |
+| `ziwei` | `five_elements_class`, `soul`, `body`, `hour_index`, `palaces[]`, `horoscope` (always `{ decadal, yearly, age }` on success — a horoscope failure fails the whole request loudly). |
 | `meta` | `{ engine, version, ephemeris }` — all literals (`ephemeris: "astronomy-engine"`). |
 
 For the full field contract — every key, type, and the agent invocation protocol — see **[AGENTS.md](./AGENTS.md)**.
@@ -375,7 +403,7 @@ For the full field contract — every key, type, and the agent invocation protoc
 ### Field quirks worth knowing
 
 - **`aspects` are NOT capped in JSON.** The JSON path returns *every* detected aspect, sorted ascending by orb (tightest first). The 10-item cap exists only in the Markdown report.
-- **`ziwei.horoscope` is best-effort and may be `null`.** It is wrapped in `try/except`; on any exception it serializes as `null`. When present it is `{ decadal, yearly, age }`. `mutagen` is a bare star-name array `[str, …4]` in fixed 祿/權/科/忌 order — **unchanged since `schema_version` `1.0`**. `schema_version` `1.1` is an additive, backward-compatible bump: alongside the unchanged `mutagen` it adds `mutagenTyped` (a typed view `[{ "star", "type" }, …4]` in the same order) on `decadal`/`yearly`/`age`, `decadal.ageRange` `[startAge, endAge]`, and the `age` sub-object (the 小限 / annual minor limit, may be `null`). The positional 祿/權/科/忌 mapping in `mutagenTyped` is invariant across all 10 天干. (Those sub-objects also expose extra internal structure — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch`, etc. — beyond the documented placeholder.)
+- **`ziwei.horoscope` is all-or-nothing.** On success it is always `{ decadal, yearly, age }`; a sidecar/horoscope failure fails the whole request loudly (exit `1` / HTTP `500`) — a partial or `null` horoscope is never emitted in an `"ok": true` response. `stars` appears only under `decadal`/`yearly` (never `age`); `yearlyDecStar` only under `yearly`. `mutagen` is a bare star-name array `[str, …4]` in fixed 祿/權/科/忌 order — **unchanged since `schema_version` `1.0`**. `schema_version` `1.1` is an additive, backward-compatible bump: alongside the unchanged `mutagen` it adds `mutagenTyped` (a typed view `[{ "star", "type" }, …4]` in the same order) on `decadal`/`yearly`/`age`, `decadal.ageRange` `[startAge, endAge]`, and the `age` sub-object (the 小限 / annual minor limit, may be `null`). The positional 祿/權/科/忌 mapping in `mutagenTyped` is invariant across all 10 天干. (Those sub-objects also expose extra internal structure — `index`, `palaceNames[]`, `heavenlyStem`/`earthlyBranch`, etc. — beyond the documented placeholder.)
 - **Star strings encode brightness + 四化.** Format is `name(brightness)[mutagen]`, with each part optional — e.g. `紫微(廟)[祿]`, `紫微(廟)`, `天機[祿]`, or plain `天機`. `adjective_stars` are plain names only (no brightness/mutagen).
 
 ---
@@ -401,13 +429,28 @@ Not every output carries the same confidence. Read each tier accordingly:
 
 ---
 
+## Use it as an MCP server (Claude Desktop / Claude Code)
+
+```bash
+pip install 'life-chart-engine[mcp]'
+```
+
+```jsonc
+// Claude Desktop config → mcpServers
+{ "life-chart-engine": { "command": "life-chart-mcp" } }
+```
+
+One tool — `compute_chart` — same inputs as the CLI flags, returns the full
+JSON envelope as text. Deterministic, offline, stdio-only. See
+[`AGENTS.md`](./AGENTS.md) §6 for the exact schema.
+
 ## Use it from an AI agent / Hermes
 
 The intended integration model is **self-install**, not SaaS.
 
-A user copies this repo's URL, and **their own** agent or CLI (Claude Code, Hermes, a script, etc.) clones it and runs it **locally on the user's machine**. The compute happens on the user's side. There is no hosted endpoint to call, no account, and **no SaaS integration required** — the engine is a stateless, deterministic, offline subprocess.
+A user copies this repo's URL, and **their own** agent or CLI (Claude Code, Hermes, a script, etc.) clones it and runs it **locally on the user's machine**. The compute happens on the user's side. This repo exposes no hosted endpoint, needs no account, and requires **no SaaS integration** — the engine is a stateless, deterministic, offline subprocess. (A separate [hosted product](https://life.aicycle.cc) built on this engine exists for people who prefer a browser — it is a distinct service, not part of this repo.)
 
-The publisher does not operate it as a network service. Under MIT, local use, modification, distribution, and hosted use are allowed under the terms in `LICENSE`.
+This repo itself is not operated as a network service. Under MIT, local use, modification, distribution, and hosted use are allowed under the terms in `LICENSE`.
 
 For agents, the contract is simple: dispatch the installed `life-chart --json` wrapper when available, or fall back to the venv Python command in the repo workdir, parse stdout as JSON, branch on `ok` (and the exit code), then hand off the structured object. No cleanup needed — it is stateless. The full CLI + JSON contract lives in **[AGENTS.md](./AGENTS.md)**.
 
