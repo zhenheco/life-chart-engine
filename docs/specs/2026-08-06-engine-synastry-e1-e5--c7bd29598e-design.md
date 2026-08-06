@@ -76,6 +76,8 @@
 | `server.py` | HTTP surface；新增 `POST /synastry`、`/health` 加 `schema_version` | `POST /synastry` | 修改 |
 | `scripts/mcp_server.py` | **明確排除於 synastry 之外**：維持單盤工具，僅更新 docstring 內的版本字面值 | 不變 | 修改（僅字面值） |
 | `webapp.py` | **明確排除於 synastry 之外**：本地單盤 UI，不新增合盤畫面 | 不變 | 不動 |
+| `pyproject.toml` | 註冊 `deploy_regression` pytest marker | — | 修改（**新建** `[tool.pytest.ini_options]` 區塊，目前不存在） |
+| `DEPLOY-HETZNER.md` | 驗證章節加入部署後回歸指令 | — | 修改（**只加驗證章節**；不得順手固化目前 git 版本裡已過期的主機／路徑，見 §風險 2） |
 
 設計約束：`build_synastry` 只呼叫既有的 `western()` / `human_design()` 取得行星位置、宮頭、角度點與閘門啟動，
 **不得重複實作行星位置計算或閘門判定**；每人的單盤計算在一次請求內只跑一次，供三個模組共用。
@@ -118,9 +120,12 @@
     —— 三處皆改為 `"1.2"`。
     `tests/test_server.py::test_health` 現為**完全相等**斷言 `response.json() == {"ok": True}`，
     必須改為 `{"ok": True, "schema_version": "1.2"}`。
+    同檔的 helper `build_json_or_error` 的失敗 envelope 常數（`{"ok": False, "error": ..., "schema_version": "1.1"}`）
+    **也必須改為 `"1.2"`**：它模擬的正是本節列為執行期必改的 exit-1 envelope，
+    而 baseline 含 `ok:false` 的 fixture 會走到這條路徑並被同一個 `got["schema_version"]` 斷言檢查。
   - **測試不得改**：`tests/test_engine_astronomy_contract.py` 中對 **fixture** 的斷言
-    （`assert data["engine_schema_version"] == "1.1"`）與模擬 envelope 的常數
-    —— 它們描述的是未變動的基線資料。
+    （`assert data["engine_schema_version"] == "1.1"`）與 `test_main_accepts_argv…` 的 monkeypatch envelope
+    —— 它們描述的是未變動的基線資料，不是引擎當前輸出。
   - **文件必改**：`AGENTS.md`（§1 identity、**§2 的 `/chart` 回傳版本敘述**、§4 output reference、
     **§5 的 exit-1 envelope 範例**）、`README.md`（Output reference）、
     `scripts/mcp_server.py` docstring、18 份翻譯 README 中敘述**當前** `schema_version` 之處
@@ -358,12 +363,14 @@ Response 頂層形狀固定：
   | 頭 | Head | `communication`, `decision_power` |
   | 邏輯 | Ajna | `communication`, `decision_power` |
   | 喉 | Throat | `communication`, `action_tempo` |
-  | G | G (Identity) | `commitment_stability`, `autonomy_boundary` |
-  | 意志 | Heart / Ego | `money_division`, `decision_power` |
+  | G | G | `commitment_stability`, `autonomy_boundary` |
+  | 意志 | Heart | `money_division`, `decision_power` |
   | 情緒 | Solar Plexus | `emotion_regulation`, `conflict_repair` |
   | 薦骨 | Sacral | `action_tempo`, `intimacy_attraction` |
   | 脾 | Spleen | `timing_context`, `autonomy_boundary` |
   | 根 | Root | `action_tempo`, `emotion_regulation` |
+
+  「英文」欄即 §值域與 slug 表的 raw_fact 值，兩處必須逐字相同。
 
 ### 西洋計算規則
 
@@ -482,7 +489,7 @@ Response 頂層形狀固定：
 
   | 情況 | status | `error` | `field` |
   |---|---|---|---|
-  | body 非 JSON | 400 | `invalid_json` | `null` |
+  | body 非 JSON（含非法 UTF-8） | 400 | `invalid_json` | `null` |
   | body 非物件（如 JSON 陣列或字串） | 400 | `invalid_input` | `person_a` |
   | `person_a`／`person_b` 缺漏或非物件 | 400 | `invalid_input` | `person_a` / `person_b` |
   | 缺 `date`／`tz`／`lat`／`lon`／`gender` | 400 | `invalid_input` | 該欄位名 |
@@ -506,6 +513,12 @@ Response 頂層形狀固定：
   本次新增 `ComputationUnsupportedError(ValueError)`，由 `ephemeris.py` 在這兩處改拋，
   `server.py` 依**型別**映射 422、其餘例外映射 500。靠訊息字串比對會在文案微調時無聲失效。
   此變更對 `/chart` 的既有行為為 no-op（它仍把所有例外歸為 500），只讓 `/synastry` 能分類。
+
+  **body 解析階段一律 `except ValueError` 映射 `invalid_json`**，不得只捕 `JSONDecodeError`：
+  `await request.json()` 對非法 UTF-8 body 拋的是 `UnicodeDecodeError`（`ValueError` 的子類但**不是**
+  `JSONDecodeError`），只捕後者會讓它落到 500，違反上表。
+  **body 大小上限**沿用前置 reverse proxy（Caddy）的限制，本層不另設 guard；
+  Starlette 會全量緩衝 body，但 `/synastry` 在金鑰驗證之後才讀 body，未授權者無法用它放大資源消耗。
 
   `time` 格式錯誤**不視為時間未知**：靜默降級會讓打錯字的呼叫者拿到殘缺解讀卻以為完整。
   `person_a` 與 `person_b` 完全相同 → **接受並照常計算**（所有相位 orb 為 0 是正確結果）。
@@ -532,8 +545,12 @@ Response 頂層形狀固定：
   無新增 secret、無新增外部呼叫、無網路存取。
   金鑰比對改用 `hmac.compare_digest`（既有的 `x_engine_key != key` 非常數時間）；
   這是**契約不變的內部強化**，對兩個 endpoint 同時生效，回應碼與 body 完全不變。
-  **必須先判 `None`**：`hmac.compare_digest(None, key)` 會 `TypeError`，把「缺 header」從 401 變成 500。
-  寫法固定為 `if x_engine_key is None or not hmac.compare_digest(x_engine_key, key): -> 401`。
+  **必須先判 `None`、且必須以 bytes 比較**：`hmac.compare_digest(None, key)` 會 `TypeError`，
+  把「缺 header」從 401 變成 500；而 `compare_digest` 的 str 形式**只接受 ASCII**，
+  Starlette 以 latin-1 解 header，攜帶非 ASCII 金鑰同樣會 `TypeError` → 500。
+  寫法固定為：
+  `if x_engine_key is None or not hmac.compare_digest(x_engine_key.encode("utf-8", "surrogateescape"), key.encode("utf-8", "surrogateescape")): -> 401`。
+  測試須涵蓋非 ASCII 金鑰值回 401 而非 500。
 - **邊界/效能**：0°/360° 跨界以最短弧判定；每人單盤在一次請求內只算一次並共用；
   合盤為 O(11×11) 組合，無 rate limit 需求；不得拖慢既有 `/chart` 路徑。
 - **type → strategy 對照**（引擎現有 `human_design()` 只算 type 與 authority，無 strategy，此表為新增）：
@@ -603,6 +620,7 @@ Response 頂層形狀固定：
   - [ ] `aspects[]` 依 `salience` desc → `feature_id` asc 排序（測試以人工建構的同 salience 兩筆斷言 tie-break）。
   - [ ] 對至少 5 組樣本盤斷言每筆 evidence 的 `dimensions` ⊂ `themes-v1`，且依 §dimensions 規則（來源表列內順序、A 先 B 後、首次出現去重）產生。
   - [ ] `data_confidence` 三組測試：兩側已知 → `0.95`；**未知側月亮**參與 → `0.6`；已知側月亮參與但另一側未知 → **`0.85`**。
+  - [ ] **時間未知的推估時刻是該側 `tz` 的當地 12:00，不是 UTC 12:00**：對一組 `tz` 非 0 的未知側輸入，斷言其結果與「同一人明確給定 `--time 12:00`」的結果 deep-equal（測試一則）。沒有這條，用 UTC 12:00 的實作會通過全部其他 AC，而行星位置最多可差 ±14 小時。
   - [ ] `scripts/semantics.py` 的 `THEMES_V1` 與 `tests/fixtures/themes-v1.json` 逐字相同（含順序）。
   - [ ] **`validate_evidence` 必須會拒絕**：對下列五種缺陷各 raise 一次（測試五則）——缺任一必填鍵（以 13 個必填鍵 `feature_id`／`system`／`method`／`method_version`／`subject`／`object`／`raw_fact`／`dimensions`／`salience`／`ease_or_tension`／`method_consensus`／`data_confidence`／`participates_in_convergence` 逐一移除）、`ease_or_tension` 為值域外的值、`feature_id` 含底線、`feature_id` 不符 `^[a-z]+-[a-z0-9-]+$`、`dimensions` 含非 `themes-v1` ID。沒有這條，E3／E4 用「通過驗證函式」證明形狀的那些 AC 可被 no-op 實作全綠。
   - [ ] `build_synastry_json` 在無網路環境下可完整執行（測試比照 `tests/test_sidecar_no_network.py` 的 socket guard）。
@@ -617,6 +635,7 @@ Response 頂層形狀固定：
   - [ ] 方向語意：`a_planets_in_b_houses` 的每筆 `subject == "A"`（visitor）、`object == "B"`（owner），`feature_id` 形如 `w-ovl-a-<planet>-in-b-h<n>`（測試斷言）。
   - [ ] house overlay 的 `salience == round(planet_weight × 0.8, 3)`、`ease_or_tension == "mixed"`、`participates_in_convergence == false`（測試各一則）。
   - [ ] 角度點接觸的 `salience == round(orb_weight × 0.5, 3)`（`planet_weight` **固定 0.5**，不取 max），`participates_in_convergence == true`（測試一則手算對照：太陽拱 ASC orb 2.0，`orb_weight = 1-(2/4)² = 0.75`，`salience = 0.375`，並斷言不是 0.75）。
+  - [ ] **`angle_contacts_a_to_b` 與 `angle_contacts_b_to_a` 的每個元素通過 `validate_evidence`**，且 `feature_id` 符合 `w-ang-<subject>-<planet>-<aspect>-<object>-<angle>` 模板（測試各一則）。沒有這條，這兩個陣列可以缺 `system`／`method`／`method_version`／`method_consensus` 而所有其他 AC 全綠。
   - [ ] 構造 A 火星落 B 十宮但 B 火星不落 A 十宮的資料，斷言兩陣列不對稱。
   - [ ] 角度點接觸雙向分開，orb 行星 3°／日月 4°；兩端皆為特殊天體時取較小者（北交點對 ASC → 2°，測試一則）。測試涵蓋「月亮拱 ASC 用 4° 非 6°」界內／界外各一。
   - [ ] **角度點對角度點不產生 evidence**（測試斷言）。
@@ -640,7 +659,7 @@ Response 頂層形狀固定：
   - [ ] `raw_fact.a_gates`／`b_gates` 依閘門編號 asc、`centers` 依 lo→hi 中心順序（測試斷言）。
   - [ ] 每條通道在 `channel_connections[]` 至多出現一次（以 `raw_fact.channel` 斷言集合大小 == 元素數）；`none` 者不輸出。
   - [ ] 輸出 `center_states[]`：**9 個中心全部出現、每個恰好一筆**，順序為頭→邏輯→喉→G→意志→情緒→薦骨→脾→根（測試逐筆斷言 `raw_fact.center` 的完整期望序列）；`state` ∈ 五個值；`causing_channels` 於 `defined_by_merge` 時非空且依字串 asc（測試斷言其順序）、其餘為 `[]`。
-  - [ ] `center_states` 的 evidence：`salience == 0.5`、`ease_or_tension == "mixed"`、`participates_in_convergence == false`、`subject`／`object` 皆為 `null`、`dimensions` ＝ 該中心那一列的 theme、`feature_id` 形如 `hd-ctr-<center_slug>-<state_slug>` 且不含底線（測試各一則）。
+  - [ ] `center_states` 的每個元素**通過同一個 `validate_evidence`**；並逐欄斷言 `salience == 0.5`、`ease_or_tension == "mixed"`、`participates_in_convergence == false`、`subject`／`object` 皆為 `null`、`dimensions` ＝ 該中心那一列的 theme、`feature_id` 形如 `hd-ctr-<center_slug>-<state_slug>` 且不含底線（測試各一則）。
   - [ ] `participants.person_x` 輸出 `type`／`strategy`／`authority`／`split_bridges`／`hanging_gates_completed`；`strategy` 依 §type → strategy 表（測試涵蓋五種 type）；`authority` 值域為引擎現行六個中文字面值之一。
   - [ ] `split_bridges` 依 §定義（該人自身被切分的定義中心，因合併新形成、連接原本不同分量的通道）產生，元素為 `{channel, centers}`，依 `channel` 字串 asc；自身單一定義或無定義時為 `[]`（測試：以一組二分人資料斷言逐值期望清單，另一組單一定義斷言 `[]`）。
   - [ ] `hanging_gates_completed` 為**該人自身的懸掛閘門被對方補足**者，元素為 `{own_gate, partner_gate, channel}`，依 `own_gate` asc → `channel` 字串 asc（測試：以一組 electromagnetic 資料斷言 A 與 B 兩側各自的逐值期望清單並斷言方向不互換；另一則以**同一個 `own_gate` 被兩條通道補足**的資料，斷言完整順序，證明次要鍵存在）。
@@ -670,7 +689,8 @@ Response 頂層形狀固定：
   - [ ] **極地座標回 `422 computation_unsupported`**（斷言不是 500、`message` 為固定字串且**不含** `placidus undefined at high latitude`）；斷言其 body 的**鍵集合恰為** `{ok, error, message}`（無 `field`／`detail`），而 `400 invalid_input` 的鍵集合恰為 `{ok, error, field, detail}`（測試各一則）。
   - [ ] 422 由 `ComputationUnsupportedError` 型別映射而非訊息比對（測試：注入一個訊息完全不同的 `ComputationUnsupportedError` 仍得 422；注入一般 `ValueError` 得 500）。
   - [ ] **極地座標 + 任一側時間未知時仍會計算宮位**：以一組在 12:00 也不收斂的高緯座標斷言回 `422`（不得因不輸出落宮而跳過宮位計算、降級為 200 partial）。測試資料必須挑在 12:00 也失敗者——收斂性隨恆星時變動，挑錯資料會讓這條測試偶然變綠。
-  - [ ] 缺 `X-Engine-Key` header（值為 `None`）回 `401` 而非 `500`（測試一則，守住 `hmac.compare_digest` 的 `None` 前置判斷）。
+  - [ ] 缺 `X-Engine-Key` header（值為 `None`）回 `401` 而非 `500`；**非 ASCII 的 header 值**同樣回 `401` 而非 `500`（測試各一則，守住 `None` 前置判斷與 bytes 比較）。
+  - [ ] **非法 UTF-8 body 回 `400 invalid_json`** 而非 500（測試一則，守住 `except ValueError` 而非只捕 `JSONDecodeError`）。
   - [ ] **`node` 不在 PATH 時 `POST /synastry` 仍回 200**（測試一則，prior art：`tests/test_node_absence.py`）。
   - [ ] 其餘內部錯誤回 `500`，body 為 `{"ok": false, "error": "internal_error", "message": "synastry computation failed"}`，`message` 不含例外字串。
   - [ ] **CLI 雙人模式計算失敗**：極地座標下 exit `1`，stdout 為 `{"ok": false, "error": "computation_unsupported", "message": "<固定字串>", "schema_version": "1.2"}`，斷言**不含** `str(exc)` 內容（測試一則）。
