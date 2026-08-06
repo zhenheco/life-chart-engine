@@ -174,7 +174,7 @@ iztro@2.5.8
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ iztro@2.5.8
 | Блок | Резюме |
 |------|--------|
 | `ok` | `true` при успехе (`false` в оболочке ошибки). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Эхо нормализованных входов: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (обратите внимание на `tz_offset`, не `tz`). |
 | `western` | Строка `system`, объекты позиции `ascendant`/`midheaven`, массивы `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, массивы `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

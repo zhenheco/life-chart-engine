@@ -302,7 +302,7 @@ def build_json(inp):
     horoscope=dict(decadal=_safe(zw['dec']), yearly=_safe(zw['yr']), age=_safe(zw['age']))
     return {
         "ok": True,
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "input": {
             "name": inp["name"],
             "gender": inp["gender"],
@@ -375,13 +375,26 @@ def to_json_text(envelope):
     return json.dumps(envelope, ensure_ascii=False, indent=2)
 
 
+def build_synastry_json(inp_a, inp_b):
+    """Re-export; implementation lives in ``scripts/synastry.py`` (no cycle)."""
+    try:
+        from .synastry import build_synastry_json as _impl
+    except ImportError:
+        from synastry import build_synastry_json as _impl
+    return _impl(inp_a, inp_b)
+
+
+_B_FLAG_ATTRS = ("date_b", "time_b", "tz_b", "lat_b", "lon_b", "gender_b")
+_B_REQUIRED_ATTRS = ("date_b", "tz_b", "lat_b", "lon_b", "gender_b")
+
+
 def _parse_args(argv=None):
     import argparse
     p=argparse.ArgumentParser(description="三系統完整盤面引擎（西洋星盤+人類圖+紫微）")
     p.add_argument('--name', default=INPUT['name'])
     p.add_argument('--gender', choices=['男','女'])
     p.add_argument('--date', help='西曆 YYYY-MM-DD')
-    p.add_argument('--time', help='本地時鐘時間 HH:MM (24h)')
+    p.add_argument('--time', help='本地時鐘時間 HH:MM (24h)；synastry 模式可省略或 unknown')
     p.add_argument('--tz', help='出生地當時 UTC 時差（含夏令時，如台灣=8）')
     p.add_argument('--lat', help='緯度')
     p.add_argument('--lon', help='經度')
@@ -390,12 +403,67 @@ def _parse_args(argv=None):
                    choices=['forward','current'], help='晚子時規則：forward=算次日, current=算當日')
     p.add_argument('--example', action='store_true', help='使用內建範例出生資料')
     p.add_argument('--json', action='store_true', default=False)
+    # Person B (synastry mode): any -b flag enters dual-person mode
+    p.add_argument('--date-b', dest='date_b', help='Person B 西曆 YYYY-MM-DD')
+    p.add_argument('--time-b', dest='time_b', help='Person B 本地時鐘 HH:MM 或 unknown')
+    p.add_argument('--tz-b', dest='tz_b', help='Person B UTC 時差')
+    p.add_argument('--lat-b', dest='lat_b', help='Person B 緯度')
+    p.add_argument('--lon-b', dest='lon_b', help='Person B 經度')
+    p.add_argument('--gender-b', dest='gender_b', choices=['男', '女'], help='Person B 性別')
     a=p.parse_args(argv)
+
+    synastry_mode = any(getattr(a, attr) is not None for attr in _B_FLAG_ATTRS)
+
+    if a.example and synastry_mode:
+        supplied_b = [f"--{attr.replace('_', '-')}" for attr in _B_FLAG_ATTRS
+                      if getattr(a, attr) is not None]
+        p.error(
+            f"--example is mutually exclusive with synastry -b flags "
+            f"({', '.join(supplied_b)})"
+        )
+
     birth_fields = ('gender', 'date', 'time', 'tz', 'lat', 'lon')
     supplied_birth_fields = [field for field in birth_fields if getattr(a, field) is not None]
     if a.example and supplied_birth_fields:
         flags = ', '.join(f"--{field}" for field in supplied_birth_fields)
         p.error(f"--example cannot be combined with birth flags: {flags}")
+
+    if synastry_mode:
+        if not a.json:
+            p.error("synastry mode only supports --json")
+        missing_b = [f"--{attr.replace('_', '-')}" for attr in _B_REQUIRED_ATTRS
+                     if getattr(a, attr) is None]
+        # A-side required fields in synastry mode: time is optional (unknown allowed)
+        a_required = ('gender', 'date', 'tz', 'lat', 'lon')
+        missing_a = [f"--{field}" for field in a_required if getattr(a, field) is None]
+        missing = missing_a + missing_b
+        if missing:
+            p.error("the following arguments are required: " + ', '.join(missing))
+
+        raw_a = {
+            'name': a.name, 'gender': a.gender, 'date': a.date, 'time': a.time,
+            'tz': a.tz, 'lat': a.lat, 'lon': a.lon, 'target': a.target,
+            'ziwei_day_divide': a.ziwei_day_divide,
+        }
+        raw_b = {
+            'name': 'B', 'gender': a.gender_b, 'date': a.date_b, 'time': a.time_b,
+            'tz': a.tz_b, 'lat': a.lat_b, 'lon': a.lon_b, 'target': a.target,
+            'ziwei_day_divide': a.ziwei_day_divide,
+        }
+        try:
+            inp_a = validate_input(raw_a, allow_unknown_time=True)
+        except ValueError as exc:
+            field, separator, detail = str(exc).partition(':')
+            p.error(f"--{field}:{detail}" if separator else str(exc))
+        try:
+            inp_b = validate_input(raw_b, allow_unknown_time=True)
+        except ValueError as exc:
+            # B-side validation errors must name the -b flag so callers can
+            # tell which person failed (e.g. --lat-b, not --lat).
+            field, separator, detail = str(exc).partition(':')
+            p.error(f"--{field}-b:{detail}" if separator else str(exc))
+        return {"mode": "synastry", "inp_a": inp_a, "inp_b": inp_b, "json": True}
+
     if not a.example:
         missing = [field for field in birth_fields if getattr(a, field) is None]
         if missing:
@@ -418,16 +486,34 @@ def _parse_args(argv=None):
     except ValueError as exc:
         field, separator, detail = str(exc).partition(':')
         p.error(f"--{field}:{detail}" if separator else str(exc))
-    return inp,a.json
+    return {"mode": "single", "inp": inp, "json": a.json}
 
 
 def main(argv=None):
-    inp,json_mode = _parse_args(argv)
+    parsed = _parse_args(argv)
+    if parsed["mode"] == "synastry":
+        try:
+            sys.stdout.write(
+                to_json_text(build_synastry_json(parsed["inp_a"], parsed["inp_b"])) + "\n"
+            )
+        except Exception:
+            # Fixed dual-mode error shape; do not leak str(exc) (see design §CLI 雙人輸出).
+            envelope = {
+                "ok": False,
+                "error": "internal_error",
+                "message": "synastry computation failed",
+                "schema_version": "1.2",
+            }
+            sys.stdout.write(to_json_text(envelope) + "\n")
+            return 1
+        return 0
+
+    inp, json_mode = parsed["inp"], parsed["json"]
     if json_mode:
         try:
             sys.stdout.write(to_json_text(build_json(inp)) + "\n")
         except Exception as e:
-            envelope = {"ok": False, "error": str(e), "schema_version": "1.1"}
+            envelope = {"ok": False, "error": str(e), "schema_version": "1.2"}
             sys.stdout.write(to_json_text(envelope) + "\n")
             return 1
     else:

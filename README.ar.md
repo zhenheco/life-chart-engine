@@ -174,7 +174,7 @@ iztro@2.5.8
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ iztro@2.5.8
 | الكتلة | الملخص |
 |-------|---------|
 | `ok` | `true` عند النجاح (`false` في غلاف الخطأ). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | صدى المدخلات المعايرة: `name`، `gender`، `date`، `time`، `tz_offset`، `lat`، `lon`، `target` (لاحظ `tz_offset`، وليس `tz`). |
 | `western` | سلسلة `system`، كائنات موضع `ascendant`/`midheaven`، `planets[]`، `houses[]` (×12)، `aspects[]`. |
 | `human_design` | `type`، `authority`، `profile`، `definition`، `incarnation_cross`، `design_date`، `defined_centers[]`، `open_centers[]`، `channels[]`، `gates[]`. |

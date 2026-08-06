@@ -174,7 +174,7 @@ Sampel nyata terpangkas (array terpotong menjadi 1–2 entri; nilai verbatim):
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ Selubung `--json` memiliki tujuh kunci tingkat atas, dalam urutan ini:
 | Blok | Ringkasan |
 |-------|---------|
 | `ok` | `true` pada kesuksesan (`false` dalam selubung kesalahan). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Gema input ternormalisasi: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (catatan `tz_offset`, bukan `tz`). |
 | `western` | String `system`, objek posisi `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

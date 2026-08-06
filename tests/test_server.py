@@ -45,7 +45,7 @@ def test_health(server_client):
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"ok": True}
+    assert response.json() == {"ok": True, "schema_version": "1.2"}
 
 
 def test_post_chart_forwards_engine_input(server_client):

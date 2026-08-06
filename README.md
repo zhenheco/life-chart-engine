@@ -211,7 +211,7 @@ Trimmed real sample (arrays truncated to 1–2 entries; values verbatim):
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -391,7 +391,7 @@ The `--json` envelope has seven top-level keys, in this order:
 | Block | Summary |
 |-------|---------|
 | `ok` | `true` on success (`false` in the error envelope). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Echo of normalized inputs: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (note `tz_offset`, not `tz`). |
 | `western` | `system` string, `ascendant`/`midheaven` position objects, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

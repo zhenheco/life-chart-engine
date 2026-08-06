@@ -17,7 +17,7 @@ app = FastAPI(title="life-chart-engine")
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {"ok": True, "schema_version": "1.2"}
 
 
 @app.post("/chart")
@@ -35,7 +35,7 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
         capture_exception(exc)
         return JSONResponse(
             status_code=500,
-            content={"ok": False, "error": str(exc), "schema_version": "1.1"},
+            content={"ok": False, "error": str(exc), "schema_version": "1.2"},
         )
 
 

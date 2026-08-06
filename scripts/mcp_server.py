@@ -55,7 +55,7 @@ def _build_server():
         date/time are local birth-clock values ("YYYY-M-D" / "H:M", zero-padding
         optional, year within 1900–2100); tz is the DST-aware UTC offset at
         birth; gender is 男 or 女. Returns the engine's full JSON envelope
-        (schema_version 1.1) as text.
+        (schema_version 1.2) as text.
         """
         # ValueError from validate_input → FastMCP surfaces it as isError=true
         # with the message (field-named), and the session survives.

@@ -174,7 +174,7 @@ Mẫu thực được cắt ngắn (mảng bị cắt ngắn thành 1–2 mục;
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ Phong bì `--json` có bảy khóa cấp cao nhất, theo thứ tự này:
 | Khối | Tóm tắt |
 |-------|---------|
 | `ok` | `true` khi thành công (`false` ở phong bì lỗi). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Echo của đầu vào được chuẩn hóa: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (lưu ý `tz_offset`, không phải `tz`). |
 | `western` | Chuỗi `system`, các đối tượng vị trí `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

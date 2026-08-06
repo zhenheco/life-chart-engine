@@ -188,7 +188,7 @@ iztro@2.5.8
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -298,7 +298,7 @@ iztro@2.5.8
 | 區塊 | 摘要 |
 |------|------|
 | `ok` | 成功時 `true` (`false` 在錯誤信封中)。 |
-| `schema_version` | `"1.1"`。 |
+| `schema_version` | `"1.2"`。 |
 | `input` | 標準化輸入的回應：`name`、`gender`、`date`、`time`、`tz_offset`、`lat`、`lon`、`target` (注意 `tz_offset`，不是 `tz`)。 |
 | `western` | `system` 字串、`ascendant`/`midheaven` 位置物件、`planets[]`、`houses[]` (×12)、`aspects[]`。 |
 | `human_design` | `type`、`authority`、`profile`、`definition`、`incarnation_cross`、`design_date`、`defined_centers[]`、`open_centers[]`、`channels[]`、`gates[]`。 |

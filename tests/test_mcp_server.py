@@ -83,7 +83,7 @@ def test_call_tool_returns_single_text_content_byte_equal_to_cli_json():
     assert cli.stdout.endswith("\n") and not cli.stdout.endswith("\n\n")
     assert result.content[0].text == cli.stdout[:-1]
     payload = json.loads(result.content[0].text)
-    assert payload["ok"] is True and payload["schema_version"] == "1.1"
+    assert payload["ok"] is True and payload["schema_version"] == "1.2"
 
 
 def test_invalid_input_is_error_and_session_survives():

@@ -174,7 +174,7 @@ Ingekort reëel voorbeeld (arrays afgekapt tot 1–2 invoer; waarden woordelijk)
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ De `--json` envelop heeft zeven top-level sleutels, in deze volgorde:
 | Blok | Samenvatting |
 |------|---------|
 | `ok` | `true` bij succes (`false` in fout-envelop). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Echo van genormaliseerde invoer: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (merk op `tz_offset`, niet `tz`). |
 | `western` | `system` string, `ascendant`/`midheaven` positieobjecten, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

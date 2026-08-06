@@ -174,7 +174,7 @@ Engine अभी verified **CPython 3.12** runtime पर चलता है।
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ Engine अभी verified **CPython 3.12** runtime पर चलता है।
 | ब्लॉक | सारांश |
 |-------|---------|
 | `ok` | सफलता पर `true` (`false` error envelope में)। |
-| `schema_version` | `"1.1"`। |
+| `schema_version` | `"1.2"`। |
 | `input` | सामान्यीकृत इनपुट की प्रतिध्वनि: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (ध्यान दें `tz_offset`, `tz` नहीं)। |
 | `western` | `system` string, `ascendant`/`midheaven` position objects, `planets[]`, `houses[]` (×12), `aspects[]`। |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`। |

@@ -93,7 +93,7 @@ def test_installed_wheel_entry_points_work_outside_checkout(tmp_path: Path) -> N
         assert proc.returncode == 0, proc.stderr
         payload = json.loads(proc.stdout)
         assert payload["ok"] is True
-        assert payload["schema_version"] == "1.1"
+        assert payload["schema_version"] == "1.2"
 
 
 def test_installed_wheel_mcp_entry_point_smoke(tmp_path: Path) -> None:

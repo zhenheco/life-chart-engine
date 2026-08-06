@@ -174,7 +174,7 @@ iztro@2.5.8
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ Flags การเกิดทั้งหกตัวเป็น **ข้อ�
 | บล็อก | สรุป |
 |-------|---------|
 | `ok` | `true` ความสำเร็จ (`false` ในซองจดหมายข้อผิดพลาด) |
-| `schema_version` | `"1.1"` |
+| `schema_version` | `"1.2"` |
 | `input` | Echo ของเนื้อหาที่ปกติ: `name` `gender` `date` `time` `tz_offset` `lat` `lon` `target` (หมายเหตุ `tz_offset` ไม่ใช่ `tz`) |
 | `western` | `system` string `ascendant`/`midheaven` position objects `planets[]` `houses[]` (×12) `aspects[]` |
 | `human_design` | `type` `authority` `profile` `definition` `incarnation_cross` `design_date` `defined_centers[]` `open_centers[]` `channels[]` `gates[]` |

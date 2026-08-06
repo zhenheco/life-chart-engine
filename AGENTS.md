@@ -19,7 +19,7 @@ parallel and to sandbox read-only.
 | **kind** | CLI, stdin-free, args-in / JSON-out |
 | **deterministic** | yes |
 | **side effects** | none |
-| **schema_version** | `1.1` |
+| **schema_version** | `1.2` |
 
 ---
 
@@ -44,11 +44,15 @@ life-chart --json \
   `~/.local/bin/life-chart`.
 - `<VENV_PY>` = the project venv's Python (CPython 3.12), created by `setup.sh`
   (default `<REPO>/.venv/bin/python`). Do **not** use the system `python3`.
-- **Node.js ≥ 18 on PATH is a hard runtime requirement** (supported/tested on
-  18 and 24 in CI) — 紫微斗數 runs via a Node sidecar. A missing or failing
-  `node` fails the whole request loudly (`--json`: `{"ok": false}` exit `1`
-  naming the requirement; Markdown: one stderr line, empty stdout; HTTP: `500`).
-  This applies to `pip install life-chart-engine` installs too — install Node
+- **Node.js ≥ 18 on PATH** (supported/tested on 18 and 24 in CI) is required for
+  **single-person mode** (`life-chart` / CLI single chart / HTTP `POST /chart` /
+  MCP `compute_chart`): 紫微斗數 runs via a Node sidecar. A missing or failing
+  `node` fails that request loudly (`--json`: `{"ok": false}` exit `1` naming
+  the requirement; Markdown: one stderr line, empty stdout; HTTP: `500`).
+  **Synastry dual-person mode** (`schema_version` `1.2`, any `-b` flag) does not
+  call the sidecar and has **no per-request Node dependency** — dual mode can
+  succeed with `node` absent from `PATH`. This Node requirement for single-person
+  mode also applies to `pip install life-chart-engine` installs — install Node
   from https://nodejs.org or your package manager.
 - Pass `--json` for the structured contract below. Omit it for human Markdown.
 - The process prints **exactly one JSON object to stdout** and nothing else.
@@ -63,7 +67,7 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 
 - `GET /health` returns `200`.
 - `POST /chart` accepts the same input fields as the CLI flags, with `tz`
-  mapped to `tz_offset` internally, and returns the same `schema_version: "1.1"`
+  mapped to `tz_offset` internally, and returns the same `schema_version: "1.2"`
   JSON object.
 - If `ENGINE_API_KEY` is set, callers must send `X-Engine-Key` (wrong key → `401`).
 - **Fail-closed:** if `ENGINE_API_KEY` is NOT set, the server refuses requests with
@@ -81,12 +85,12 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 | flag | type | required | format / rule |
 |------|------|:---:|---------------|
 | `--date` | string | **yes** | Gregorian `YYYY-M-D` (zero-padding optional, e.g. `1990-6-15`). Must be a real calendar date with year in the supported window **1900–2100**. Convert lunar dates before calling. |
-| `--time` | string | **yes** | `H:M`, 24h, **local clock time** at birthplace (zero-padding optional, e.g. `8:30` or `8:5`). |
+| `--time` | string | **yes** (single-person mode) | `H:M`, 24h, **local clock time** at birthplace (zero-padding optional, e.g. `8:30` or `8:5`). |
 | `--tz` | float | **yes** | UTC offset of the birthplace **at the moment of birth, including DST**, in `[-12, 14]`, finite. Taiwan after 1980 = `8`. |
 | `--lat` | float | **yes** | Latitude in `[-90, 90]`, finite (city-level precision is enough). |
 | `--lon` | float | **yes** | Longitude in `[-180, 180]`, finite. |
 | `--gender` | enum | **yes** | `男` or `女`. Affects Zi Wei; required so a wrong-gender chart can never be produced silently. |
-| `--example` | flag | no | Compute the built-in example person (`範例`, 2000-01-01 12:00, UTC+8, Taipei 101). **Mutually exclusive with all six birth flags** (combining → exit `2`). May combine with `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
+| `--example` | flag | no | Compute the built-in example person (`範例`, 2000-01-01 12:00, UTC+8, Taipei 101). **Mutually exclusive with all six birth flags and any `-b` flag** (combining → exit `2`). May combine with `--name`, `--target`, `--ziwei-day-divide`, `--json`. |
 | `--name` | string | no | Display label only. |
 | `--target` | string | no | Zi Wei horoscope reference date `YYYY-M-D`, same 1900–2100 window. Pass today's date for current 大限/流年. |
 | `--ziwei-day-divide` | enum | no | Late 子 hour rule: `forward` (default, 23:00-23:59 counts as next day) or `current` (counts as current day). |
@@ -118,7 +122,7 @@ On success, stdout is one JSON object:
 ```jsonc
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -235,7 +239,7 @@ On success, stdout is one JSON object:
 - All ecliptic longitudes are degrees `[0,360)`. `deg`/`min` are the
   within-sign degree/minute.
 - `meta.version` (`"1.0"`) is the **engine's internal version string** and is
-  independent of both `schema_version` (`"1.1"`) and the PyPI package version
+  independent of both `schema_version` (`"1.2"`) and the PyPI package version
   (`1.1.0`); consumers should branch on `schema_version` only.
 
 ---
@@ -245,7 +249,7 @@ On success, stdout is one JSON object:
 | exit | meaning | stdout |
 |:---:|---|---|
 | `0` | success | the JSON object with `"ok": true` |
-| `1` | runtime error (with `--json`) | `{ "ok": false, "error": "<message>", "schema_version": "1.1" }` |
+| `1` | runtime error (with `--json`) | **Single-person:** `{ "ok": false, "error": "<message>", "schema_version": "1.2" }` (three keys; `error` is the exception text). **Dual-person (synastry):** `{ "ok": false, "error": "internal_error", "message": "synastry computation failed", "schema_version": "1.2" }` (four keys; fixed token/string, does not leak exception content). |
 | `2` | argument/validation error (argparse) | **empty** (usage text goes to stderr) — includes missing required flags, malformed dates/times, out-of-range `tz`/`lat`/`lon`, years outside 1900–2100, and illegal `--example` combinations |
 
 Agents should branch on `ok` (and on exit code) before reading chart fields.
