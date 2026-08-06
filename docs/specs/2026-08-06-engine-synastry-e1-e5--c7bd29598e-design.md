@@ -72,6 +72,7 @@
 | `scripts/semantics.py` | `semantics-v1` 規則本體：theme 表、slug 表、orb 判定順序、權重、`salience`、`data_confidence`、`feature_id` 組成、type→strategy | `THEMES_V1`, `SLUGS`, `evidence(...)`, `orb_weight(orb, max_orb)`, `resolve_max_orb(a, b, aspect)`, `feature_id(method, **parts)`, `STRATEGY_BY_TYPE` | 新建 |
 | `scripts/chart_engine.py` | 既有單人計算核心；新增雙人分派與 `schema_version` 1.2 | `build_json(inp)`（形狀不變）、`build_synastry_json(inp_a, inp_b)` | 修改 |
 | `scripts/validation.py` | 既有輸入驗證；新增「時間未知」與 B 側欄位 | `validate_input(raw, *, allow_unknown_time=False)` | 修改 |
+| `scripts/ephemeris.py` | 既有星曆與宮位；兩處 Placidus 失敗改拋 typed exception 供 HTTP 分類 | `ComputationUnsupportedError(ValueError)` | 修改（僅例外型別） |
 | `server.py` | HTTP surface；新增 `POST /synastry`、`/health` 加 `schema_version` | `POST /synastry` | 修改 |
 | `scripts/mcp_server.py` | **明確排除於 synastry 之外**：維持單盤工具，僅更新 docstring 內的版本字面值 | 不變 | 修改（僅字面值） |
 | `webapp.py` | **明確排除於 synastry 之外**：本地單盤 UI，不新增合盤畫面 | 不變 | 不動 |
@@ -83,6 +84,12 @@
 
 `scripts/semantics.py` 同時擁有 **evidence 驗證函式** `validate_evidence(obj) -> None`
 （E2–E4 各 AC 所稱「同一個驗證函式」即為它），供產出端與測試共用。
+
+**模組相依方向**：`synastry.py` import `chart_engine` 的 `western()`／`human_design()`，
+而 `chart_engine.build_synastry_json` 又要呼叫 `synastry.build_synastry` —— 這是循環 import。
+解法固定為：**`build_synastry_json` 實作在 `scripts/synastry.py`**，`chart_engine` 只 re-export 它
+（供 CLI 使用，以 function-level import 避免模組載入期循環），`server.py` 直接從 `synastry` import。
+不得靠模組頂層互 import 硬碰。
 
 ## Implementation Decisions
 
@@ -114,7 +121,8 @@
   - **測試不得改**：`tests/test_engine_astronomy_contract.py` 中對 **fixture** 的斷言
     （`assert data["engine_schema_version"] == "1.1"`）與模擬 envelope 的常數
     —— 它們描述的是未變動的基線資料。
-  - **文件必改**：`AGENTS.md`（§1 identity、§4 output reference）、`README.md`（Output reference）、
+  - **文件必改**：`AGENTS.md`（§1 identity、**§2 的 `/chart` 回傳版本敘述**、§4 output reference、
+    **§5 的 exit-1 envelope 範例**）、`README.md`（Output reference）、
     `scripts/mcp_server.py` docstring、18 份翻譯 README 中敘述**當前** `schema_version` 之處
     （`tests/test_readme_sync.py` 保持綠）。
   - **不得改動**：各 README 的版本歷史敘述、`docs/specs/2026-07-13-engine-polish-funnel-design.md`、
@@ -142,9 +150,13 @@ Response 頂層形狀固定：
                     "human_design": { "channel_connections": [], "center_states": [],
                                       "participants": { "person_a": {}, "person_b": {} } },
                     "unavailable": [] },
-  "evidence_completeness": "full"
+  "evidence_completeness": "partial"
 }
 ```
+
+上例的陣列一律留空**只為展示鍵的形狀**，不是典型回應。正因為 `aspects` 為空，
+依 §完整度 的規則這個確切形狀的 `evidence_completeness` 必然是 `"partial"`；
+典型的完整回應會有非空的 `aspects` 與 `"full"`。
 
 - `person_a` / `person_b` 在 `western` / `human_design` / `ziwei` 中固定為**空物件**，
   只為讓消費端檢查三鍵存在的型別守衛通過；個人盤資料不由此 endpoint 提供。
@@ -166,9 +178,15 @@ Response 頂層形狀固定：
 不使用引擎內部中文名——否則同一份 response 會出現兩種中心名稱表示。
 `type`／`strategy`／`authority` 則維持引擎現行的中文字面值（它們是面向讀者的分類名，非機器 key）。
 
-- `split_bridges`：**該人自身盤**中，其定義中心被切分為 ≥2 個連通分量時，
-  合併後新形成、且**連接原本不同分量**的通道清單。元素為 `{channel, centers}`；
-  `centers` 依 `lo` 閘門所屬中心、`hi` 閘門所屬中心的順序。若該人自身為單一定義或無定義 → `[]`。
+- `split_bridges`：**該人自身盤**的定義中心被切分為 ≥2 個連通分量時，合併後把原本不同分量連起來的通道清單。
+  精確定義：令 `merged_channels` ＝ A∪B 的 active gates 能湊齊兩端的所有通道，
+  `own_channels` ＝ 該人自身 active gates 能湊齊兩端的通道。
+  `split_bridges` ＝ `merged_channels - own_channels` 中，**兩端中心分屬該人原本不同連通分量**者。
+  此定義**不要求**橋接通道的閘門必須全由對方提供 —— 只要該人自己湊不齊、合併後湊齊了，且它跨越了原本的分裂，就算。
+  （因此一條通道可能同時出現在 `split_bridges` 與 `hanging_gates_completed`；兩者回答不同問題：
+  前者是「這條連結彌合了我的分裂」，後者是「我的哪個懸掛閘門被補上了」。）
+  元素為 `{channel, centers}`；`centers` 依 `lo` 閘門所屬中心、`hi` 閘門所屬中心的順序，
+  使用英文 raw_fact 值。若該人自身為單一定義或無定義 → `[]`。
 - `hanging_gates_completed`：**該人自身的懸掛閘門**（自己持有一端、自己另一端未持有）中，
   被**對方**補上另一端而形成完整通道者。元素為 `{own_gate, partner_gate, channel}`，
   `own_gate` 為該人持有的閘門。故 `person_a` 這格裝的是「A 的懸掛閘門被 B 補足」的清單。
@@ -465,12 +483,13 @@ Response 頂層形狀固定：
   | 情況 | status | `error` | `field` |
   |---|---|---|---|
   | body 非 JSON | 400 | `invalid_json` | `null` |
-  | body 非物件；`person_a`／`person_b` 缺漏或非物件 | 400 | `invalid_input` | `person_a` / `person_b` |
+  | body 非物件（如 JSON 陣列或字串） | 400 | `invalid_input` | `person_a` |
+  | `person_a`／`person_b` 缺漏或非物件 | 400 | `invalid_input` | `person_a` / `person_b` |
   | 缺 `date`／`tz`／`lat`／`lon`／`gender` | 400 | `invalid_input` | 該欄位名 |
   | `time` 存在但格式不合（`"25:99"`／`"abc"`） | 400 | `invalid_input` | `time` |
   | `tz`／`lat`／`lon` 超界或非有限、年份超出 1900–2100 | 400 | `invalid_input` | 該欄位名 |
   | 金鑰缺漏或錯誤 | 401 | `unauthorized` | `null` |
-  | `ENGINE_API_KEY` 未設且未開 `ENGINE_ALLOW_OPEN` | 503 | `not_configured` | `null` |
+  | `ENGINE_API_KEY` 未設且未開 `ENGINE_ALLOW_OPEN` | 503 | `not_configured` | —（固定訊息形狀） |
   | 輸入合法但該座標無法計算（如極地 Placidus 未定義） | 422 | `computation_unsupported` | —（固定訊息形狀） |
   | 其餘內部錯誤 | 500 | `internal_error` | —（固定訊息形狀） |
 
@@ -499,9 +518,14 @@ Response 頂層形狀固定：
   - **可重試**：`500 internal_error`、上游 proxy 產生的 5xx 與逾時。
   - 座標無法計算之所以獨立成 `422` 而不併入 `500`：它是**輸入決定性**的失敗，
     重試永遠不會成功。若歸在可重試的 `500`，消費端會對該使用者無限重試。
-  - **座標可計算性的判定與時間是否已知無關**：極地座標即使在時間未知（本來就不算宮位）的情況下
-    仍回 `422`，不得因為「反正不輸出落宮」而降級為 `200 partial`。
-    否則同一組座標會依另一個無關欄位得到兩種完全不同的外部行為。
+  - **引擎在時間未知時仍照常計算宮位**（以 12:00 推估時刻），只是不輸出落宮與角度點 evidence。
+    因此極地座標在時間未知時同樣可能拋 `ComputationUnsupportedError` 並回 `422`，
+    不得因為「反正不輸出落宮」而跳過宮位計算、把它降級為 `200 partial`。
+  - **但 422 與否本身是時間相依的，這是事實而非缺陷**：Placidus 的收斂性由 RAMC 決定，
+    而 RAMC 來自恆星時（`ephemeris.py` 的 `A.SiderealTime(time)`）。在約 66.6°–90° 的高緯帶，
+    同一組座標可能在 08:30 不收斂（`422`）、在 12:00 收斂（`200`）。
+    **不得宣稱「座標可計算性與時間無關」**——那與此處指定的機制互斥。
+    契約只保證：判定一律在**該次實際使用的時刻**（已知時間或 12:00 推估）上做，且不因輸出項少而跳過。
 - **冪等性**：同一 body 連續兩次 `POST /synastry` 的回應 byte-for-byte 相同。
 - **安全/權限**：沿用 `X-Engine-Key` 的既有契約；`ENGINE_API_KEY` 未設時 fail-closed `503`，
   除非 `ENGINE_ALLOW_OPEN=1`。輸入驗證共用 `scripts/validation.py`。
@@ -542,7 +566,7 @@ Response 頂層形狀固定：
 - **Blocked by**: None
 - **User stories**: #18, #19, #22, #23, #24, #27, #30
 - **Acceptance criteria**:
-  - [ ] CLI 新增 `--date-b/--tz-b/--lat-b/--lon-b/--gender-b`（五者必填）與 `--time-b`（optional）；五個必填者全給才進入 synastry 模式，部分給出 → exit 2 並指明缺哪些（測試：給 3 個必填 flag → exit 2 且訊息含缺少的兩個 flag 名）。
+  - [ ] CLI 新增 `--date-b/--tz-b/--lat-b/--lon-b/--gender-b`（五者必填）與 `--time-b`（optional）。**模式進入條件：出現任一 `-b` flag（含 `--time-b`）即進入 synastry 模式**；此時五個必填者未齊 → exit 2 並列出缺少者（測試兩則：給 3 個必填 flag → exit 2 且訊息含缺少的兩個；**只給 `--time-b` → exit 2 而非靜默輸出單人盤**）。單獨的 `--time-b` 若被當成單人模式的雜訊忽略，正是 Story #23 要禁止的結果。
   - [ ] `--time-b` 省略或給 `unknown` → B 側時間未知；synastry 模式下 `--time`（A 側）同樣可省略或給 `unknown`。單人模式的 `--time` 維持必填、行為不變（測試各一則）。
   - [ ] synastry 模式下未給 `--json` → exit 2 並在 stderr 說明僅支援 `--json`（測試一則）。
   - [ ] **單人模式不輸出 `synastry` 鍵**；雙人模式輸出 `synastry` 物件（本 slice 內容可為空陣列，鍵齊全）。
@@ -556,6 +580,7 @@ Response 頂層形狀固定：
   - [ ] `tests/fixtures/golden_example.json` 重新產生且 diff **僅限 `schema_version` 一行**；`tests/fixtures/golden_example.md` **零 diff、byte 相同**（測試各一則）；`GOLDEN_PROVENANCE.md` 記錄本次再生的日期、原因與 diff 範圍。
   - [ ] 同一組雙人輸入連跑兩次，CLI stdout byte-for-byte 相同。
   - [ ] `test_runtime_and_test_sources_do_not_import_swisseph` 的掃描清單擴充至 `scripts/synastry.py` 與 `scripts/semantics.py`（測試斷言清單含這兩個檔）。
+  - [ ] **`node` 不在 PATH 時 CLI 雙人模式仍成功**（prior art：`tests/test_node_absence.py`）；同一守衛在 E5 涵蓋 `POST /synastry`。這條是 §API contract「`/synastry` 無 per-request Node 依賴」的唯一證明。
   - [ ] 既有測試全綠，含 `test_example_matches_pre_change_golden_bytes`。
 
 ### Slice E2 — 西洋跨盤相位
@@ -603,7 +628,8 @@ Response 頂層形狀固定：
 
 ### Slice E4 — 人類圖四種連結與合併中心
 - **Type**: AFK
-- **Blocked by**: E1
+- **Blocked by**: E1, E2（E4 的 AC 消費 `scripts/semantics.py` 的 `validate_evidence`／theme 表／slug 表，
+  其行為 AC 在 E2；若只擋 E1，E2 與 E4 會並行改同一個新檔）
 - **User stories**: #2, #9, #10, #26, #28, #29
 - **Acceptance criteria**:
   - [ ] 依 §人類圖連結判定的 9 格表判定；測試涵蓋全部 9 格（含 `(2,0)`／`(0,2)` → `dominance`、`(1,0)`／`(0,1)` → `none`）。
@@ -621,6 +647,7 @@ Response 頂層形狀固定：
   - [ ] 時間未知時 `participants` **照常輸出**且內容以 12:00 推估盤計算；斷言 `type`／`strategy`／`authority` 非空、兩個陣列存在（可為 `[]`），且 `synastry.unavailable` 含 `hd_lines`（測試一則）。
   - [ ] **每筆 `channel_connections[]` 通過與西洋側同一個 evidence 驗證函式**；`method_version == "human-design-synastry-v1"`。
   - [ ] `dimensions` ＝ 連結類型 theme → lo 閘門中心 theme → hi 閘門中心 theme，首次出現去重（測試一組手算對照，斷言完整期望陣列）；`ease_or_tension` 依四型對照。
+  - [ ] **四型的 `salience` 常數各斷言一次**：`electromagnetic == 0.9`、`companionship == 0.9`、`dominance == 0.8`、`compromise == 0.7`。`validate_evidence` 只驗形狀，常數寫錯不會被任何其他 AC 抓到。
   - [ ] 時間未知時通道的 `data_confidence` 依**窮盡切分**：任一端點由**未知側**的 `{月,水,金,火}` 啟動 → `0.6`；否則 → `0.85`（測試四則：未知側月啟動 0.6、未知側土星啟動 0.85、未知側木星啟動 0.85、**只有 B 未知而 A 側月亮啟動 → 0.85**）。
   - [ ] `hd_center_state` 的 `data_confidence`：兩側已知 `0.95`、任一側未知 `0.85`（測試各一則）。
   - [ ] 禁用欄位名遞迴掃描（同 E2 名單）在 HD 側亦通過。
@@ -642,8 +669,9 @@ Response 頂層形狀固定：
   - [ ] **判定先後順序**：未設 `ENGINE_API_KEY` 且 body 非 JSON → 回 `503 not_configured`（測試一則，斷言不是 400）；金鑰錯誤且 body 非 JSON → 回 `401 unauthorized`（測試一則）。
   - [ ] **極地座標回 `422 computation_unsupported`**（斷言不是 500、`message` 為固定字串且**不含** `placidus undefined at high latitude`）；斷言其 body 的**鍵集合恰為** `{ok, error, message}`（無 `field`／`detail`），而 `400 invalid_input` 的鍵集合恰為 `{ok, error, field, detail}`（測試各一則）。
   - [ ] 422 由 `ComputationUnsupportedError` 型別映射而非訊息比對（測試：注入一個訊息完全不同的 `ComputationUnsupportedError` 仍得 422；注入一般 `ValueError` 得 500）。
-  - [ ] **極地座標 + 任一側時間未知**同樣回 `422`（座標可計算性的判定與時間是否已知無關；測試一則，斷言不是 200 partial）。
+  - [ ] **極地座標 + 任一側時間未知時仍會計算宮位**：以一組在 12:00 也不收斂的高緯座標斷言回 `422`（不得因不輸出落宮而跳過宮位計算、降級為 200 partial）。測試資料必須挑在 12:00 也失敗者——收斂性隨恆星時變動，挑錯資料會讓這條測試偶然變綠。
   - [ ] 缺 `X-Engine-Key` header（值為 `None`）回 `401` 而非 `500`（測試一則，守住 `hmac.compare_digest` 的 `None` 前置判斷）。
+  - [ ] **`node` 不在 PATH 時 `POST /synastry` 仍回 200**（測試一則，prior art：`tests/test_node_absence.py`）。
   - [ ] 其餘內部錯誤回 `500`，body 為 `{"ok": false, "error": "internal_error", "message": "synastry computation failed"}`，`message` 不含例外字串。
   - [ ] **CLI 雙人模式計算失敗**：極地座標下 exit `1`，stdout 為 `{"ok": false, "error": "computation_unsupported", "message": "<固定字串>", "schema_version": "1.2"}`，斷言**不含** `str(exc)` 內容（測試一則）。
   - [ ] 沿用 `X-Engine-Key`；無金鑰與錯誤金鑰各回 401 且 `error == "unauthorized"`；`ENGINE_API_KEY` 未設時回 503 且 `error == "not_configured"`，設 `ENGINE_ALLOW_OPEN=1` 時放行（測試各一則）。
@@ -654,7 +682,7 @@ Response 頂層形狀固定：
   - [ ] **`/chart` 回歸**：成功回應 parse 後與 `examples/sample-output.json` deep-equal，僅排除 `schema_version`。
   - [ ] `AGENTS.md` 記載完整 request/response/error schema；**測試斷言 `AGENTS.md` 逐字含**五個 `method` 名稱、六個 `error` token（`invalid_json`／`invalid_input`／`unauthorized`／`not_configured`／`computation_unsupported`／`internal_error`）、`POST /synastry`，以及 **retryable／not-retryable 兩份清單**且 `computation_unsupported` 出現在 not-retryable 那份。
   - [ ] `AGENTS.md` §3 input contract 記載新增的五個必填 `-b` flag、optional `--time-b`、`time` 可省略／`null`／`"unknown"`，以及 `--example` 與 `-b` 互斥（測試斷言這些 flag 名逐字出現）。AGENTS.md 是 CLI 的 manifest，漏掉它等於新介面對 agent 不存在。
-  - [ ] **部署漂移防護**：新增 pytest marker **`deploy_regression`**（註冊於 `pyproject.toml`），標記的測試涵蓋 `/chart` 成功路徑與 `examples/sample-output.json` deep-equal、`/health` 的 `schema_version`、單人 CLI 的 golden bytes。`DEPLOY-HETZNER.md` 的驗證章節**逐字含指令 `pytest -m deploy_regression`**（測試斷言該字串存在），並要求重建部署後執行並保留輸出為證據。
+  - [ ] **部署漂移防護**：新增 pytest marker **`deploy_regression`**（註冊於 `pyproject.toml`），標記的測試僅涵蓋**平台無關**者：`/chart` 成功路徑與 `examples/sample-output.json` deep-equal、`/health` 的 `schema_version`、`POST /synastry` 的形狀。**不得納入 `test_example_matches_pre_change_golden_bytes`** —— 它有 `skipif sys.platform != golden_platform.txt`（現值 `darwin`），在 Hetzner 的 Linux 主機上會被 skip，綠燈對它不構成任何證據，正好是 §風險 4 要防的自我證明。`DEPLOY-HETZNER.md` 的驗證章節**逐字含指令 `pytest -m deploy_regression -r s`**（`-r s` 讓任何 skip 顯示出來；測試斷言該字串存在），並要求重建部署後執行、確認 skip 數為 0 並保留輸出為證據。
   - [ ] `tests/fixtures/GOLDEN_PROVENANCE.md` 含本次再生日期與 `schema_version` 字樣（測試斷言兩者存在）。
 
 ## Out of Scope
