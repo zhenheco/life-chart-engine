@@ -158,9 +158,13 @@ Response 頂層形狀固定：
 
 ```json
 { "type": "生產者", "strategy": "等待回應", "authority": "薦骨型權威",
-  "split_bridges": [ { "channel": "20-34", "centers": ["喉", "薦骨"] } ],
+  "split_bridges": [ { "channel": "20-34", "centers": ["Throat", "Sacral"] } ],
   "hanging_gates_completed": [ { "own_gate": 20, "partner_gate": 34, "channel": "20-34" } ] }
 ```
+
+`centers` 使用**與 `raw_fact` 相同的英文值**（見 §值域與 slug 表），
+不使用引擎內部中文名——否則同一份 response 會出現兩種中心名稱表示。
+`type`／`strategy`／`authority` 則維持引擎現行的中文字面值（它們是面向讀者的分類名，非機器 key）。
 
 - `split_bridges`：**該人自身盤**中，其定義中心被切分為 ≥2 個連通分量時，
   合併後新形成、且**連接原本不同分量**的通道清單。元素為 `{channel, centers}`；
@@ -448,9 +452,14 @@ Response 頂層形狀固定：
 - **`evidence_completeness`**：`aspects` 非空且 `unavailable` 為空 → `full`；
   `unavailable` 非空**或** `aspects` 為空 → `partial`。**引擎只會吐這兩個值**；
   第三態由消費端判定。`partial` 一律仍回 **HTTP 200**。
-- **錯誤 body 形狀**：4xx 一律
-  `{"ok": false, "error": "<token>", "field": "<欄位名或 null>", "detail": "<人可讀說明>"}`；
-  5xx 為 `{"ok": false, "error": "<token>", "message": "<固定字串>"}`。
+- **錯誤 body 形狀**，恰為兩種，依 `error` token 決定（不依狀態碼分類）：
+  - **輸入錯誤形狀**（`invalid_json`／`invalid_input`／`unauthorized`）：
+    `{"ok": false, "error": "<token>", "field": "<欄位名或 null>", "detail": "<人可讀說明>"}`。
+  - **固定訊息形狀**（`computation_unsupported`／`not_configured`／`internal_error`）：
+    `{"ok": false, "error": "<token>", "message": "<固定字串>"}`，**無** `field`／`detail`。
+    `computation_unsupported` 雖是 4xx 也走這一種：它描述的是「這組座標算不出來」而非某個欄位格式錯，
+    沒有可指的 `field`，硬塞一個 `null` 欄位只會讓消費端以為漏填了什麼。
+  - 兩種形狀的鍵集合固定且互斥，消費端可依 `error` token 決定要讀 `detail` 還是 `message`。
   `error` 為固定可 parse 的 token，消費端只讀它。
 
   | 情況 | status | `error` | `field` |
@@ -462,8 +471,8 @@ Response 頂層形狀固定：
   | `tz`／`lat`／`lon` 超界或非有限、年份超出 1900–2100 | 400 | `invalid_input` | 該欄位名 |
   | 金鑰缺漏或錯誤 | 401 | `unauthorized` | `null` |
   | `ENGINE_API_KEY` 未設且未開 `ENGINE_ALLOW_OPEN` | 503 | `not_configured` | `null` |
-  | 輸入合法但該座標無法計算（如極地 Placidus 未定義） | 422 | `computation_unsupported` | `null` |
-  | 其餘內部錯誤 | 500 | `internal_error` | — |
+  | 輸入合法但該座標無法計算（如極地 Placidus 未定義） | 422 | `computation_unsupported` | —（固定訊息形狀） |
+  | 其餘內部錯誤 | 500 | `internal_error` | —（固定訊息形狀） |
 
   **判定先後順序固定**：`not_configured` → `unauthorized` → `invalid_json` → `invalid_input`
   → `computation_unsupported` → `internal_error`。同時違反多條時以先者為準
@@ -473,6 +482,11 @@ Response 頂層形狀固定：
   `503 not_configured` 的 body 為 `{"ok": false, "error": "not_configured", "message": "ENGINE_API_KEY not configured"}`。
   `422 computation_unsupported` 的 body 為
   `{"ok": false, "error": "computation_unsupported", "message": "chart cannot be computed for the given coordinates"}`。
+  **422 與 500 的分界靠 typed exception，不靠訊息字串比對**：`scripts/ephemeris.py` 目前只丟泛型
+  `ValueError`（`"placidus undefined at high latitude"`／`"placidus cusp iteration did not converge"`）。
+  本次新增 `ComputationUnsupportedError(ValueError)`，由 `ephemeris.py` 在這兩處改拋，
+  `server.py` 依**型別**映射 422、其餘例外映射 500。靠訊息字串比對會在文案微調時無聲失效。
+  此變更對 `/chart` 的既有行為為 no-op（它仍把所有例外歸為 500），只讓 `/synastry` 能分類。
 
   `time` 格式錯誤**不視為時間未知**：靜默降級會讓打錯字的呼叫者拿到殘缺解讀卻以為完整。
   `person_a` 與 `person_b` 完全相同 → **接受並照常計算**（所有相位 orb 為 0 是正確結果）。
@@ -485,12 +499,17 @@ Response 頂層形狀固定：
   - **可重試**：`500 internal_error`、上游 proxy 產生的 5xx 與逾時。
   - 座標無法計算之所以獨立成 `422` 而不併入 `500`：它是**輸入決定性**的失敗，
     重試永遠不會成功。若歸在可重試的 `500`，消費端會對該使用者無限重試。
+  - **座標可計算性的判定與時間是否已知無關**：極地座標即使在時間未知（本來就不算宮位）的情況下
+    仍回 `422`，不得因為「反正不輸出落宮」而降級為 `200 partial`。
+    否則同一組座標會依另一個無關欄位得到兩種完全不同的外部行為。
 - **冪等性**：同一 body 連續兩次 `POST /synastry` 的回應 byte-for-byte 相同。
 - **安全/權限**：沿用 `X-Engine-Key` 的既有契約；`ENGINE_API_KEY` 未設時 fail-closed `503`，
   除非 `ENGINE_ALLOW_OPEN=1`。輸入驗證共用 `scripts/validation.py`。
   無新增 secret、無新增外部呼叫、無網路存取。
   金鑰比對改用 `hmac.compare_digest`（既有的 `x_engine_key != key` 非常數時間）；
   這是**契約不變的內部強化**，對兩個 endpoint 同時生效，回應碼與 body 完全不變。
+  **必須先判 `None`**：`hmac.compare_digest(None, key)` 會 `TypeError`，把「缺 header」從 401 變成 500。
+  寫法固定為 `if x_engine_key is None or not hmac.compare_digest(x_engine_key, key): -> 401`。
 - **邊界/效能**：0°/360° 跨界以最短弧判定；每人單盤在一次請求內只算一次並共用；
   合盤為 O(11×11) 組合，無 rate limit 需求；不得拖慢既有 `/chart` 路徑。
 - **type → strategy 對照**（引擎現有 `human_design()` 只算 type 與 authority，無 strategy，此表為新增）：
@@ -533,7 +552,7 @@ Response 頂層形狀固定：
   - [ ] `--example` 與任一 `-b` flag 併用時 → exit 2 並指明兩者互斥（測試一則：`--example --time-b 08:30` 與 `--example` 加五個必填 `-b` flag 各一，皆不得靜默落回單人模式）。
   - [ ] `AGENTS.md`／`README.md`／`scripts/mcp_server.py` docstring／18 份翻譯 README 中敘述**當前**版本之處同步為 1.2；`tests/test_readme_sync.py` 保持綠。各 README 版本歷史敘述、`docs/specs/2026-07-13-*`、`tests/fixtures/ephemeris_baseline.json` 不得被改動（測試斷言三者未變）。
   - [ ] 單人輸出與 `examples/sample-output.json` **parse 後 deep-equal，僅排除 `schema_version`**；該檔 git diff 僅允許 `schema_version` 一行。
-  - [ ] **不啟用 `sort_keys`**；單人 `--json` 輸出的鍵序與浮點表示與變更前**逐 byte 相同，唯一差異為 `schema_version` 的值**（測試以變更前的 golden bytes 做字串替換後比對）。
+  - [ ] **不啟用 `sort_keys`**；單人 `--json` 輸出的鍵序與浮點表示與變更前**逐 byte 相同，唯一差異為 `schema_version` 的值**。變更前的 bytes 另存為 **`tests/fixtures/golden_example_pre_1_2.json`**（本次新增、之後永不再生），測試以它做 `"1.1"`→`"1.2"` 字串替換後與現行輸出逐 byte 比對。不得拿再生後的 `golden_example.json` 當「變更前」的證據——那會讓這條測試自我證明。
   - [ ] `tests/fixtures/golden_example.json` 重新產生且 diff **僅限 `schema_version` 一行**；`tests/fixtures/golden_example.md` **零 diff、byte 相同**（測試各一則）；`GOLDEN_PROVENANCE.md` 記錄本次再生的日期、原因與 diff 範圍。
   - [ ] 同一組雙人輸入連跑兩次，CLI stdout byte-for-byte 相同。
   - [ ] `test_runtime_and_test_sources_do_not_import_swisseph` 的掃描清單擴充至 `scripts/synastry.py` 與 `scripts/semantics.py`（測試斷言清單含這兩個檔）。
@@ -560,6 +579,7 @@ Response 頂層形狀固定：
   - [ ] 對至少 5 組樣本盤斷言每筆 evidence 的 `dimensions` ⊂ `themes-v1`，且依 §dimensions 規則（來源表列內順序、A 先 B 後、首次出現去重）產生。
   - [ ] `data_confidence` 三組測試：兩側已知 → `0.95`；**未知側月亮**參與 → `0.6`；已知側月亮參與但另一側未知 → **`0.85`**。
   - [ ] `scripts/semantics.py` 的 `THEMES_V1` 與 `tests/fixtures/themes-v1.json` 逐字相同（含順序）。
+  - [ ] **`validate_evidence` 必須會拒絕**：對下列五種缺陷各 raise 一次（測試五則）——缺任一必填鍵（以 13 個必填鍵 `feature_id`／`system`／`method`／`method_version`／`subject`／`object`／`raw_fact`／`dimensions`／`salience`／`ease_or_tension`／`method_consensus`／`data_confidence`／`participates_in_convergence` 逐一移除）、`ease_or_tension` 為值域外的值、`feature_id` 含底線、`feature_id` 不符 `^[a-z]+-[a-z0-9-]+$`、`dimensions` 含非 `themes-v1` ID。沒有這條，E3／E4 用「通過驗證函式」證明形狀的那些 AC 可被 no-op 實作全綠。
   - [ ] `build_synastry_json` 在無網路環境下可完整執行（測試比照 `tests/test_sidecar_no_network.py` 的 socket guard）。
   - [ ] 小行星與次要相位預設不輸出。
 
@@ -620,7 +640,10 @@ Response 頂層形狀固定：
   - [ ] **錯誤對照表逐列測試**：非 JSON→`invalid_json`；缺 `person_b`→`invalid_input`/`field="person_b"`；`person_a` 非物件→`invalid_input`（斷言**不是** 500）；缺 `date`→`invalid_input`/`field="person_a.date"`（斷言帶前綴）；`lat` 超界→`invalid_input`；`time` 格式錯→`invalid_input`/`field="person_a.time"`；`person_a == person_b` → 200 並照常計算。
   - [ ] `time` 的未知字面值為**精確比對小寫 `"unknown"`**；`"Unknown"`、`" unknown "`、`""` 一律 `400 invalid_input`/`field="person_a.time"`（測試三則），不得被當成時間未知。
   - [ ] **判定先後順序**：未設 `ENGINE_API_KEY` 且 body 非 JSON → 回 `503 not_configured`（測試一則，斷言不是 400）；金鑰錯誤且 body 非 JSON → 回 `401 unauthorized`（測試一則）。
-  - [ ] **極地座標回 `422 computation_unsupported`**（斷言不是 500、`message` 為固定字串且**不含** `placidus undefined at high latitude`）；`422` 屬不可重試類別（測試一則）。
+  - [ ] **極地座標回 `422 computation_unsupported`**（斷言不是 500、`message` 為固定字串且**不含** `placidus undefined at high latitude`）；斷言其 body 的**鍵集合恰為** `{ok, error, message}`（無 `field`／`detail`），而 `400 invalid_input` 的鍵集合恰為 `{ok, error, field, detail}`（測試各一則）。
+  - [ ] 422 由 `ComputationUnsupportedError` 型別映射而非訊息比對（測試：注入一個訊息完全不同的 `ComputationUnsupportedError` 仍得 422；注入一般 `ValueError` 得 500）。
+  - [ ] **極地座標 + 任一側時間未知**同樣回 `422`（座標可計算性的判定與時間是否已知無關；測試一則，斷言不是 200 partial）。
+  - [ ] 缺 `X-Engine-Key` header（值為 `None`）回 `401` 而非 `500`（測試一則，守住 `hmac.compare_digest` 的 `None` 前置判斷）。
   - [ ] 其餘內部錯誤回 `500`，body 為 `{"ok": false, "error": "internal_error", "message": "synastry computation failed"}`，`message` 不含例外字串。
   - [ ] **CLI 雙人模式計算失敗**：極地座標下 exit `1`，stdout 為 `{"ok": false, "error": "computation_unsupported", "message": "<固定字串>", "schema_version": "1.2"}`，斷言**不含** `str(exc)` 內容（測試一則）。
   - [ ] 沿用 `X-Engine-Key`；無金鑰與錯誤金鑰各回 401 且 `error == "unauthorized"`；`ENGINE_API_KEY` 未設時回 503 且 `error == "not_configured"`，設 `ENGINE_ALLOW_OPEN=1` 時放行（測試各一則）。
@@ -629,7 +652,8 @@ Response 頂層形狀固定：
   - [ ] **CLI／HTTP 一致性**：同一組輸入（含時間未知情境）的 CLI `--json` stdout 與 `/synastry` response body **parse 後 deep-equal**（測試兩則：時間已知與時間未知各一）。
   - [ ] **`/health` 新增 `schema_version` 欄位，既有 `ok` 欄位不變**（斷言兩鍵皆在且 `schema_version == "1.2"`）。
   - [ ] **`/chart` 回歸**：成功回應 parse 後與 `examples/sample-output.json` deep-equal，僅排除 `schema_version`。
-  - [ ] `AGENTS.md` 記載完整 request/response/error schema；**測試斷言 `AGENTS.md` 逐字含**五個 `method` 名稱、六個 `error` token（`invalid_json`／`invalid_input`／`unauthorized`／`not_configured`／`computation_unsupported`／`internal_error`）與 `POST /synastry`。
+  - [ ] `AGENTS.md` 記載完整 request/response/error schema；**測試斷言 `AGENTS.md` 逐字含**五個 `method` 名稱、六個 `error` token（`invalid_json`／`invalid_input`／`unauthorized`／`not_configured`／`computation_unsupported`／`internal_error`）、`POST /synastry`，以及 **retryable／not-retryable 兩份清單**且 `computation_unsupported` 出現在 not-retryable 那份。
+  - [ ] `AGENTS.md` §3 input contract 記載新增的五個必填 `-b` flag、optional `--time-b`、`time` 可省略／`null`／`"unknown"`，以及 `--example` 與 `-b` 互斥（測試斷言這些 flag 名逐字出現）。AGENTS.md 是 CLI 的 manifest，漏掉它等於新介面對 agent 不存在。
   - [ ] **部署漂移防護**：新增 pytest marker **`deploy_regression`**（註冊於 `pyproject.toml`），標記的測試涵蓋 `/chart` 成功路徑與 `examples/sample-output.json` deep-equal、`/health` 的 `schema_version`、單人 CLI 的 golden bytes。`DEPLOY-HETZNER.md` 的驗證章節**逐字含指令 `pytest -m deploy_regression`**（測試斷言該字串存在），並要求重建部署後執行並保留輸出為證據。
   - [ ] `tests/fixtures/GOLDEN_PROVENANCE.md` 含本次再生日期與 `schema_version` 字樣（測試斷言兩者存在）。
 
