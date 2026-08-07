@@ -43,6 +43,10 @@ UNAVAILABLE_TIME_UNKNOWN: tuple[str, ...] = (
     "hd_lines",
 )
 
+# Bodies whose gate activations degrade channel confidence to 0.6 when their
+# side's birth time is unknown (Moon/Mercury/Venus/Mars — spec §HD 窮盡切分).
+HD_FAST_BODIES: frozenset[str] = frozenset({"☾", "☿", "♀", "♂"})
+
 
 def _import_western():
     """Load ``western`` without creating a package-level cycle with chart_engine."""
@@ -51,6 +55,15 @@ def _import_western():
     else:
         from chart_engine import western
     return western
+
+
+def _import_hd_tables():
+    """Load ``human_design`` / ``CHANNELS`` / ``GATE_CENTER`` (same cycle rule)."""
+    if __package__:
+        from .chart_engine import CHANNELS, GATE_CENTER, human_design
+    else:
+        from chart_engine import CHANNELS, GATE_CENTER, human_design
+    return human_design, CHANNELS, GATE_CENTER
 
 
 def _sort_evidence(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -169,9 +182,269 @@ def compute_angle_contacts(
     return _sort_evidence(out)
 
 
+def hd_active_gates(rows) -> set[int]:
+    """Distinct active gates from ``human_design()`` rows.
+
+    Each row is ``(body, personality_gate, personality_line, design_gate,
+    design_line)``. The same gate activated by several bodies collapses to a
+    single active gate (set membership is binary).
+    """
+    gates: set[int] = set()
+    for _body, p_gate, _p_line, d_gate, _d_line in rows:
+        gates.add(p_gate)
+        gates.add(d_gate)
+    return gates
+
+
+def hd_fast_gates(rows) -> set[int]:
+    """Gates activated by Moon/Mercury/Venus/Mars (personality or design)."""
+    gates: set[int] = set()
+    for body, p_gate, _p_line, d_gate, _d_line in rows:
+        if body in HD_FAST_BODIES:
+            gates.add(p_gate)
+            gates.add(d_gate)
+    return gates
+
+
+def classify_hd_channel(lo: int, hi: int, gates_a, gates_b):
+    """Classify one channel by the 9-grid (spec §人類圖連結判定).
+
+    Returns ``(link_type, full_channel_owner)``; ``(None, None)`` when the
+    channel produces no connection (never emitted).
+    """
+    a_count = (lo in gates_a) + (hi in gates_a)
+    b_count = (lo in gates_b) + (hi in gates_b)
+    if a_count == 2 and b_count == 2:
+        return "companionship", None
+    if a_count == 2 and b_count == 1:
+        return "compromise", "A"
+    if a_count == 1 and b_count == 2:
+        return "compromise", "B"
+    if a_count == 2 and b_count == 0:
+        return "dominance", "A"
+    if a_count == 0 and b_count == 2:
+        return "dominance", "B"
+    if a_count == 1 and b_count == 1:
+        # Complementary ends → electromagnetic; both hold the same single
+        # gate → no connection.
+        if (lo in gates_a) != (lo in gates_b):
+            return "electromagnetic", None
+        return None, None
+    return None, None
+
+
+def merged_hd_channels(gates_a, gates_b) -> list[tuple[int, int]]:
+    """Channels complete in the A∪B gate union, normalized, ascending."""
+    _hd_fn, channels, _gate_center = _import_hd_tables()
+    union = set(gates_a) | set(gates_b)
+    out = []
+    for g1, g2 in channels:
+        lo, hi = min(g1, g2), max(g1, g2)
+        if lo in union and hi in union:
+            out.append((lo, hi))
+    return sorted(out)
+
+
+def compute_hd_channel_connections(
+    gates_a,
+    gates_b,
+    *,
+    time_unknown_a: bool = False,
+    time_unknown_b: bool = False,
+    fast_gates_a=frozenset(),
+    fast_gates_b=frozenset(),
+) -> list[dict[str, Any]]:
+    """One ``hd_channel_connection`` per connected channel, sorted.
+
+    Gate activation sets come from ``human_design()`` via
+    ``hd_active_gates`` — never recomputed here.
+    """
+    _hd_fn, channels, gate_center = _import_hd_tables()
+    out: list[dict[str, Any]] = []
+    for g1, g2 in channels:
+        lo, hi = min(g1, g2), max(g1, g2)
+        link_type, owner = classify_hd_channel(lo, hi, gates_a, gates_b)
+        if link_type is None:
+            continue
+        out.append(
+            semantics.evidence_hd_channel_connection(
+                lo=lo,
+                hi=hi,
+                link_type=link_type,
+                full_channel_owner=owner,
+                a_gates=[g for g in (lo, hi) if g in gates_a],
+                b_gates=[g for g in (lo, hi) if g in gates_b],
+                center_lo=gate_center[lo],
+                center_hi=gate_center[hi],
+                time_unknown_a=time_unknown_a,
+                time_unknown_b=time_unknown_b,
+                fast_gates_a=fast_gates_a,
+                fast_gates_b=fast_gates_b,
+            )
+        )
+    return _sort_evidence(out)
+
+
+def compute_hd_center_states(
+    defined_a,
+    defined_b,
+    merged_channels,
+    *,
+    time_unknown_a: bool = False,
+    time_unknown_b: bool = False,
+) -> list[dict[str, Any]]:
+    """One ``hd_center_state`` per center in fixed 頭→…→根 row order.
+
+    ``defined_a`` / ``defined_b`` are the persons' own defined-center name
+    sets (internal Chinese); ``merged_channels`` are normalized (lo, hi)
+    pairs complete in the union.
+    """
+    _hd_fn, _channels, gate_center = _import_hd_tables()
+    merged_defined: set[str] = set()
+    for lo, hi in merged_channels:
+        merged_defined.add(gate_center[lo])
+        merged_defined.add(gate_center[hi])
+    out: list[dict[str, Any]] = []
+    for center in semantics.HD_CENTER_ORDER:
+        if center in defined_a and center in defined_b:
+            state = "both_defined"
+        elif center in defined_a:
+            state = "a_defined"
+        elif center in defined_b:
+            state = "b_defined"
+        elif center in merged_defined:
+            state = "defined_by_merge"
+        else:
+            state = "undefined"
+        if state == "defined_by_merge":
+            causing = [
+                f"{lo}-{hi}"
+                for lo, hi in merged_channels
+                if gate_center[lo] == center or gate_center[hi] == center
+            ]
+        else:
+            causing = []
+        out.append(
+            semantics.evidence_hd_center_state(
+                center=center,
+                state=state,
+                causing_channels=causing,
+                time_unknown_a=time_unknown_a,
+                time_unknown_b=time_unknown_b,
+            )
+        )
+    return out
+
+
+def _center_components(defined, own_channels, gate_center) -> dict[str, int]:
+    """Map each defined center to a component id via the person's own channels."""
+    adj = {c: set() for c in sorted(defined)}
+    for lo, hi in own_channels:
+        c1, c2 = gate_center[lo], gate_center[hi]
+        if c1 != c2 and c1 in adj and c2 in adj:
+            adj[c1].add(c2)
+            adj[c2].add(c1)
+    comp: dict[str, int] = {}
+    next_id = 0
+    for center in sorted(defined):
+        if center in comp:
+            continue
+        next_id += 1
+        stack = [center]
+        while stack:
+            x = stack.pop()
+            if x in comp:
+                continue
+            comp[x] = next_id
+            stack.extend(y for y in sorted(adj[x]) if y not in comp)
+    return comp
+
+
+def compute_split_bridges(own_gates, partner_gates) -> list[dict[str, Any]]:
+    """Merged channels bridging two of the person's own definition components.
+
+    Channels the person cannot complete alone but the merge completes, whose
+    two centers lie in different own connected components. Sorted by channel
+    string ascending.
+    """
+    _hd_fn, channels, gate_center = _import_hd_tables()
+    own: set[tuple[int, int]] = set()
+    merged: list[tuple[int, int]] = []
+    for g1, g2 in channels:
+        lo, hi = min(g1, g2), max(g1, g2)
+        if lo in own_gates and hi in own_gates:
+            own.add((lo, hi))
+        lo_any = lo in own_gates or lo in partner_gates
+        hi_any = hi in own_gates or hi in partner_gates
+        if lo_any and hi_any:
+            merged.append((lo, hi))
+    defined: set[str] = set()
+    for lo, hi in sorted(own):
+        defined.add(gate_center[lo])
+        defined.add(gate_center[hi])
+    comp = _center_components(defined, sorted(own), gate_center)
+    bridges: list[dict[str, Any]] = []
+    for lo, hi in merged:
+        c1, c2 = gate_center[lo], gate_center[hi]
+        if c1 in comp and c2 in comp and comp[c1] != comp[c2]:
+            bridges.append(
+                {
+                    "channel": f"{lo}-{hi}",
+                    "centers": [
+                        semantics.HD_CENTER_RAW[c1],
+                        semantics.HD_CENTER_RAW[c2],
+                    ],
+                }
+            )
+    return sorted(bridges, key=lambda b: b["channel"])
+
+
+def compute_hanging_gates_completed(
+    own_gates, partner_gates
+) -> list[dict[str, Any]]:
+    """The person's hanging gates completed by the partner's gates.
+
+    Sorted by own_gate ascending, then channel string ascending (a gate in
+    three channels can be completed more than once).
+    """
+    _hd_fn, channels, _gate_center = _import_hd_tables()
+    out: list[dict[str, Any]] = []
+    for g1, g2 in channels:
+        lo, hi = min(g1, g2), max(g1, g2)
+        if lo in own_gates and hi not in own_gates and hi in partner_gates:
+            out.append(
+                {"own_gate": lo, "partner_gate": hi, "channel": f"{lo}-{hi}"}
+            )
+        if hi in own_gates and lo not in own_gates and lo in partner_gates:
+            out.append(
+                {"own_gate": hi, "partner_gate": lo, "channel": f"{lo}-{hi}"}
+            )
+    return sorted(out, key=lambda e: (e["own_gate"], e["channel"]))
+
+
+def build_participants(hd_a, hd_b, gates_a, gates_b) -> dict[str, Any]:
+    """``participants`` block: not evidence objects, no feature_id."""
+    out: dict[str, Any] = {}
+    for key, hd, own, partner in (
+        ("person_a", hd_a, gates_a, gates_b),
+        ("person_b", hd_b, gates_b, gates_a),
+    ):
+        out[key] = {
+            "type": hd["htype"],
+            "strategy": semantics.STRATEGY_BY_TYPE[hd["htype"]],
+            "authority": hd["auth"],
+            "split_bridges": compute_split_bridges(own, partner),
+            "hanging_gates_completed": compute_hanging_gates_completed(
+                own, partner
+            ),
+        }
+    return out
+
+
 def build_synastry(inp_a, inp_b):
-    """Return the synastry block; E2 aspects + E3 overlay / angle contacts."""
+    """Return the synastry block (western + human design)."""
     western = _import_western()
+    human_design_fn, _channels, _gate_center = _import_hd_tables()
     _jd_a, pos_a, _retro_a, _cusps_a, asc_a, mc_a, house_of_a = western(inp_a)
     _jd_b, pos_b, _retro_b, _cusps_b, asc_b, mc_b, house_of_b = western(inp_b)
 
@@ -185,6 +458,29 @@ def build_synastry(inp_a, inp_b):
         time_unknown_a=time_unknown_a,
         time_unknown_b=time_unknown_b,
     )
+
+    # Each person's chart is computed once; HD gate activation is read from
+    # human_design() output, never re-derived here.
+    hd_a = human_design_fn(inp_a, pos_a["太陽"])
+    hd_b = human_design_fn(inp_b, pos_b["太陽"])
+    gates_a = hd_active_gates(hd_a["rows"])
+    gates_b = hd_active_gates(hd_b["rows"])
+    channel_connections = compute_hd_channel_connections(
+        gates_a,
+        gates_b,
+        time_unknown_a=time_unknown_a,
+        time_unknown_b=time_unknown_b,
+        fast_gates_a=hd_fast_gates(hd_a["rows"]),
+        fast_gates_b=hd_fast_gates(hd_b["rows"]),
+    )
+    center_states = compute_hd_center_states(
+        set(hd_a["defined"]),
+        set(hd_b["defined"]),
+        merged_hd_channels(gates_a, gates_b),
+        time_unknown_a=time_unknown_a,
+        time_unknown_b=time_unknown_b,
+    )
+    participants = build_participants(hd_a, hd_b, gates_a, gates_b)
 
     if time_unknown_any:
         a_in_b: list[dict[str, Any]] = []
@@ -218,12 +514,9 @@ def build_synastry(inp_a, inp_b):
             "angle_contacts_b_to_a": ang_b_to_a,
         },
         "human_design": {
-            "channel_connections": [],
-            "center_states": [],
-            "participants": {
-                "person_a": {},
-                "person_b": {},
-            },
+            "channel_connections": channel_connections,
+            "center_states": center_states,
+            "participants": participants,
         },
         "unavailable": unavailable,
     }

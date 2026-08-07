@@ -290,16 +290,27 @@ def test_dual_json_output_has_synastry_with_complete_keys():
     assert payload["schema_version"] == "1.2"
     syn = payload["synastry"]
     assert set(syn["western"]) == SYNASTRY_KEYS_WESTERN
-    # E2 fills aspects[]; E3 fills overlay + angle contacts; E4 still empty HD.
+    # E2 fills aspects[]; E3 fills overlay + angle contacts; E4 fills HD.
     assert isinstance(syn["western"]["aspects"], list)
     for k in SYNASTRY_KEYS_WESTERN:
         assert isinstance(syn["western"][k], list)
         assert syn["western"][k], f"{k} non-empty when both times known"
     assert set(syn["human_design"]) == SYNASTRY_KEYS_HD
-    assert syn["human_design"]["channel_connections"] == []
-    assert syn["human_design"]["center_states"] == []
+    assert isinstance(syn["human_design"]["channel_connections"], list)
+    assert syn["human_design"]["channel_connections"], (
+        "channel_connections non-empty when both times known"
+    )
+    assert len(syn["human_design"]["center_states"]) == 9
     assert "person_a" in syn["human_design"]["participants"]
     assert "person_b" in syn["human_design"]["participants"]
+    for person in ("person_a", "person_b"):
+        assert set(syn["human_design"]["participants"][person]) == {
+            "type",
+            "strategy",
+            "authority",
+            "split_bridges",
+            "hanging_gates_completed",
+        }
     assert syn["unavailable"] == []
     assert payload["western"] == {"person_a": {}, "person_b": {}}
     assert payload["human_design"] == {"person_a": {}, "person_b": {}}

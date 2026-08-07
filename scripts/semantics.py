@@ -125,6 +125,61 @@ PLANET_THEMES: dict[str, list[str]] = {
     "天底": ["timing_context", "autonomy_boundary"],
 }
 
+# Human Design centers. Row order IS the center_states[] output order
+# (頭→邏輯→喉→G→意志→情緒→薦骨→脾→根). (internal, raw_fact, slug, themes)
+HD_CENTER_ROWS: list[tuple[str, str, str, list[str]]] = [
+    ("頭", "Head", "head", ["communication", "decision_power"]),
+    ("邏輯", "Ajna", "ajna", ["communication", "decision_power"]),
+    ("喉", "Throat", "throat", ["communication", "action_tempo"]),
+    ("G", "G", "g", ["commitment_stability", "autonomy_boundary"]),
+    ("意志", "Heart", "heart", ["money_division", "decision_power"]),
+    ("情緒", "Solar Plexus", "solar-plexus", ["emotion_regulation", "conflict_repair"]),
+    ("薦骨", "Sacral", "sacral", ["action_tempo", "intimacy_attraction"]),
+    ("脾", "Spleen", "spleen", ["timing_context", "autonomy_boundary"]),
+    ("根", "Root", "root", ["action_tempo", "emotion_regulation"]),
+]
+
+HD_CENTER_ORDER: tuple[str, ...] = tuple(row[0] for row in HD_CENTER_ROWS)
+HD_CENTER_RAW: dict[str, str] = {row[0]: row[1] for row in HD_CENTER_ROWS}
+HD_CENTER_SLUG: dict[str, str] = {row[0]: row[2] for row in HD_CENTER_ROWS}
+HD_CENTER_THEMES: dict[str, list[str]] = {row[0]: list(row[3]) for row in HD_CENTER_ROWS}
+
+# Link type → themes / salience / ease_or_tension (spec §人類圖連結判定).
+HD_LINK_THEMES: dict[str, list[str]] = {
+    "electromagnetic": ["intimacy_attraction", "conflict_repair"],
+    "dominance": ["decision_power", "autonomy_boundary"],
+    "compromise": ["autonomy_boundary", "conflict_repair"],
+    "companionship": ["commitment_stability", "action_tempo"],
+}
+
+HD_LINK_SALIENCE: dict[str, float] = {
+    "electromagnetic": 0.9,
+    "companionship": 0.9,
+    "dominance": 0.8,
+    "compromise": 0.7,
+}
+
+HD_LINK_EASE: dict[str, str] = {
+    "companionship": "ease",
+    "electromagnetic": "mixed",
+    "dominance": "tension",
+    "compromise": "tension",
+}
+
+HD_STATE_SLUG: dict[str, str] = {
+    "a_defined": "a-defined",
+    "b_defined": "b-defined",
+    "both_defined": "both-defined",
+    "defined_by_merge": "defined-by-merge",
+    "undefined": "undefined",
+}
+
+# Center states rank below every channel connection.
+HD_CENTER_STATE_SALIENCE = 0.5
+# Channel/center confidence when any side's birth time is unknown.
+DATA_CONFIDENCE_HD_UNKNOWN = 0.85
+DATA_CONFIDENCE_HD_UNKNOWN_FAST = 0.6
+
 REQUIRED_EVIDENCE_KEYS: tuple[str, ...] = (
     "feature_id",
     "system",
@@ -315,6 +370,50 @@ def dimensions_for_angle_contact(planet: str, angle: str) -> list[str]:
     return out
 
 
+def dimensions_for_hd_channel(
+    link_type: str, center_lo: str, center_hi: str
+) -> list[str]:
+    """Link-type themes → lo gate's center themes → hi gate's center themes.
+
+    First-seen dedupe. Centers are internal Chinese names.
+    """
+    out: list[str] = []
+    seen: set[str] = set()
+    themes = (
+        HD_LINK_THEMES[link_type]
+        + HD_CENTER_THEMES[center_lo]
+        + HD_CENTER_THEMES[center_hi]
+    )
+    for theme in themes:
+        if theme not in seen:
+            seen.add(theme)
+            out.append(theme)
+    return out
+
+
+def data_confidence_hd_channel(
+    *,
+    channel_gates: Sequence[int],
+    fast_gates_a: Any,
+    fast_gates_b: Any,
+    time_unknown_a: bool,
+    time_unknown_b: bool,
+) -> float:
+    """Exhaustive split for HD channels (spec §時間未知與 data_confidence).
+
+    Unknown side's Moon/Mercury/Venus/Mars activating either endpoint → 0.6;
+    otherwise 0.85 when any side is unknown; 0.95 when both known.
+    """
+    if not time_unknown_a and not time_unknown_b:
+        return DATA_CONFIDENCE_BOTH_KNOWN
+    gates = set(channel_gates)
+    if time_unknown_a and gates & set(fast_gates_a):
+        return DATA_CONFIDENCE_HD_UNKNOWN_FAST
+    if time_unknown_b and gates & set(fast_gates_b):
+        return DATA_CONFIDENCE_HD_UNKNOWN_FAST
+    return DATA_CONFIDENCE_HD_UNKNOWN
+
+
 def evidence(
     *,
     method: str,
@@ -475,6 +574,124 @@ def evidence_angle_contact(
         "method_consensus": "core",
         "data_confidence": DATA_CONFIDENCE_BOTH_KNOWN,
         "participates_in_convergence": True,
+    }
+
+
+def evidence_hd_channel_connection(
+    *,
+    lo: int,
+    hi: int,
+    link_type: str,
+    full_channel_owner: str | None,
+    a_gates: Sequence[int],
+    b_gates: Sequence[int],
+    center_lo: str,
+    center_hi: str,
+    time_unknown_a: bool = False,
+    time_unknown_b: bool = False,
+    fast_gates_a: Any = frozenset(),
+    fast_gates_b: Any = frozenset(),
+) -> dict[str, Any]:
+    """Build one ``hd_channel_connection`` evidence object.
+
+    ``lo``/``hi`` are normalized gate numbers (lo < hi); ``center_lo`` /
+    ``center_hi`` are the internal Chinese center names of those gates.
+    ``full_channel_owner`` is ``"A"``/``"B"`` for dominance/compromise and
+    ``None`` for electromagnetic/companionship (directionless: subject A,
+    object B).
+    """
+    if link_type not in HD_LINK_SALIENCE:
+        raise ValueError(f"unknown HD link type: {link_type!r}")
+    if full_channel_owner not in ("A", "B", None):
+        raise ValueError(
+            f"full_channel_owner must be 'A', 'B' or None; got {full_channel_owner!r}"
+        )
+    if link_type in ("electromagnetic", "companionship"):
+        if full_channel_owner is not None:
+            raise ValueError(f"{link_type} has no full_channel_owner")
+        subject, obj = "A", "B"
+    else:
+        if full_channel_owner is None:
+            raise ValueError(f"{link_type} requires full_channel_owner")
+        subject = full_channel_owner
+        obj = "B" if full_channel_owner == "A" else "A"
+    conf = data_confidence_hd_channel(
+        channel_gates=(lo, hi),
+        fast_gates_a=fast_gates_a,
+        fast_gates_b=fast_gates_b,
+        time_unknown_a=time_unknown_a,
+        time_unknown_b=time_unknown_b,
+    )
+    return {
+        "feature_id": feature_id(
+            "hd_channel_connection", lo=str(lo), hi=str(hi), link_type=link_type
+        ),
+        "system": "human_design",
+        "method": "hd_channel_connection",
+        "method_version": METHOD_VERSION_HD,
+        "subject": subject,
+        "object": obj,
+        "raw_fact": {
+            "channel": f"{lo}-{hi}",
+            "link_type": link_type,
+            "a_gates": sorted(a_gates),
+            "b_gates": sorted(b_gates),
+            "centers": [HD_CENTER_RAW[center_lo], HD_CENTER_RAW[center_hi]],
+            "full_channel_owner": full_channel_owner,
+        },
+        "dimensions": dimensions_for_hd_channel(link_type, center_lo, center_hi),
+        "salience": round(HD_LINK_SALIENCE[link_type], 3),
+        "ease_or_tension": HD_LINK_EASE[link_type],
+        "method_consensus": "core",
+        "data_confidence": round(conf, 3),
+        "participates_in_convergence": True,
+    }
+
+
+def evidence_hd_center_state(
+    *,
+    center: str,
+    state: str,
+    causing_channels: Sequence[str],
+    time_unknown_a: bool = False,
+    time_unknown_b: bool = False,
+) -> dict[str, Any]:
+    """Build one ``hd_center_state`` evidence object.
+
+    ``center`` is the internal Chinese name; ``state`` uses the underscore
+    enum (hyphenated slug only appears in the feature_id). Non-directional:
+    subject/object are None and the entry never votes in convergence.
+    """
+    if center not in HD_CENTER_SLUG:
+        raise ValueError(f"unknown HD center: {center!r}")
+    if state not in HD_STATE_SLUG:
+        raise ValueError(f"unknown HD center state: {state!r}")
+    if time_unknown_a or time_unknown_b:
+        conf = DATA_CONFIDENCE_HD_UNKNOWN
+    else:
+        conf = DATA_CONFIDENCE_BOTH_KNOWN
+    return {
+        "feature_id": feature_id(
+            "hd_center_state",
+            center_slug=HD_CENTER_SLUG[center],
+            state_slug=HD_STATE_SLUG[state],
+        ),
+        "system": "human_design",
+        "method": "hd_center_state",
+        "method_version": METHOD_VERSION_HD,
+        "subject": None,
+        "object": None,
+        "raw_fact": {
+            "center": HD_CENTER_RAW[center],
+            "state": state,
+            "causing_channels": sorted(causing_channels),
+        },
+        "dimensions": list(HD_CENTER_THEMES[center]),
+        "salience": HD_CENTER_STATE_SALIENCE,
+        "ease_or_tension": "mixed",
+        "method_consensus": "core",
+        "data_confidence": round(conf, 3),
+        "participates_in_convergence": False,
     }
 
 
