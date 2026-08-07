@@ -269,6 +269,10 @@ def feature_id(method: str, **parts: str) -> str:
     raise ValueError(f"unknown method for feature_id: {method!r}")
 
 
+# Both birth times known (western overlay / angle contact / both-known aspects).
+DATA_CONFIDENCE_BOTH_KNOWN = 0.95
+
+
 def data_confidence_western(
     *,
     planet_a: str,
@@ -278,13 +282,37 @@ def data_confidence_western(
 ) -> float:
     """Western synastry_aspect confidence (not HD channel rules)."""
     if not time_unknown_a and not time_unknown_b:
-        return 0.95
+        return DATA_CONFIDENCE_BOTH_KNOWN
     # Unknown-side Moon participation → 0.6
     if time_unknown_a and planet_a == "月亮":
         return 0.6
     if time_unknown_b and planet_b == "月亮":
         return 0.6
     return 0.85
+
+
+# House-overlay salience scale (planet_weight × this factor).
+HOUSE_OVERLAY_WEIGHT = 0.8
+# Angle-contact planet_weight is fixed (not max with the angle body).
+ANGLE_CONTACT_PLANET_WEIGHT = 0.5
+
+ANGLE_INTERNAL_ORDER: tuple[str, ...] = ("上升", "下降", "天頂", "天底")
+
+
+def dimensions_for_planet(planet: str) -> list[str]:
+    """Themes for a single planet (house overlay)."""
+    return list(PLANET_THEMES[planet])
+
+
+def dimensions_for_angle_contact(planet: str, angle: str) -> list[str]:
+    """Planet themes then angle themes; first-seen dedupe."""
+    out: list[str] = []
+    seen: set[str] = set()
+    for theme in PLANET_THEMES[planet] + PLANET_THEMES[angle]:
+        if theme not in seen:
+            seen.add(theme)
+            out.append(theme)
+    return out
 
 
 def evidence(
@@ -339,6 +367,113 @@ def evidence(
         "ease_or_tension": meta["ease_or_tension"],
         "method_consensus": "core",
         "data_confidence": round(conf, 3),
+        "participates_in_convergence": True,
+    }
+
+
+def evidence_house_overlay(
+    *,
+    planet: str,
+    house_number: int,
+    visitor: str,
+    owner: str,
+) -> dict[str, Any]:
+    """Build one ``house_overlay`` evidence object.
+
+    ``visitor`` / ``owner`` are ``"A"`` or ``"B"`` (subject = visitor, object = owner).
+    Only emitted when both birth times are known (caller responsibility).
+    """
+    if visitor not in ("A", "B") or owner not in ("A", "B"):
+        raise ValueError(f"visitor/owner must be A or B; got {visitor!r}/{owner!r}")
+    if not isinstance(house_number, int) or not (1 <= house_number <= 12):
+        raise ValueError(f"house_number must be int 1–12; got {house_number!r}")
+    slug = SLUGS["internal_to_slug"][planet]
+    v = visitor.lower()
+    o = owner.lower()
+    fid = feature_id(
+        "house_overlay",
+        visitor=v,
+        planet=slug,
+        owner=o,
+        house_number=str(house_number),
+    )
+    pw = PLANET_WEIGHT[planet]
+    return {
+        "feature_id": fid,
+        "system": "western",
+        "method": "house_overlay",
+        "method_version": METHOD_VERSION_WESTERN,
+        "subject": visitor,
+        "object": owner,
+        "raw_fact": {
+            "planet": SLUGS["internal_to_raw"][planet],
+            "house_number": house_number,
+            "house_system": "placidus",
+        },
+        "dimensions": dimensions_for_planet(planet),
+        "salience": round(pw * HOUSE_OVERLAY_WEIGHT, 3),
+        "ease_or_tension": "mixed",
+        "method_consensus": "core",
+        "data_confidence": DATA_CONFIDENCE_BOTH_KNOWN,
+        "participates_in_convergence": False,
+    }
+
+
+def evidence_angle_contact(
+    *,
+    planet: str,
+    angle: str,
+    aspect: str,
+    actual_angle: float,
+    orb: float,
+    subject: str,
+    obj: str,
+) -> dict[str, Any]:
+    """Build one ``angle_contact`` evidence object.
+
+    ``planet_weight`` is fixed at ``ANGLE_CONTACT_PLANET_WEIGHT`` (0.5), not max.
+    ``angle`` is an internal name (上升/下降/天頂/天底).
+    Only emitted when both birth times are known (caller responsibility).
+    ``obj`` is the object chart label (``"A"`` / ``"B"``); the evidence key
+    remains ``"object"``.
+    """
+    if subject not in ("A", "B") or obj not in ("A", "B"):
+        raise ValueError(f"subject/object must be A or B; got {subject!r}/{obj!r}")
+    if angle not in ANGLE_BODIES:
+        raise ValueError(f"angle must be an angle body; got {angle!r}")
+    meta = ASPECT_BY_SLUG[aspect]
+    max_orb = resolve_max_orb(planet, angle, aspect)
+    ow = orb_weight(orb, max_orb)
+    slug_p = SLUGS["internal_to_slug"][planet]
+    slug_ang = SLUGS["internal_to_slug"][angle]
+    fid = feature_id(
+        "angle_contact",
+        subject=subject.lower(),
+        planet=slug_p,
+        aspect=meta["slug"],
+        object=obj.lower(),
+        angle=slug_ang,
+    )
+    return {
+        "feature_id": fid,
+        "system": "western",
+        "method": "angle_contact",
+        "method_version": METHOD_VERSION_WESTERN,
+        "subject": subject,
+        "object": obj,
+        "raw_fact": {
+            "planet": SLUGS["internal_to_raw"][planet],
+            "angle": slug_ang,
+            "aspect": meta["raw"],
+            "exact_angle": int(meta["exact_angle"]),
+            "actual_angle": actual_angle,
+            "orb": orb,
+        },
+        "dimensions": dimensions_for_angle_contact(planet, angle),
+        "salience": round(ow * ANGLE_CONTACT_PLANET_WEIGHT, 3),
+        "ease_or_tension": meta["ease_or_tension"],
+        "method_consensus": "core",
+        "data_confidence": DATA_CONFIDENCE_BOTH_KNOWN,
         "participates_in_convergence": True,
     }
 
