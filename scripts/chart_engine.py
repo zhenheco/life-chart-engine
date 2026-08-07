@@ -376,10 +376,15 @@ def to_json_text(envelope):
 
 
 def build_synastry_json(inp_a, inp_b):
-    """Re-export; implementation lives in ``scripts/synastry.py`` (no cycle)."""
-    try:
+    """Re-export; implementation lives in ``scripts/synastry.py`` (no cycle).
+
+    Choose relative vs absolute import by ``__package__`` — do not use
+    try/except ImportError as a fallback (that would swallow real ImportErrors
+    raised while loading synastry's dependencies and hide the root cause).
+    """
+    if __package__:
         from .synastry import build_synastry_json as _impl
-    except ImportError:
+    else:
         from synastry import build_synastry_json as _impl
     return _impl(inp_a, inp_b)
 

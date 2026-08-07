@@ -290,7 +290,9 @@ def test_dual_json_output_has_synastry_with_complete_keys():
     assert payload["schema_version"] == "1.2"
     syn = payload["synastry"]
     assert set(syn["western"]) == SYNASTRY_KEYS_WESTERN
-    for k in SYNASTRY_KEYS_WESTERN:
+    # E2 fills aspects[]; E3/E4 still leave the other western arrays empty.
+    assert isinstance(syn["western"]["aspects"], list)
+    for k in SYNASTRY_KEYS_WESTERN - {"aspects"}:
         assert syn["western"][k] == []
     assert set(syn["human_design"]) == SYNASTRY_KEYS_HD
     assert syn["human_design"]["channel_connections"] == []
@@ -302,7 +304,9 @@ def test_dual_json_output_has_synastry_with_complete_keys():
     assert payload["human_design"] == {"person_a": {}, "person_b": {}}
     assert payload["ziwei"]["status"] == "not_computed"
     assert "methodology_note" in payload["ziwei"]
-    assert payload["evidence_completeness"] == "partial"
+    # Both times known → aspects non-empty and evidence_completeness full (E2).
+    assert syn["western"]["aspects"]
+    assert payload["evidence_completeness"] == "full"
 
 
 # ---------------------------------------------------------------------------

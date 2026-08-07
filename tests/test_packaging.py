@@ -96,6 +96,49 @@ def test_installed_wheel_entry_points_work_outside_checkout(tmp_path: Path) -> N
         assert payload["schema_version"] == "1.2"
 
 
+def test_installed_wheel_dual_person_synastry_smoke(tmp_path: Path) -> None:
+    """Installed package dual-person mode must emit non-empty synastry aspects.
+
+    Guards the package-relative import path in synastry.py (``from . import semantics``)
+    that single-person --example smoke never exercises.
+    """
+    wheel = _build_wheel(tmp_path / "dist")
+    venv_dir = tmp_path / "venv"
+    subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True, capture_output=True)
+    pip = venv_dir / "bin" / "pip"
+    subprocess.run([str(pip), "install", str(wheel)], check=True, capture_output=True, text=True)
+
+    proc = subprocess.run(
+        [
+            str(venv_dir / "bin" / "life-chart"),
+            "--json",
+            "--name", "A",
+            "--gender", "女",
+            "--date", "1990-06-15",
+            "--time", "08:30",
+            "--tz", "8",
+            "--lat", "25.033",
+            "--lon", "121.5654",
+            "--date-b", "1988-03-20",
+            "--tz-b", "8",
+            "--lat-b", "25.0",
+            "--lon-b", "121.5",
+            "--gender-b", "男",
+            "--time-b", "09:15",
+        ],
+        cwd=tmp_path,  # outside the checkout: no cwd shadowing
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "synastry" in proc.stdout
+    payload = json.loads(proc.stdout)
+    assert payload.get("ok") is True
+    assert payload["synastry"]["western"]["aspects"]
+
+
 def test_installed_wheel_mcp_entry_point_smoke(tmp_path: Path) -> None:
     wheel = _build_wheel(tmp_path / "dist")
     venv_dir = tmp_path / "venv"
