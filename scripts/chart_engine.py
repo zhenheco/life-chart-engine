@@ -409,6 +409,8 @@ def _parse_args(argv=None):
     p.add_argument('--example', action='store_true', help='使用內建範例出生資料')
     p.add_argument('--json', action='store_true', default=False)
     # Person B (synastry mode): any -b flag enters dual-person mode
+    p.add_argument('--name-b', dest='name_b', default='B',
+                   help='Person B 顯示名稱（synastry 輸出不 echo 輸入，預設 B）')
     p.add_argument('--date-b', dest='date_b', help='Person B 西曆 YYYY-MM-DD')
     p.add_argument('--time-b', dest='time_b', help='Person B 本地時鐘 HH:MM 或 unknown')
     p.add_argument('--tz-b', dest='tz_b', help='Person B UTC 時差')
@@ -451,7 +453,7 @@ def _parse_args(argv=None):
             'ziwei_day_divide': a.ziwei_day_divide,
         }
         raw_b = {
-            'name': 'B', 'gender': a.gender_b, 'date': a.date_b, 'time': a.time_b,
+            'name': a.name_b, 'gender': a.gender_b, 'date': a.date_b, 'time': a.time_b,
             'tz': a.tz_b, 'lat': a.lat_b, 'lon': a.lon_b, 'target': a.target,
             'ziwei_day_divide': a.ziwei_day_divide,
         }
@@ -497,21 +499,39 @@ def _parse_args(argv=None):
 def main(argv=None):
     parsed = _parse_args(argv)
     if parsed["mode"] == "synastry":
+        if __package__:
+            from .synastry import (
+                ERROR_COMPUTATION_UNSUPPORTED,
+                ERROR_INTERNAL,
+                MESSAGE_COMPUTATION_UNSUPPORTED,
+                MESSAGE_INTERNAL,
+            )
+        else:
+            from synastry import (
+                ERROR_COMPUTATION_UNSUPPORTED,
+                ERROR_INTERNAL,
+                MESSAGE_COMPUTATION_UNSUPPORTED,
+                MESSAGE_INTERNAL,
+            )
         try:
             sys.stdout.write(
                 to_json_text(build_synastry_json(parsed["inp_a"], parsed["inp_b"])) + "\n"
             )
-        except Exception:
+        except eph.ComputationUnsupportedError:
             # Fixed dual-mode error shape; do not leak str(exc) (see design §CLI 雙人輸出).
-            envelope = {
-                "ok": False,
-                "error": "internal_error",
-                "message": "synastry computation failed",
-                "schema_version": "1.2",
-            }
-            sys.stdout.write(to_json_text(envelope) + "\n")
-            return 1
-        return 0
+            error, message = ERROR_COMPUTATION_UNSUPPORTED, MESSAGE_COMPUTATION_UNSUPPORTED
+        except Exception:
+            error, message = ERROR_INTERNAL, MESSAGE_INTERNAL
+        else:
+            return 0
+        envelope = {
+            "ok": False,
+            "error": error,
+            "message": message,
+            "schema_version": "1.2",
+        }
+        sys.stdout.write(to_json_text(envelope) + "\n")
+        return 1
 
     inp, json_mode = parsed["inp"], parsed["json"]
     if json_mode:

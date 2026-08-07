@@ -20,6 +20,16 @@ ZIWEI_METHODOLOGY_NOTE = (
     "紫微斗數沒有本引擎採用的合盤方法；兩人盤各自獨立計算，不做關係層級推論。"
 )
 
+# Error contract shared by HTTP POST /synastry and CLI dual mode
+# (spec §完整度、錯誤與安全). Tokens are machine-parsable; messages are fixed
+# strings — exception text is never surfaced to callers.
+ERROR_COMPUTATION_UNSUPPORTED = "computation_unsupported"
+ERROR_INTERNAL = "internal_error"
+MESSAGE_COMPUTATION_UNSUPPORTED = (
+    "chart cannot be computed for the given coordinates"
+)
+MESSAGE_INTERNAL = "synastry computation failed"
+
 # Fixed 11-body set for aspects[] / overlay / angle contacts
 # (South Node excluded; no angles; no Chiron).
 ASPECT_BODIES: tuple[str, ...] = (

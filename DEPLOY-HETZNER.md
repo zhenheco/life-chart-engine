@@ -75,6 +75,44 @@ ENGINE_API_KEY=<set in platform secret store>
 The Worker request must include the `X-Engine-Key` header value sourced from
 the configured `ENGINE_API_KEY` secret.
 
-The HTTP response schema is the same `schema_version: "1.1"` JSON object documented in `AGENTS.md`.
+The HTTP response schema is the same `schema_version: "1.2"` JSON object documented in `AGENTS.md`.
 
 **Deploy order is web-first-safe.** The `life-web` client now accepts the whole `1.x` family, and `mutagen` stays string-compatible (the `1.1` additions — `mutagenTyped`, `decadal.ageRange`, the `age` sub-object — are additive only). So deploying the engine `1.1` will not break an already-running web; either order is safe, web-first preferred.
+
+## 6. Deploy-regression verification (after every rebuild)
+
+After rebuilding/redeploying the container, run the platform-independent
+regression marker from the repo checkout and keep the full output as evidence:
+
+```bash
+pytest -m deploy_regression -r s
+```
+
+- Requirement: **the 3 tests selected by the marker must all be passed, and
+  none of those selected tests may be skipped**. `-r s` prints every skipped
+  test — any skip among the selected tests means deploy drift and must be
+  investigated, not waived. The bare command's summary line can still show
+  one unrelated collection-time skip from `tests/test_mcp_server.py` (see
+  below); that skip is outside the deploy contract — judge the requirement
+  on the selected tests, or use the `--ignore` form below for a clean
+  zero-skip summary line. Platform-gated byte-identity tests are
+  deliberately NOT marked `deploy_regression`: they skip off their capture
+  platform (e.g. on a Linux host), and a skip is no evidence about the
+  deployed build — marking them would fake a green result.
+- The marker covers the platform-independent contract: `/health`
+  `schema_version`, the `POST /chart` success path deep-equal against
+  `examples/sample-output.json`, and the `POST /synastry` response shape.
+- One known collection-time skip is unrelated to the deploy contract:
+  `tests/test_mcp_server.py` skips at import when the optional `[mcp]` extra
+  is not installed (it never is in a base checkout/image). To get a clean
+  zero-skip summary line, exclude it explicitly:
+
+```bash
+pytest -m deploy_regression -r s --ignore=tests/test_mcp_server.py
+```
+
+- Also verify from outside before life-web traffic may rely on
+  `POST /synastry`: `curl https://engine-life.aicycle.cc/health` must return
+  JSON containing `"schema_version": "1.2"` (the engine must serve
+  `/synastry` BEFORE life-web goes live — otherwise existing paid synastry
+  customers get 502/503).

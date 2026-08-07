@@ -7,6 +7,15 @@ import math
 import astronomy as A
 
 
+class ComputationUnsupportedError(ValueError):
+    """Input-deterministic computation failure (HTTP maps this TYPE to 422).
+
+    Raised where the mathematics is undefined for the given input (Placidus
+    cusps at polar latitudes). Callers must branch on the exception type,
+    never on the message text — wording is internal and may change.
+    """
+
+
 FLG = 0
 J2000 = 2451545.0
 DELTA_DAYS = 0.5
@@ -130,12 +139,12 @@ def _placidus_cusp(ramc, phi, eps, k):
     for _ in range(100):
         arg = -math.sin(ra) * tan_phi * tan_eps
         if abs(arg) > 1:
-            raise ValueError("placidus undefined at high latitude")
+            raise ComputationUnsupportedError("placidus undefined at high latitude")
         nxt = (ramc + k * math.acos(arg)) % (2 * math.pi)
         if abs(_signed_rad_delta(nxt, ra)) < 1e-8:
             return _lon_from_ra(nxt, eps)
         ra = nxt
-    raise ValueError("placidus cusp iteration did not converge")
+    raise ComputationUnsupportedError("placidus cusp iteration did not converge")
 
 
 def _signed_rad_delta(a, b):

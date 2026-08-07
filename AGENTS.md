@@ -40,6 +40,19 @@ life-chart --json \
   [--target <YYYY-MM-DD>]
 ```
 
+Synastry (dual-person) mode — relationship-level facts for two people
+(`schema_version` `1.2`; see §4 "Synastry output"):
+
+```bash
+life-chart --json \
+  --name "A" --gender 女 --date 1990-06-15 --time 08:30 \
+  --tz 8 --lat 25.0330 --lon 121.5654 \
+  --date-b 1988-03-20 --time-b 09:15 --tz-b 8 --lat-b 25.0 --lon-b 121.5 --gender-b 男
+
+# B-side birth time unknown: omit --time-b (or pass `unknown`).
+# A-side --time may likewise be omitted or `unknown` in this mode.
+```
+
 - `life-chart` = the installed wrapper created by `install.sh`, symlinked to
   `~/.local/bin/life-chart`.
 - `<VENV_PY>` = the project venv's Python (CPython 3.12), created by `setup.sh`
@@ -55,6 +68,12 @@ life-chart --json \
   mode also applies to `pip install life-chart-engine` installs — install Node
   from https://nodejs.org or your package manager.
 - Pass `--json` for the structured contract below. Omit it for human Markdown.
+- **Synastry mode entry:** the presence of **any** `-b` flag (even just
+  `--time-b`) enters dual-person mode. The five required `-b` flags
+  (`--date-b`, `--tz-b`, `--lat-b`, `--lon-b`, `--gender-b`) must then all be
+  present — a partial set exits `2` naming the missing ones. Dual mode
+  requires `--json` (Markdown exits `2`) and never calls the Zi Wei sidecar
+  (no per-request Node dependency).
 - The process prints **exactly one JSON object to stdout** and nothing else.
 
 Optional HTTP wrapper (source checkout only — the PyPI wheel ships the CLI and
@@ -65,10 +84,19 @@ FastAPI/Uvicorn):
 uvicorn server:app --host 0.0.0.0 --port 8000
 ```
 
-- `GET /health` returns `200`.
+- `GET /health` returns `200` with `{"ok": true, "schema_version": "1.2"}`, so
+  an operator can verify from outside which contract a deployed instance serves.
 - `POST /chart` accepts the same input fields as the CLI flags, with `tz`
   mapped to `tz_offset` internally, and returns the same `schema_version: "1.2"`
   JSON object.
+- `POST /synastry` accepts `{"person_a": {...}, "person_b": {...}}` — per-person
+  fields are the same as `/chart`, except `time` is optional: it may be
+  **omitted**, `null`, or the exact lowercase string `"unknown"` (any other
+  value — including `"Unknown"`, `" unknown "`, `""` — is `400 invalid_input`).
+  Per-person `name` / `target` / `ziwei_day_divide` are accepted but do not
+  affect the output. Returns the §4 synastry envelope. The endpoint never calls
+  the Zi Wei sidecar, so it has **no per-request Node dependency**. Same
+  `X-Engine-Key` auth and fail-closed behaviour as `/chart`; error contract in §5.
 - If `ENGINE_API_KEY` is set, callers must send `X-Engine-Key` (wrong key → `401`).
 - **Fail-closed:** if `ENGINE_API_KEY` is NOT set, the server refuses requests with
   `503` unless `ENGINE_ALLOW_OPEN=1` is set explicitly (local/dev only).
@@ -94,6 +122,22 @@ uvicorn server:app --host 0.0.0.0 --port 8000
 | `--name` | string | no | Display label only. |
 | `--target` | string | no | Zi Wei horoscope reference date `YYYY-M-D`, same 1900–2100 window. Pass today's date for current 大限/流年. |
 | `--ziwei-day-divide` | enum | no | Late 子 hour rule: `forward` (default, 23:00-23:59 counts as next day) or `current` (counts as current day). |
+| `--date-b` | string | **yes (synastry)** | Person B. Same rules as `--date`. |
+| `--time-b` | string | no | Person B. Same format as `--time`. Omit it or pass the literal `unknown` → B's birth time is unknown (B is then estimated at B-local 12:00; time-dependent evidence is withheld, see §4). |
+| `--tz-b` | float | **yes (synastry)** | Person B. Same rules as `--tz`. |
+| `--lat-b` | float | **yes (synastry)** | Person B. Same rules as `--lat`. |
+| `--lon-b` | float | **yes (synastry)** | Person B. Same rules as `--lon`. |
+| `--gender-b` | enum | **yes (synastry)** | Person B. `男` or `女`. |
+| `--name-b` | string | no | Person B display label (default `B`). The synastry output never echoes inputs, so it cannot change the result. |
+
+**Synastry (dual-person) mode:** any `-b` flag present switches the CLI into
+dual mode; the five required `-b` flags above must then all be given. In this
+mode the A-side `--time` is also optional (omit or `unknown` → time unknown),
+while it stays **required** in single-person mode. `time` unknown values on the
+HTTP surface are identical: omitted, `null`, or the exact lowercase string
+`"unknown"`. `--example` is mutually exclusive with any `-b` flag. The same
+input yields the same JSON object (deep-equal after parsing) on both the CLI
+(`--json`) and HTTP (`POST /synastry`) — the two surfaces share one builder.
 
 > **Breaking change (v1.1.0):** the historical behaviour where omitted birth
 > flags silently fell back to the example person has been **removed**. All six
@@ -242,6 +286,66 @@ On success, stdout is one JSON object:
   independent of both `schema_version` (`"1.2"`) and the PyPI package version
   (`1.1.0`); consumers should branch on `schema_version` only.
 
+### Synastry output (dual-person mode: CLI `-b` flags / `POST /synastry`)
+
+On success, stdout / the HTTP response is one JSON object — the CLI `--json`
+output and the `POST /synastry` body are **the same object**:
+
+```jsonc
+{
+  "ok": true,
+  "schema_version": "1.2",
+  "western":      { "person_a": {}, "person_b": {} },
+  "human_design": { "person_a": {}, "person_b": {} },
+  "ziwei":        { "person_a": {}, "person_b": {},
+                    "status": "not_computed",
+                    "methodology_note": "紫微斗數沒有本引擎採用的合盤方法；兩人盤各自獨立計算，不做關係層級推論。" },
+  "synastry": {
+    "western": {
+      "aspects": [ /* synastry_aspect evidence */ ],
+      "a_planets_in_b_houses": [ /* house_overlay evidence, A visiting B */ ],
+      "b_planets_in_a_houses": [ /* house_overlay evidence, B visiting A */ ],
+      "angle_contacts_a_to_b": [ /* angle_contact evidence */ ],
+      "angle_contacts_b_to_a": [ /* angle_contact evidence */ ]
+    },
+    "human_design": {
+      "channel_connections": [ /* hd_channel_connection evidence */ ],
+      "center_states": [ /* hd_center_state evidence, 9 centers, fixed order */ ],
+      "participants": { "person_a": { /* type/strategy/authority/split_bridges/hanging_gates_completed */ },
+                        "person_b": { /* same shape */ } }
+    },
+    "unavailable": []
+  },
+  "evidence_completeness": "full"
+}
+```
+
+- `person_a` / `person_b` inside `western` / `human_design` / `ziwei` are
+  always **empty objects** (type-guard slots only; individual charts are not
+  served by this surface). `ziwei.status` is always `"not_computed"` and
+  `ziwei.methodology_note` is the fixed string above — 紫微合盤 is a deliberate
+  boundary, not a bug.
+- Every element of the five evidence arrays is one uniformly shaped Evidence
+  object carrying a unique, deterministic `feature_id`. The `method` value is
+  one of exactly five: `synastry_aspect` (`method_version`
+  `western-synastry-v1`), `house_overlay` (`western-synastry-v1`),
+  `angle_contact` (`western-synastry-v1`), `hd_channel_connection`
+  (`human-design-synastry-v1`), `hd_center_state`
+  (`human-design-synastry-v1`). No compatibility score / percentage / rating
+  field exists anywhere in the schema.
+- **Time unknown on either side** (time omitted / `null` / `"unknown"`): the
+  unknown side is estimated at its local 12:00; house overlay and angle
+  contacts are not emitted — the four arrays stay present but `[]` — and
+  `synastry.unavailable` becomes the fixed token array
+  `["house_overlay", "angle_contacts", "hd_lines"]` (fixed order). With both
+  times known it is `[]`. Array keys never disappear.
+- `evidence_completeness` has exactly two values: `"full"` (aspects non-empty
+  AND `unavailable` empty) or `"partial"` (otherwise — still HTTP 200 / exit 0).
+  The consumer owns the third ("unusable") judgement.
+- Determinism: identical input → byte-identical output, on both surfaces; all
+  arrays have a pinned total order (`salience` desc → `feature_id` asc, except
+  `center_states` in fixed center order).
+
 ---
 
 ## 5. Exit codes & errors
@@ -249,7 +353,7 @@ On success, stdout is one JSON object:
 | exit | meaning | stdout |
 |:---:|---|---|
 | `0` | success | the JSON object with `"ok": true` |
-| `1` | runtime error (with `--json`) | **Single-person:** `{ "ok": false, "error": "<message>", "schema_version": "1.2" }` (three keys; `error` is the exception text). **Dual-person (synastry):** `{ "ok": false, "error": "internal_error", "message": "synastry computation failed", "schema_version": "1.2" }` (four keys; fixed token/string, does not leak exception content). |
+| `1` | runtime error (with `--json`) | **Single-person:** `{ "ok": false, "error": "<message>", "schema_version": "1.2" }` (three keys; `error` is the exception text). **Dual-person (synastry):** `{ "ok": false, "error": "<token>", "message": "<fixed string>", "schema_version": "1.2" }` (four keys) where the token is `computation_unsupported` (input-deterministic failure, e.g. Placidus undefined at polar coordinates) or `internal_error`; both use fixed messages and never leak exception content — same token/message table as `POST /synastry` below. |
 | `2` | argument/validation error (argparse) | **empty** (usage text goes to stderr) — includes missing required flags, malformed dates/times, out-of-range `tz`/`lat`/`lon`, years outside 1900–2100, and illegal `--example` combinations |
 
 Agents should branch on `ok` (and on exit code) before reading chart fields.
@@ -261,6 +365,51 @@ surface (same shared validator); only the carrier differs:
 |---|---|---|---|
 | validation error (missing/malformed/out-of-range/out-of-window input) | exit `2`, empty stdout, usage on stderr | `400` + `detail` naming the field | `isError: true` + field-named message |
 | runtime error (Node sidecar failure, high-latitude Placidus, timeout) | exit `1` (`--json`: one `{"ok": false}` envelope; Markdown: message on stderr, empty stdout) | `500` + `{"ok": false, ...}` envelope | `isError: true` + message |
+
+### HTTP `POST /synastry` error contract (six fixed tokens)
+
+`error` is a fixed machine-parsable token; consumers should read only it.
+There are exactly two body shapes, chosen by token (never by status code),
+with fixed, mutually exclusive key sets:
+
+- **Input-error shape** (`invalid_json` / `invalid_input` / `unauthorized`):
+  `{"ok": false, "error": "<token>", "field": "<field name or null>", "detail": "<human-readable>"}`
+- **Fixed-message shape** (`computation_unsupported` / `not_configured` / `internal_error`):
+  `{"ok": false, "error": "<token>", "message": "<fixed string>"}` — no `field`/`detail`.
+
+| situation | status | `error` | `field` |
+|---|---|---|---|
+| body is not JSON (invalid UTF-8 included) | `400` | `invalid_json` | `null` |
+| body not an object | `400` | `invalid_input` | `person_a` |
+| `person_a` / `person_b` missing or not an object | `400` | `invalid_input` | `person_a` / `person_b` |
+| per-person field missing/malformed/out-of-range/out-of-window | `400` | `invalid_input` | prefixed field (`person_a.date`, `person_b.time`, …); first error only, `person_a` before `person_b` |
+| `X-Engine-Key` missing or wrong | `401` | `unauthorized` | `null` |
+| input valid but the coordinates are not computable (e.g. polar Placidus) | `422` | `computation_unsupported` | — (fixed-message shape) |
+| `ENGINE_API_KEY` not set and no `ENGINE_ALLOW_OPEN=1` | `503` | `not_configured` | — (fixed-message shape) |
+| any other internal failure | `500` | `internal_error` | — (fixed-message shape) |
+
+Fixed messages: `computation_unsupported` → `"chart cannot be computed for the
+given coordinates"`; `not_configured` → `"ENGINE_API_KEY not configured"`;
+`internal_error` → `"synastry computation failed"` (the real exception goes to
+Sentry, never into the body).
+
+**Decision order is fixed:** `not_configured` → `unauthorized` → `invalid_json`
+→ `invalid_input` → `computation_unsupported` → `internal_error`. When several
+apply, the earlier wins (e.g. key not configured AND body not JSON → `503`).
+
+The `422` mapping is by **exception type** (`ComputationUnsupportedError`),
+never by message matching. Time-unknown inputs do not downgrade it: houses are
+still computed at the estimated local 12:00, so polar coordinates return `422`
+even when overlay/angle output is withheld. A malformed `time` is `400`, never
+a silent downgrade to time-unknown; `person_a == person_b` is accepted and
+computed normally.
+
+**Retry semantics:**
+
+- **Not retryable** (the same input deterministically reproduces the same
+  result): `400 invalid_json`, `400 invalid_input`, `401 unauthorized`,
+  `422 computation_unsupported`, `503 not_configured`.
+- **Retryable**: `500 internal_error`, plus upstream proxy 5xx and timeouts.
 
 ---
 
