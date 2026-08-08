@@ -174,7 +174,7 @@ Muestra real recortada (matrices truncadas a 1–2 entradas; valores literales):
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ La envoltura `--json` tiene siete claves de nivel superior, en este orden:
 | Bloque | Resumen |
 |--------|---------|
 | `ok` | `true` en caso de éxito (`false` en la envoltura de error). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Eco de entradas normalizadas: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (nota `tz_offset`, no `tz`). |
 | `western` | cadena `system`, objetos de posición `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

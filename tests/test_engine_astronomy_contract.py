@@ -74,7 +74,7 @@ def build_json_or_error(inp):
     try:
         return chart_engine.build_json(inp)
     except Exception as exc:
-        return {"ok": False, "error": str(exc), "schema_version": "1.1"}
+        return {"ok": False, "error": str(exc), "schema_version": "1.2"}
 
 
 def shape(value):
@@ -271,7 +271,7 @@ def test_contract_literals_and_shape_match_baseline():
     for item in data["fixtures"]:
         got = build_json_or_error(engine_input(item))
         assert shape(got) == shape(item["build_json"]), item["id"]
-        assert got["schema_version"] == "1.1"
+        assert got["schema_version"] == "1.2"
         if got["ok"]:
             assert list(got) == TOP_KEYS
             assert got["meta"]["ephemeris"] == "astronomy-engine"
@@ -409,7 +409,12 @@ def test_build_json_does_not_need_python_network(monkeypatch):
 
 
 def test_runtime_and_test_sources_do_not_import_swisseph():
-    checked = [ROOT / "scripts" / "chart_engine.py", ROOT / "scripts" / "ephemeris.py"]
+    checked = [
+        ROOT / "scripts" / "chart_engine.py",
+        ROOT / "scripts" / "ephemeris.py",
+        ROOT / "scripts" / "synastry.py",
+        ROOT / "scripts" / "semantics.py",
+    ]
     checked.extend((ROOT / "tests").glob("test_*.py"))
     for path in checked:
         tree = ast.parse(path.read_text(encoding="utf-8"))

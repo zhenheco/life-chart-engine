@@ -37,7 +37,9 @@ def _time_value(value):
 def _finite_float(field, value, minimum, maximum):
     try:
         parsed = float(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError: float() on an out-of-range integer (e.g. a 400-digit
+        # JSON int) — still a malformed field, not a server error.
         raise ValueError(f"{field}: must be a number") from None
     if not math.isfinite(parsed):
         raise ValueError(f"{field}: must be finite")
@@ -46,9 +48,18 @@ def _finite_float(field, value, minimum, maximum):
     return parsed
 
 
-def validate_input(raw):
-    """Validate raw interface values and return the engine's normalized input."""
-    for field in ("date", "time", "tz", "lat", "lon", "gender"):
+def validate_input(raw, *, allow_unknown_time=False):
+    """Validate raw interface values and return the engine's normalized input.
+
+    When ``allow_unknown_time`` is True (synastry mode), ``time`` may be
+    omitted, ``None``/``null``, or the exact lowercase string ``\"unknown\"``;
+    the engine then uses local 12:00 and sets ``time_unknown=True`` on the
+    normalized input. Any other value is validated as a clock time.
+    """
+    required = ["date", "tz", "lat", "lon", "gender"]
+    if not allow_unknown_time:
+        required.insert(1, "time")
+    for field in required:
         if raw.get(field) is None:
             raise ValueError(f"{field}: is required")
 
@@ -58,16 +69,27 @@ def validate_input(raw):
 
     birth_date = _date_value("date", raw["date"])
     target = _date_value("target", raw.get("target", DEFAULT_TARGET))
+
+    time_unknown = False
+    time_raw = raw.get("time")
+    if allow_unknown_time and (time_raw is None or time_raw == "unknown"):
+        time_value = (12, 0)
+        time_unknown = True
+    else:
+        time_value = _time_value(time_raw)
+
     normalized = {
         "name": DEFAULT_NAME if raw.get("name") is None else str(raw["name"]),
         "gender": gender,
         "date": (birth_date.year, birth_date.month, birth_date.day),
-        "time": _time_value(raw["time"]),
+        "time": time_value,
         "tz_offset": _finite_float("tz", raw["tz"], -12, 14),
         "lat": _finite_float("lat", raw["lat"], -90, 90),
         "lon": _finite_float("lon", raw["lon"], -180, 180),
         "target": target.isoformat(),
     }
+    if time_unknown:
+        normalized["time_unknown"] = True
     if "ziwei_day_divide" in raw:
         day_divide = raw["ziwei_day_divide"]
         if not isinstance(day_divide, str) or day_divide not in {"forward", "current"}:

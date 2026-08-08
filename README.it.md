@@ -174,7 +174,7 @@ Esempio reale ritagliato (array troncati a 1–2 elementi; valori verbatim):
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ L'envelope `--json` ha sette chiavi di livello superiore, in questo ordine:
 | Blocco | Sintesi |
 |-------|---------|
 | `ok` | `true` al successo (`false` nell'envelope di errore). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Echo degli input normalizzati: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (nota `tz_offset`, non `tz`). |
 | `western` | Stringa `system`, oggetti di posizione `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

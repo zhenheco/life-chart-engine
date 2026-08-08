@@ -174,7 +174,7 @@ iztro@2.5.8
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ iztro@2.5.8
 | ブロック | 概要 |
 |---------|------|
 | `ok` | 成功時 `true`（エラーエンベロープでは `false`）。 |
-| `schema_version` | `"1.1"`。 |
+| `schema_version` | `"1.2"`。 |
 | `input` | 正規化された入力のエコー：`name`、`gender`、`date`、`time`、`tz_offset`、`lat`、`lon`、`target`（`tz` ではなく `tz_offset` に注意）。 |
 | `western` | `system` 文字列、`ascendant`/`midheaven` ポジションオブジェクト、`planets[]`、`houses[]`（×12）、`aspects[]`。 |
 | `human_design` | `type`、`authority`、`profile`、`definition`、`incarnation_cross`、`design_date`、`defined_centers[]`、`open_centers[]`、`channels[]`、`gates[]`。 |

@@ -22,9 +22,20 @@ NODE_FLOOR = "Node.js ≥ 18"
 REQUIRED_FLAG_TOKENS = ("`--date`", "`--time`", "`--tz`", "`--lat`", "`--lon`", "`--gender`")
 STALE_MARKERS = ("required=True", "{ decadal, yearly }です", "{ decadal, yearly }`")
 
+# Live schema_version pin. JSON-field form distinguishes "current output is X"
+# from legitimate residual 1.1 (package string v1.1.0, backtick history prose
+# like `` `schema_version` `1.1` is an additive… ``).
+CURRENT_SCHEMA_VERSION_JSON = '"schema_version": "1.2"'
+STALE_CURRENT_SCHEMA_VERSION_JSON = '"schema_version": "1.1"'
+
 
 def _translations():
     return {p.name for p in ROOT.glob("README.*.md")}
+
+
+def _contract_docs():
+    """AGENTS.md + DEPLOY-HETZNER.md + all 19 README*.md (English + 18 translations)."""
+    return ["AGENTS.md", "DEPLOY-HETZNER.md", "README.md"] + sorted(EXPECTED_TRANSLATIONS)
 
 
 def test_translation_set_is_exactly_the_expected_18_files():
@@ -54,4 +65,28 @@ def test_no_translation_still_describes_the_removed_silent_fallback():
         for stale in STALE_MARKERS:
             if stale in text:
                 problems.append(f"{name}: stale marker {stale!r} still present")
+    assert not problems, "\n" + "\n".join(problems)
+
+
+def test_contract_docs_declare_schema_version_1_2_not_1_1():
+    """AGENTS.md + DEPLOY-HETZNER.md + every README must pin live schema_version to 1.2.
+
+    Guards the 'docs synced to 1.2' AC: reverting a current-version marker from
+    1.2 back to 1.1 (JSON-field form) must fail this suite. Residual 1.1 that is
+    *not* a current-version claim — ``v1.1.0`` package string, backtick history
+    prose — is allowed and does not match the JSON-field literals below.
+    """
+    problems = []
+    for name in _contract_docs():
+        text = (ROOT / name).read_text(encoding="utf-8")
+        if CURRENT_SCHEMA_VERSION_JSON not in text:
+            problems.append(
+                f"{name}: missing current schema_version JSON literal "
+                f"{CURRENT_SCHEMA_VERSION_JSON!r}"
+            )
+        if STALE_CURRENT_SCHEMA_VERSION_JSON in text:
+            problems.append(
+                f"{name}: residual current-version 1.1 literal "
+                f"{STALE_CURRENT_SCHEMA_VERSION_JSON!r}"
+            )
     assert not problems, "\n" + "\n".join(problems)

@@ -174,7 +174,7 @@ Przycięty przykład ze świata rzeczywistego (tablice skrócone do 1–2 wpisó
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ Koperta `--json` ma siedem kluczy najwyższego poziomu, w tej kolejności:
 | Blok | Streszczenie |
 |------|-------------|
 | `ok` | `true` po powodzeniu (`false` w kopercie błędu). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Echo znormalizowanych wejść: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (zwróć uwagę na `tz_offset`, nie `tz`). |
 | `western` | String `system`, obiekty pozycji `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

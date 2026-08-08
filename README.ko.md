@@ -174,7 +174,7 @@ iztro@2.5.8
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ iztro@2.5.8
 | 블록 | 요약 |
 |------|-----|
 | `ok` | 성공 시 `true`(`false` in error envelope). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | 정규화된 입력의 에코: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (note `tz_offset`, not `tz`). |
 | `western` | `system` 문자열, `ascendant`/`midheaven` 위치 객체, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

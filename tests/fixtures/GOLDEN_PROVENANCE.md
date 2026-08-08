@@ -23,3 +23,20 @@ python scripts/chart_engine.py --example        > tests/fixtures/golden_example.
 Regenerating from `--example` is valid only while `--example` output is known
 byte-identical to the historical fallback on the capturing platform (verified
 at capture time on macOS).
+
+## 2026-08-06 — schema_version 1.1 → 1.2 (E1 synastry skeleton)
+
+- **Date:** 2026-08-06
+- **Reason:** Slice E1 bumps live `schema_version` from `"1.1"` to `"1.2"` for the
+  dual-person synastry mode skeleton. Single-person chart body is otherwise
+  unchanged (no `sort_keys`, same insertion order, same float repr).
+- **Diff scope:**
+  - `tests/fixtures/golden_example.json` — **one line only**:
+    `"schema_version": "1.1"` → `"1.2"`.
+  - `examples/sample-output.json` — **one line only**: same `schema_version` bump.
+  - `tests/fixtures/golden_example.md` — **zero diff** (Markdown path does not
+    print `schema_version`).
+- **Pre-change oracle:** `tests/fixtures/golden_example_pre_1_2.json` was
+  captured from the pre-1.2 engine (`--example --json`) **before** any code
+  change and must never be regenerated. Byte-identity tests replace
+  `"1.1"`→`"1.2"` in that file and compare to live stdout.

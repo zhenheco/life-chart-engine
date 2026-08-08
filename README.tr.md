@@ -174,7 +174,7 @@ Kesilmiş gerçek örnek (diziler 1–2 giriş ile kesilmiş; değerler olduğu 
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ Altı doğum işaretinin tümü **zorunludur** — eksik bir işaret, stderr'e k
 | Blok | Özet |
 |------|------|
 | `ok` | Başarı üzerine `true` (hata zarfında `false`). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Normalleştirilmiş girdilerin yankısı: `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (`tz` değil `tz_offset` not). |
 | `western` | `system` dizesi, `ascendant`/`midheaven` konum nesneleri, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

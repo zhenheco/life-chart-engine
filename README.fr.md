@@ -174,7 +174,7 @@ Exemple réel élagué (les tableaux sont tronqués à 1–2 entrées ; les vale
 ```json
 {
   "ok": true,
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "input": {
     "name": "小明", "gender": "女",
     "date": "1990-06-15", "time": "08:30",
@@ -284,7 +284,7 @@ L'enveloppe `--json` a sept clés de haut niveau, dans cet ordre :
 | Bloc | Résumé |
 |------|--------|
 | `ok` | `true` en cas de succès (`false` dans l'enveloppe d'erreur). |
-| `schema_version` | `"1.1"`. |
+| `schema_version` | `"1.2"`. |
 | `input` | Écho des entrées normalisées : `name`, `gender`, `date`, `time`, `tz_offset`, `lat`, `lon`, `target` (notez `tz_offset`, pas `tz`). |
 | `western` | Chaîne `system`, objets de position `ascendant`/`midheaven`, `planets[]`, `houses[]` (×12), `aspects[]`. |
 | `human_design` | `type`, `authority`, `profile`, `definition`, `incarnation_cross`, `design_date`, `defined_centers[]`, `open_centers[]`, `channels[]`, `gates[]`. |

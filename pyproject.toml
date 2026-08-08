@@ -47,3 +47,16 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["F"]
+
+[tool.pytest.ini_options]
+markers = [
+    # Platform-independent contract checks to run after every deploy rebuild:
+    #     pytest -m deploy_regression -r s
+    # `-r s` surfaces skips; every test selected by the marker must pass and
+    # none of the selected tests may be skipped — a skipped test is no evidence
+    # about the deployed build. (The bare run's summary may still show one
+    # unrelated collection-time skip from tests/test_mcp_server.py when the
+    # optional [mcp] extra is absent.) Platform-gated byte-identity tests are
+    # deliberately not marked (see DEPLOY-HETZNER.md verification section).
+    "deploy_regression: platform-independent engine contract checks (/health schema_version, /chart sample deep-equal, POST /synastry shape)",
+]
