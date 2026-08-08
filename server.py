@@ -66,7 +66,11 @@ async def synastry_endpoint(
 
     try:
         body = await request.json()
-    except ValueError:  # JSONDecodeError AND UnicodeDecodeError (invalid UTF-8)
+    except (ValueError, RecursionError):
+        # JSONDecodeError, UnicodeDecodeError (invalid UTF-8), and
+        # RecursionError (JSON nested deeper than the parser's recursion
+        # limit). Every parse-stage failure is input-deterministic, so it maps
+        # to the non-retryable 400 invalid_json — never a bare 500.
         return _input_error(400, "invalid_json", None, "body must be valid JSON")
 
     if not isinstance(body, dict):
@@ -125,8 +129,21 @@ def _auth_failure(x_engine_key: str | None) -> str | None:
 
     Must compare bytes, and must check None first: ``hmac.compare_digest``
     raises TypeError on None and its str form only accepts ASCII, while
-    Starlette decodes header bytes as latin-1 — a missing or non-ASCII key
+    Starlette decodes header bytes as latin-1 — a missing or undecodable key
     must stay a 401, never become a 500.
+
+    The header is re-encoded as latin-1 to recover the exact wire bytes before
+    comparing against the configured key's UTF-8 bytes. Re-encoding as UTF-8
+    instead would mangle every non-ASCII byte, so a non-ASCII ENGINE_API_KEY
+    would reject even the correct key — a 100% outage that merely looks like a
+    broken deploy.
+
+    The key side must use ``surrogateescape``: on POSIX, ``os.environ``
+    surrogate-escapes environment values that are not valid UTF-8, so a
+    non-UTF-8 ENGINE_API_KEY arrives here containing lone surrogates. Plain
+    UTF-8 encoding would raise UnicodeEncodeError outside every handler try —
+    a 500 on all requests — while ``surrogateescape`` round-trips the
+    original bytes.
     """
     key = os.environ.get("ENGINE_API_KEY")
     if not key:
@@ -137,7 +154,7 @@ def _auth_failure(x_engine_key: str | None) -> str | None:
             return None
         return "not_configured"
     if x_engine_key is None or not hmac.compare_digest(
-        x_engine_key.encode("utf-8", "surrogateescape"),
+        x_engine_key.encode("latin-1", "replace"),
         key.encode("utf-8", "surrogateescape"),
     ):
         return "unauthorized"

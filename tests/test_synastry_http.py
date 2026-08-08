@@ -27,6 +27,8 @@ import synastry  # noqa: E402  (contract constants; production-owned, not hand-c
 SCRIPT = ROOT / "scripts" / "chart_engine.py"
 PY = sys.executable
 SAMPLE = ROOT / "examples" / "sample-output.json"
+SAMPLE_INPUT = ROOT / "examples" / "sample-input.json"
+SAMPLE_SYNASTRY_INPUT = ROOT / "examples" / "sample-synastry-input.json"
 
 # A side: same person the E1–E4 CLI tests use (non-empty arrays guaranteed).
 PERSON_A = {
@@ -323,6 +325,28 @@ def test_invalid_utf8_body_is_invalid_json_not_500(client, raw_body):
     assert payload["field"] is None
 
 
+def test_deeply_nested_body_is_invalid_json_not_bare_500(client):
+    """A parser RecursionError must stay inside the six-token envelope.
+
+    json.loads raises RecursionError (not a ValueError) once nesting exceeds
+    the recursion limit (~20 KB of brackets is enough). Without catching it,
+    the endpoint leaks a bare, non-JSON 500 — a retryable status for an
+    input-deterministic failure (spec: parse-stage errors are 400
+    invalid_json, not retryable).
+    """
+    http, _server = client
+    body = b'{"person_a":' + b"[" * 10000 + b"]" * 10000 + b"}"
+
+    response = _post(http, content=body)
+
+    assert response.status_code == 400, response.text
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "invalid_json"
+    assert payload["field"] is None
+    assert set(payload) == {"ok", "error", "field", "detail"}
+
+
 def test_missing_person_b_is_invalid_input_field_person_b(client):
     http, _server = client
 
@@ -415,6 +439,23 @@ def test_lat_out_of_range_is_invalid_input(client):
     payload = response.json()
     assert payload["error"] == "invalid_input"
     assert payload["field"] == "person_a.lat"
+
+
+def test_huge_integer_tz_is_invalid_input_not_500(client):
+    """A 400-digit JSON int makes float() raise OverflowError — a pure input
+    error must surface as 400 invalid_input, not as a server-error 500 that
+    an authorized caller could weaponize into Sentry alerts."""
+    http, _server = client
+
+    response = _post(
+        http,
+        {"person_a": {**PERSON_A, "tz": int("1" * 400)}, "person_b": PERSON_B},
+    )
+
+    assert response.status_code == 400, response.text
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "person_a.tz"
 
 
 def test_same_person_twice_is_computed_normally(client):
@@ -627,6 +668,86 @@ def test_non_ascii_engine_key_header_is_401_not_500(client, monkeypatch):
     assert payload["error"] == "unauthorized"
 
 
+def test_non_ascii_configured_key_accepts_correct_utf8_header(client, monkeypatch):
+    """A non-ASCII ENGINE_API_KEY must not be a 100% outage.
+
+    Starlette hands the header over as a latin-1-decoded str, so the server
+    must re-encode it as latin-1 to recover the exact wire bytes before
+    comparing against the configured key's UTF-8 bytes. Re-encoding the
+    header as UTF-8 instead mangles every non-ASCII byte and rejects even
+    the correct key.
+    """
+    http, server_mod = client
+    monkeypatch.delenv("ENGINE_ALLOW_OPEN", raising=False)
+    monkeypatch.setenv("ENGINE_API_KEY", "密鑰secret")
+
+    status, raw = _raw_asgi_post(
+        server_mod.app,
+        json.dumps(DUAL_BODY).encode("utf-8"),
+        [(b"x-engine-key", "密鑰secret".encode("utf-8"))],
+    )
+
+    assert status == 200, raw
+    assert json.loads(raw)["ok"] is True
+
+    wrong_status, wrong_raw = _raw_asgi_post(
+        server_mod.app,
+        json.dumps(DUAL_BODY).encode("utf-8"),
+        [(b"x-engine-key", "wrong-密鑰".encode("utf-8"))],
+    )
+
+    assert wrong_status == 401, wrong_raw
+    assert json.loads(wrong_raw)["error"] == "unauthorized"
+
+
+def test_surrogate_escaped_configured_key_is_401_not_500(client, monkeypatch):
+    """A non-UTF-8 ENGINE_API_KEY must not be a 100% outage either.
+
+    On POSIX, os.environ surrogate-escapes env values that are not valid
+    UTF-8, so the configured key can contain lone surrogates. Re-encoding it
+    as plain UTF-8 raises UnicodeEncodeError outside every handler try — a
+    bare 500 on both endpoints — instead of the 401 the old code returned.
+    With surrogateescape the original bytes round-trip, and any header value
+    must stay a 401 envelope, never an exception.
+    """
+    http, server_mod = client
+    monkeypatch.delenv("ENGINE_ALLOW_OPEN", raising=False)
+    monkeypatch.setenv("ENGINE_API_KEY", b"k\xff".decode("utf-8", "surrogateescape"))
+
+    response = _post(http, DUAL_BODY, headers={"X-Engine-Key": "whatever"})
+
+    assert response.status_code == 401, response.text
+    payload = response.json()
+    assert payload["error"] == "unauthorized"
+    assert payload["field"] is None
+    assert set(payload) == {"ok", "error", "field", "detail"}
+
+    # Non-ASCII header bytes against a surrogate-escaped key: same envelope.
+    status, raw = _raw_asgi_post(
+        server_mod.app,
+        json.dumps(DUAL_BODY).encode("utf-8"),
+        [(b"x-engine-key", b"key-\xff")],
+    )
+
+    assert status == 401, raw
+    raw_payload = json.loads(raw)
+    assert raw_payload["error"] == "unauthorized"
+    assert set(raw_payload) == {"ok", "error", "field", "detail"}
+
+    # /chart shares _auth_failure: it must regain its 401, not raise.
+    chart = http.post(
+        "/chart",
+        json={
+            "date": "1990-06-15", "time": "08:30", "tz": 8,
+            "lat": 25.0, "lon": 121.5, "gender": "女",
+        },
+        headers={"X-Engine-Key": "whatever"},
+    )
+
+    assert chart.status_code == 401, chart.text
+    assert chart.json() == {"detail": "unauthorized"}
+
+
 def test_wrong_key_is_401_unauthorized(client, monkeypatch):
     http, _server = client
     monkeypatch.delenv("ENGINE_ALLOW_OPEN", raising=False)
@@ -791,19 +912,11 @@ def test_health_reports_ok_and_schema_version(client):
 def test_chart_success_deep_equal_sample_excluding_schema_version(client):
     http, _server = client
 
-    response = http.post(
-        "/chart",
-        json={
-            "name": "小明",
-            "gender": "女",
-            "date": "1990-06-15",
-            "time": "08:30",
-            "tz": 8,
-            "lat": 25.0330,
-            "lon": 121.5654,
-            "target": "2025-01-01",
-        },
-    )
+    # Same fixture DEPLOY-HETZNER.md §6b POSTs to the live host: one pinned
+    # request body, one pinned golden output. Reading it here keeps the
+    # fixture ↔ examples/sample-output.json correspondence enforced.
+    request_body = json.loads(SAMPLE_INPUT.read_text(encoding="utf-8"))
+    response = http.post("/chart", json=request_body)
 
     assert response.status_code == 200, response.text
     got = response.json()
@@ -874,6 +987,52 @@ def test_deploy_doc_contains_regression_command():
     text = (ROOT / "DEPLOY-HETZNER.md").read_text(encoding="utf-8")
 
     assert "pytest -m deploy_regression -r s" in text
+
+
+def test_deploy_doc_contains_live_container_post_verification():
+    """§6b must include a check that actually touches the deployed container.
+
+    The in-checkout marker only proves the source contract; a live POST of the
+    pinned sample input, deep-compared against the pinned golden output, is
+    what catches an older build still being served. The schema_version check
+    must live INSIDE the comparison as an assertion: the only diff between
+    the pre-1.2 golden and the current one is that line, so popping it from
+    both sides before comparing lets a stale build pass the deep-equal.
+    """
+    text = (ROOT / "DEPLOY-HETZNER.md").read_text(encoding="utf-8")
+
+    # curl -f: without it a 401/502/503 error body is written to
+    # /tmp/live-chart.json and misreported as deploy drift (§4 uses -fsS).
+    assert "curl -fsS -X POST https://engine-life.aicycle.cc/chart" in text
+    # Fresh-shell guard: the header variable only exists if §2/§4 ran in the
+    # same shell (§2 pins the analogous test -n "$ENGINE_API_KEY").
+    assert 'test -n "$ENGINE_AUTH_HEADER"' in text
+    assert 'assert live_sv == "1.2"' in text
+    assert "examples/sample-input.json" in text
+    assert "examples/sample-output.json" in text
+    # The marker test itself posts the same fixture, so it must exist.
+    assert SAMPLE_INPUT.is_file()
+
+
+def test_deploy_doc_contains_live_synastry_smoke():
+    """§6b must smoke the live POST /synastry, not just /chart.
+
+    A missing /synastry endpoint is exactly what hands existing paid synastry
+    customers 502/503 once life-web goes live, so the doc must POST a pinned
+    two-person body to the live host and assert the success envelope.
+    """
+    text = (ROOT / "DEPLOY-HETZNER.md").read_text(encoding="utf-8")
+
+    assert "curl -fsS -X POST https://engine-life.aicycle.cc/synastry" in text
+    assert "examples/sample-synastry-input.json" in text
+    assert 'live["ok"] is True' in text
+    assert '"evidence_completeness" in live' in text
+
+    # The doc fixture must exist and stay the same two-person body the
+    # deploy_regression synastry shape test posts.
+    assert SAMPLE_SYNASTRY_INPUT.is_file()
+    fixture = json.loads(SAMPLE_SYNASTRY_INPUT.read_text(encoding="utf-8"))
+    assert fixture == DUAL_BODY
 
 
 def test_golden_provenance_records_regeneration_date_and_schema_version():

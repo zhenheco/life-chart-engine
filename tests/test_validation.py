@@ -100,3 +100,13 @@ def test_rejected_values_never_return_nonfinite_floats():
     good = validate_input(dict(RAW))
     for key in ("tz_offset", "lat", "lon"):
         assert math.isfinite(good[key])
+
+
+@pytest.mark.parametrize("field", ["tz", "lat", "lon"])
+def test_huge_integer_field_is_value_error_not_overflow_error(field):
+    # float() on an out-of-range integer (e.g. a 400-digit JSON int) raises
+    # OverflowError; it must surface as the field-named ValueError so HTTP
+    # surfaces answer 400 invalid_input instead of 500 internal_error.
+    with pytest.raises(ValueError) as excinfo:
+        validate_input({**RAW, field: int("1" * 400)})
+    assert field in str(excinfo.value)

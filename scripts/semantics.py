@@ -196,7 +196,8 @@ REQUIRED_EVIDENCE_KEYS: tuple[str, ...] = (
     "participates_in_convergence",
 )
 
-# Top-level keys that must never appear on an Evidence object (spec §evidence schema).
+# Keys that must never appear anywhere on an Evidence object — scanned at the
+# top level and recursively inside raw_fact (spec §evidence schema).
 FORBIDDEN_EVIDENCE_KEYS: frozenset[str] = frozenset(
     {
         "interpretive_valence",
@@ -705,6 +706,30 @@ def _is_unit_interval_rounded3(value: Any) -> bool:
     return f == round(f, 3)
 
 
+def _reject_forbidden_key(key: str) -> None:
+    # Substring match (case-insensitive for ASCII tokens) — same rule as
+    # the recursive forbidden-key scan. Blocks score_total, compatibility_pct, etc.
+    key_l = key.lower()
+    for forbidden in FORBIDDEN_EVIDENCE_KEYS:
+        if forbidden == "吉凶":
+            if forbidden in key:
+                raise ValueError(f"evidence contains forbidden key: {key!r}")
+        elif forbidden.lower() in key_l:
+            raise ValueError(f"evidence contains forbidden key: {key!r}")
+
+
+def _reject_forbidden_keys(node: Any) -> None:
+    """Apply ``FORBIDDEN_EVIDENCE_KEYS`` to every dict key inside ``node``."""
+    if isinstance(node, Mapping):
+        for key, value in node.items():
+            if isinstance(key, str):
+                _reject_forbidden_key(key)
+            _reject_forbidden_keys(value)
+    elif isinstance(node, (list, tuple)):
+        for item in node:
+            _reject_forbidden_keys(item)
+
+
 def validate_evidence(obj: Mapping[str, Any]) -> None:
     """Raise ``ValueError`` if ``obj`` is not a well-formed Evidence dict."""
     if not isinstance(obj, Mapping):
@@ -716,15 +741,7 @@ def validate_evidence(obj: Mapping[str, Any]) -> None:
     for key in obj:
         if not isinstance(key, str):
             raise ValueError(f"evidence key must be a string: {key!r}")
-        # Substring match (case-insensitive for ASCII tokens) — same rule as
-        # the recursive forbidden-key scan. Blocks score_total, compatibility_pct, etc.
-        key_l = key.lower()
-        for forbidden in FORBIDDEN_EVIDENCE_KEYS:
-            if forbidden == "吉凶":
-                if forbidden in key:
-                    raise ValueError(f"evidence contains forbidden key: {key!r}")
-            elif forbidden.lower() in key_l:
-                raise ValueError(f"evidence contains forbidden key: {key!r}")
+        _reject_forbidden_key(key)
 
     fid = obj["feature_id"]
     if not isinstance(fid, str):
@@ -756,6 +773,9 @@ def validate_evidence(obj: Mapping[str, Any]) -> None:
     raw = obj["raw_fact"]
     if not isinstance(raw, Mapping):
         raise ValueError("raw_fact must be a mapping")
+    # Recurse into raw_fact: scoring-named keys nested there would slip past a
+    # top-level-only scan of the evidence object.
+    _reject_forbidden_keys(raw)
 
     pic = obj["participates_in_convergence"]
     if not isinstance(pic, bool):

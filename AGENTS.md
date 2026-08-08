@@ -325,9 +325,10 @@ output and the `POST /synastry` body are **the same object**:
   served by this surface). `ziwei.status` is always `"not_computed"` and
   `ziwei.methodology_note` is the fixed string above — 紫微合盤 is a deliberate
   boundary, not a bug.
-- Every element of the five evidence arrays is one uniformly shaped Evidence
-  object carrying a unique, deterministic `feature_id`. The `method` value is
-  one of exactly five: `synastry_aspect` (`method_version`
+- Every element of every synastry evidence array (five Western + two Human
+  Design) is one uniformly shaped Evidence object carrying a unique,
+  deterministic `feature_id`. The `method` value is one of exactly five:
+  `synastry_aspect` (`method_version`
   `western-synastry-v1`), `house_overlay` (`western-synastry-v1`),
   `angle_contact` (`western-synastry-v1`), `hd_channel_connection`
   (`human-design-synastry-v1`), `hd_center_state`
@@ -343,8 +344,16 @@ output and the `POST /synastry` body are **the same object**:
   AND `unavailable` empty) or `"partial"` (otherwise — still HTTP 200 / exit 0).
   The consumer owns the third ("unusable") judgement.
 - Determinism: identical input → byte-identical output, on both surfaces; all
-  arrays have a pinned total order (`salience` desc → `feature_id` asc, except
-  `center_states` in fixed center order).
+  arrays have a pinned total order, and the sort key is pinned per array:
+  - `aspects`, `a_planets_in_b_houses`, `b_planets_in_a_houses`,
+    `angle_contacts_a_to_b`, `angle_contacts_b_to_a`, `channel_connections`:
+    `salience` desc → `feature_id` asc
+  - `center_states`: fixed center order (never salience-sorted)
+  - `participants.split_bridges`: `channel` asc
+  - `participants.hanging_gates_completed`: `own_gate` asc → `channel` asc
+  - `raw_fact.a_gates` / `raw_fact.b_gates` (inside `hd_channel_connection`):
+    gate number asc
+  - `raw_fact.causing_channels` (inside `hd_center_state`): string asc
 
 ---
 
@@ -379,7 +388,7 @@ with fixed, mutually exclusive key sets:
 
 | situation | status | `error` | `field` |
 |---|---|---|---|
-| body is not JSON (invalid UTF-8 included) | `400` | `invalid_json` | `null` |
+| body is not JSON (invalid UTF-8, or JSON nested too deep to parse — a parser `RecursionError`) | `400` | `invalid_json` | `null` |
 | body not an object | `400` | `invalid_input` | `person_a` |
 | `person_a` / `person_b` missing or not an object | `400` | `invalid_input` | `person_a` / `person_b` |
 | per-person field missing/malformed/out-of-range/out-of-window | `400` | `invalid_input` | prefixed field (`person_a.date`, `person_b.time`, …); first error only, `person_a` before `person_b` |

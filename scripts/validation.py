@@ -37,7 +37,9 @@ def _time_value(value):
 def _finite_float(field, value, minimum, maximum):
     try:
         parsed = float(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
+        # OverflowError: float() on an out-of-range integer (e.g. a 400-digit
+        # JSON int) — still a malformed field, not a server error.
         raise ValueError(f"{field}: must be a number") from None
     if not math.isfinite(parsed):
         raise ValueError(f"{field}: must be finite")

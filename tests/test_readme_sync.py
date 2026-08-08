@@ -34,8 +34,8 @@ def _translations():
 
 
 def _contract_docs():
-    """AGENTS.md + all 19 README*.md (English + 18 translations)."""
-    return ["AGENTS.md", "README.md"] + sorted(EXPECTED_TRANSLATIONS)
+    """AGENTS.md + DEPLOY-HETZNER.md + all 19 README*.md (English + 18 translations)."""
+    return ["AGENTS.md", "DEPLOY-HETZNER.md", "README.md"] + sorted(EXPECTED_TRANSLATIONS)
 
 
 def test_translation_set_is_exactly_the_expected_18_files():
@@ -69,7 +69,7 @@ def test_no_translation_still_describes_the_removed_silent_fallback():
 
 
 def test_contract_docs_declare_schema_version_1_2_not_1_1():
-    """AGENTS.md + every README must pin live schema_version to 1.2.
+    """AGENTS.md + DEPLOY-HETZNER.md + every README must pin live schema_version to 1.2.
 
     Guards the 'docs synced to 1.2' AC: reverting a current-version marker from
     1.2 back to 1.1 (JSON-field form) must fail this suite. Residual 1.1 that is

@@ -146,6 +146,16 @@ def test_validate_evidence_rejects_forbidden_key_substrings(forbidden_key):
         semantics.validate_evidence(obj)
 
 
+@pytest.mark.parametrize("forbidden_key", ["score_total", "吉凶"])
+def test_validate_evidence_rejects_forbidden_key_inside_raw_fact(forbidden_key):
+    """The forbidden-key scan must recurse into raw_fact: scoring-named keys
+    hidden there would otherwise pass the shared validator."""
+    obj = _valid_evidence()
+    obj["raw_fact"]["nested"] = {forbidden_key: 0.5}
+    with pytest.raises(ValueError):
+        semantics.validate_evidence(obj)
+
+
 def test_validate_evidence_accepts_canonical_example():
     semantics.validate_evidence(_valid_evidence())
 
