@@ -1,14 +1,17 @@
-# Deploy HTTP Engine on Hetzner
+# Self-hosting the HTTP engine (Docker)
 
-Target: existing Hetzner host with Docker + Cloudflare Tunnel, sharing the box with Movo.
+Runs the engine as a container on any Linux host with Docker, bound to
+localhost and exposed through a reverse proxy or tunnel of your choice
+(the reference deployment uses a Cloudflare Tunnel, so the host opens no
+inbound ports).
 
-Host: `acejou@157.90.157.99`
-Tunnel: `engine-life.aicycle.cc` → `127.0.0.1:8012`
+> Operator note: host addresses, credentials, and rollback state for the
+> reference deployment are kept in a private runbook, not in this repo.
 
 ## 1. Build
 
 ```bash
-cd /home/acejou/life-chart-engine
+cd /path/to/life-chart-engine
 git pull --ff-only
 docker build -t life-engine:latest .
 ```
