@@ -751,9 +751,8 @@ Response 頂層形狀固定：
 而 prod 服務現有免費與付費單盤客戶。E5 已把「重建後跑既有回歸驗證」列為驗收條件，
 但這只讓風險被測到，不會讓風險消失；部署當下必須把 `/chart` 與 `examples/sample-output.json` 的比對結果留成證據。
 
-**風險 2 — `DEPLOY-HETZNER.md` 在 git 裡是過期的。** 版本庫中的版本仍指向已除役的主機
-`acejou@157.90.157.99` 與 `/home/acejou/life-chart-engine`；正確的是 `root@49.12.196.102` 與
-`/opt/life-chart-engine`（Hermes box，tunnel token 存 1Password `LIFE_ENGINE_TUNNEL_TOKEN`）。
+**風險 2 — `DEPLOY-HETZNER.md` 在 git 裡是過期的。** 版本庫中的版本仍指向一台已除役的主機與
+其路徑；正確的主機、路徑與 tunnel 憑證位置記在私有 runbook（本公開 repo 刻意不收主機身分資訊）。
 這份更正目前只存在於 base repo 的**未提交工作區**，不在本分支。
 本 flow **刻意不吸收那份未提交變更**（不屬於本 feature 的 diff），但任何人照 git 版本的文件部署都會連錯主機。
 這需要一次獨立的 commit 處理。
