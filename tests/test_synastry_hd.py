@@ -415,13 +415,15 @@ EXPECTED_PAIR0_CONNECTIONS = [
             "link_type": "electromagnetic",
             "a_gates": [19],
             "b_gates": [49],
-            # Pins CURRENT engine behaviour (GATE_CENTER[19] is wrongly 情緒);
-            # see .scratch/engine-synastry-e1-e5--c7bd29598e/FINDINGS-out-of-scope.md
-            # (F-1) — expected to go red when that table is fixed separately.
-            "centers": ["Solar Plexus", "Solar Plexus"],
+            "centers": ["Root", "Solar Plexus"],
             "full_channel_owner": None,
         },
-        dimensions=["intimacy_attraction", "conflict_repair", "emotion_regulation"],
+        dimensions=[
+            "intimacy_attraction",
+            "conflict_repair",
+            "action_tempo",
+            "emotion_regulation",
+        ],
         salience=0.9,
         ease_or_tension="mixed",
         data_confidence=0.95,
@@ -545,7 +547,7 @@ EXPECTED_PAIR0_CENTER_STATES = [
     ("Solar Plexus", "defined_by_merge", ["19-49"]),
     ("Sacral", "undefined", []),
     ("Spleen", "undefined", []),
-    ("Root", "undefined", []),
+    ("Root", "defined_by_merge", ["19-49"]),
 ]
 
 EXPECTED_PAIR0_CENTER_FIDS = [
@@ -557,7 +559,7 @@ EXPECTED_PAIR0_CENTER_FIDS = [
     "hd-ctr-solar-plexus-defined-by-merge",
     "hd-ctr-sacral-undefined",
     "hd-ctr-spleen-undefined",
-    "hd-ctr-root-undefined",
+    "hd-ctr-root-defined-by-merge",
 ]
 
 
@@ -622,6 +624,9 @@ def test_center_state_defined_by_merge_causing_channels_string_asc():
     sp = by_center["Solar Plexus"]
     assert sp["raw_fact"]["state"] == "defined_by_merge"
     assert sp["raw_fact"]["causing_channels"] == ["19-49", "6-59"]
+    root = by_center["Root"]
+    assert root["raw_fact"]["state"] == "defined_by_merge"
+    assert root["raw_fact"]["causing_channels"] == ["19-49"]
     sacral = by_center["Sacral"]
     assert sacral["raw_fact"]["state"] == "defined_by_merge"
     assert sacral["raw_fact"]["causing_channels"] == ["6-59"]
