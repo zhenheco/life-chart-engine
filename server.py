@@ -42,6 +42,10 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
         return build_json(_engine_input(body))
     except HTTPException:
         raise  # 400s from _engine_input pass through unchanged
+    except ComputationUnsupportedError:
+        return _message_error(
+            422, ERROR_COMPUTATION_UNSUPPORTED, MESSAGE_COMPUTATION_UNSUPPORTED
+        )
     except Exception as exc:  # build_json / ephemeris edge input
         capture_exception(exc)
         return JSONResponse(

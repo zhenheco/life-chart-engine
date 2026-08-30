@@ -448,3 +448,25 @@ def test_deeply_nested_body_is_invalid_json(server_client):
     assert payload["error"] == "invalid_json"
     assert payload["field"] is None
     assert calls == []
+
+
+def test_polar_coordinates_return_422(server_client, monkeypatch):
+    client, calls = server_client
+    from scripts.ephemeris import ComputationUnsupportedError
+    import server as server_mod
+
+    def raise_unsupported(_inp):
+        raise ComputationUnsupportedError("placidus undefined at high latitude")
+
+    monkeypatch.setattr(server_mod, "build_json", raise_unsupported)
+
+    response = client.post("/chart", json=BODY)
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "computation_unsupported"
+    assert payload["message"] == "chart cannot be computed for the given coordinates"
+    assert "placidus" not in payload["message"]
+    assert set(payload) == {"ok", "error", "message"}
+    assert calls == []
