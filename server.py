@@ -1,9 +1,8 @@
 import hmac
 import os
-from json import JSONDecodeError
 from typing import Any
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, Request
 from fastapi.responses import JSONResponse
 
 from scripts.chart_engine import build_json
@@ -181,15 +180,6 @@ def _auth_failure(x_engine_key: str | None) -> str | None:
     return None
 
 
-def _require_key(x_engine_key: str | None) -> None:
-    """/chart auth — keeps the historical ``{"detail": ...}`` bodies unchanged."""
-    failure = _auth_failure(x_engine_key)
-    if failure == "not_configured":
-        raise HTTPException(status_code=503, detail=MESSAGE_NOT_CONFIGURED)
-    if failure == "unauthorized":
-        raise HTTPException(status_code=401, detail="unauthorized")
-
-
 def _input_error(status: int, error: str, field: Any, detail: str) -> JSONResponse:
     # Input-error shape (invalid_json / invalid_input / unauthorized):
     # exactly {ok, error, field, detail}.
@@ -205,16 +195,3 @@ def _message_error(status: int, error: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status, content={"ok": False, "error": error, "message": message}
     )
-
-
-def _engine_input(body: Any) -> dict[str, Any]:
-    if not isinstance(body, dict):
-        raise HTTPException(status_code=400, detail="body must be a JSON object")
-
-    # Single validation source shared with the CLI (and MCP): scripts/validation.py.
-    # Out-of-range / non-finite / out-of-window rejection is deliberate 400 hardening
-    # over the historical float()-coercion behaviour — see AGENTS.md §3/§5.
-    try:
-        return validate_input(body)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
