@@ -1,9 +1,8 @@
 import hmac
 import os
-from json import JSONDecodeError
 from typing import Any
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import FastAPI, Header, Request
 from fastapi.responses import JSONResponse
 
 from scripts.chart_engine import build_json
@@ -24,6 +23,7 @@ init_sentry()
 app = FastAPI(title="life-chart-engine")
 
 MESSAGE_NOT_CONFIGURED = "ENGINE_API_KEY not configured"
+MESSAGE_CHART_INTERNAL = "chart computation failed"
 
 
 @app.get("/health")
@@ -33,21 +33,40 @@ def health():
 
 @app.post("/chart")
 async def chart(request: Request, x_engine_key: str | None = Header(default=None)):
-    _require_key(x_engine_key)
+    failure = _auth_failure(x_engine_key)
+    if failure == "not_configured":
+        return _message_error(503, "not_configured", MESSAGE_NOT_CONFIGURED)
+    if failure == "unauthorized":
+        return _input_error(401, "unauthorized", None, "missing or incorrect X-Engine-Key")
+
     try:
         body = await request.json()
-    except JSONDecodeError as exc:
-        raise HTTPException(status_code=400, detail="invalid JSON body") from exc
+    except (ValueError, RecursionError):
+        return _input_error(400, "invalid_json", None, "body must be valid JSON")
+
+    if not isinstance(body, dict):
+        return _input_error(400, "invalid_input", None, "body must be a JSON object")
+
     try:
-        return build_json(_engine_input(body))
-    except HTTPException:
-        raise  # 400s from _engine_input pass through unchanged
-    except Exception as exc:  # build_json / ephemeris edge input
+        inp = validate_input(body)
+    except ValueError as exc:
+        field, separator, detail = str(exc).partition(":")
+        if separator:
+            return _input_error(400, "invalid_input", field, detail.strip())
+        return _input_error(400, "invalid_input", None, str(exc))
+    except Exception as exc:
         capture_exception(exc)
-        return JSONResponse(
-            status_code=500,
-            content={"ok": False, "error": str(exc), "schema_version": "1.2"},
+        return _message_error(500, ERROR_INTERNAL, MESSAGE_CHART_INTERNAL)
+
+    try:
+        return build_json(inp)
+    except ComputationUnsupportedError:
+        return _message_error(
+            422, ERROR_COMPUTATION_UNSUPPORTED, MESSAGE_COMPUTATION_UNSUPPORTED
         )
+    except Exception as exc:
+        capture_exception(exc)
+        return _message_error(500, ERROR_INTERNAL, MESSAGE_CHART_INTERNAL)
 
 
 @app.post("/synastry")
@@ -161,15 +180,6 @@ def _auth_failure(x_engine_key: str | None) -> str | None:
     return None
 
 
-def _require_key(x_engine_key: str | None) -> None:
-    """/chart auth — keeps the historical ``{"detail": ...}`` bodies unchanged."""
-    failure = _auth_failure(x_engine_key)
-    if failure == "not_configured":
-        raise HTTPException(status_code=503, detail=MESSAGE_NOT_CONFIGURED)
-    if failure == "unauthorized":
-        raise HTTPException(status_code=401, detail="unauthorized")
-
-
 def _input_error(status: int, error: str, field: Any, detail: str) -> JSONResponse:
     # Input-error shape (invalid_json / invalid_input / unauthorized):
     # exactly {ok, error, field, detail}.
@@ -185,16 +195,3 @@ def _message_error(status: int, error: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status, content={"ok": False, "error": error, "message": message}
     )
-
-
-def _engine_input(body: Any) -> dict[str, Any]:
-    if not isinstance(body, dict):
-        raise HTTPException(status_code=400, detail="body must be a JSON object")
-
-    # Single validation source shared with the CLI (and MCP): scripts/validation.py.
-    # Out-of-range / non-finite / out-of-window rejection is deliberate 400 hardening
-    # over the historical float()-coercion behaviour — see AGENTS.md §3/§5.
-    try:
-        return validate_input(body)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc

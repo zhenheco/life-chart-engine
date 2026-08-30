@@ -372,10 +372,18 @@ surface (same shared validator); only the carrier differs:
 
 | failure class | CLI | HTTP `/chart` | MCP `compute_chart` |
 |---|---|---|---|
-| validation error (missing/malformed/out-of-range/out-of-window input) | exit `2`, empty stdout, usage on stderr | `400` + `detail` naming the field | `isError: true` + field-named message |
-| runtime error (Node sidecar failure, high-latitude Placidus, timeout) | exit `1` (`--json`: one `{"ok": false}` envelope; Markdown: message on stderr, empty stdout) | `500` + `{"ok": false, ...}` envelope | `isError: true` + message |
+| validation error (missing/malformed/out-of-range/out-of-window input) | exit `2`, empty stdout, usage on stderr | `400` six-token envelope (see below) | `isError: true` + field-named message |
+| runtime error (Node sidecar failure, high-latitude Placidus, timeout) | exit `1` (`--json`: one `{"ok": false}` envelope; Markdown: message on stderr, empty stdout) | `422` / `500` six-token envelope (see below) | `isError: true` + message |
 
-### HTTP `POST /synastry` error contract (six fixed tokens)
+### HTTP error contract (six fixed tokens) — `/chart` and `/synastry`
+
+Both `/chart` and `/synastry` use the same six tokens, decision order, and two
+body shapes. The only differences are:
+
+- `internal_error` fixed message: `"/chart"` → `"chart computation failed"`,
+  `"/synastry"` → `"synastry computation failed"`.
+- `person_a`/`person_b`-related `invalid_input` rows (table below) apply only
+  to `/synastry`; `/chart`'s body-not-object is `field=null`.
 
 `error` is a fixed machine-parsable token; consumers should read only it.
 There are exactly two body shapes, chosen by token (never by status code),
@@ -389,7 +397,7 @@ with fixed, mutually exclusive key sets:
 | situation | status | `error` | `field` |
 |---|---|---|---|
 | body is not JSON (invalid UTF-8, or JSON nested too deep to parse — a parser `RecursionError`) | `400` | `invalid_json` | `null` |
-| body not an object | `400` | `invalid_input` | `person_a` |
+| body not an object | `400` | `invalid_input` | `null` (`/chart`) / `person_a` (`/synastry`) |
 | `person_a` / `person_b` missing or not an object | `400` | `invalid_input` | `person_a` / `person_b` |
 | per-person field missing/malformed/out-of-range/out-of-window | `400` | `invalid_input` | prefixed field (`person_a.date`, `person_b.time`, …); first error only, `person_a` before `person_b` |
 | `X-Engine-Key` missing or wrong | `401` | `unauthorized` | `null` |
@@ -399,8 +407,9 @@ with fixed, mutually exclusive key sets:
 
 Fixed messages: `computation_unsupported` → `"chart cannot be computed for the
 given coordinates"`; `not_configured` → `"ENGINE_API_KEY not configured"`;
-`internal_error` → `"synastry computation failed"` (the real exception goes to
-Sentry, never into the body).
+`internal_error` → `"chart computation failed"` (`/chart`) or
+`"synastry computation failed"` (`/synastry`) — the real exception goes to
+Sentry, never into the body.
 
 **Decision order is fixed:** `not_configured` → `unauthorized` → `invalid_json`
 → `invalid_input` → `computation_unsupported` → `internal_error`. When several

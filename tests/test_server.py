@@ -84,7 +84,9 @@ def test_invalid_ziwei_day_divide_returns_400(server_client):
     response = client.post("/chart", json={**BODY, "ziwei_day_divide": "tomorrow"})
 
     assert response.status_code == 400
-    assert "ziwei_day_divide" in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "ziwei_day_divide"
     assert calls == []
 
 
@@ -96,7 +98,9 @@ def test_missing_required_field_returns_400(server_client):
     response = client.post("/chart", json=body)
 
     assert response.status_code == 400
-    assert "lon" in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "lon"
     assert calls == []
 
 
@@ -106,7 +110,9 @@ def test_invalid_gender_returns_400(server_client):
     response = client.post("/chart", json={**BODY, "gender": "other"})
 
     assert response.status_code == 400
-    assert "gender" in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "gender"
     assert calls == []
 
 
@@ -116,7 +122,9 @@ def test_invalid_target_returns_400(server_client):
     response = client.post("/chart", json={**BODY, "target": "not-a-date"})
 
     assert response.status_code == 400
-    assert "target" in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "target"
     assert calls == []
 
 
@@ -126,7 +134,9 @@ def test_invalid_time_returns_400(server_client):
     response = client.post("/chart", json={**BODY, "time": "aa:bb"})
 
     assert response.status_code == 400
-    assert "time" in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "time"
     assert calls == []
 
 
@@ -138,7 +148,19 @@ def test_api_key_rejects_missing_or_wrong_header(server_client, monkeypatch):
     wrong = client.post("/chart", json=BODY, headers={"X-Engine-Key": "bad"})
 
     assert missing.status_code == 401
+    assert missing.json() == {
+        "ok": False,
+        "error": "unauthorized",
+        "field": None,
+        "detail": "missing or incorrect X-Engine-Key",
+    }
     assert wrong.status_code == 401
+    assert wrong.json() == {
+        "ok": False,
+        "error": "unauthorized",
+        "field": None,
+        "detail": "missing or incorrect X-Engine-Key",
+    }
     assert calls == []
 
 
@@ -162,6 +184,11 @@ def test_fail_closed_when_no_key_configured(server_client, monkeypatch):
     response = client.post("/chart", json=BODY)
 
     assert response.status_code == 503
+    assert response.json() == {
+        "ok": False,
+        "error": "not_configured",
+        "message": "ENGINE_API_KEY not configured",
+    }
     assert calls == []
 
 
@@ -311,7 +338,9 @@ def test_out_of_range_numeric_values_return_400(server_client, field, value):
     response = client.post("/chart", json={**BODY, field: value})
 
     assert response.status_code == 400
-    assert field in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == field
     assert calls == []
 
 
@@ -329,9 +358,13 @@ def test_nonfinite_values_return_400(server_client, payload_field):
     )
 
     assert string_inf.status_code == 400
-    assert payload_field in string_inf.json()["detail"]
+    payload = string_inf.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == payload_field
     assert literal_nan.status_code == 400
-    assert payload_field in literal_nan.json()["detail"]
+    payload = literal_nan.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == payload_field
     assert calls == []
 
 
@@ -350,7 +383,9 @@ def test_out_of_window_years_return_400(server_client, field, value):
     response = client.post("/chart", json={**BODY, field: value})
 
     assert response.status_code == 400
-    assert field in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == field
     assert calls == []
 
 
@@ -388,7 +423,9 @@ def test_non_string_ziwei_day_divide_returns_400_not_500(server_client):
     response = client.post("/chart", json={**BODY, "ziwei_day_divide": ["forward"]})
 
     assert response.status_code == 400
-    assert "ziwei_day_divide" in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "ziwei_day_divide"
     assert calls == []
 
 
@@ -410,5 +447,118 @@ def test_non_string_gender_returns_400_not_500(server_client):
     response = client.post("/chart", json={**BODY, "gender": ["女"]})
 
     assert response.status_code == 400
-    assert "gender" in response.json()["detail"]
+    payload = response.json()
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] == "gender"
+    assert calls == []
+
+
+def test_invalid_utf8_body_is_invalid_json(server_client):
+    client, calls = server_client
+
+    response = client.post(
+        "/chart",
+        content=b"\xff\xfe",
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "invalid_json"
+    assert payload["field"] is None
+    assert payload["detail"] == "body must be valid JSON"
+    assert set(payload) == {"ok", "error", "field", "detail"}
+    assert calls == []
+
+
+def test_deeply_nested_body_is_invalid_json(server_client):
+    client, calls = server_client
+    body = b"[" * 10000 + b"]" * 10000
+
+    response = client.post(
+        "/chart",
+        content=body,
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["error"] == "invalid_json"
+    assert payload["field"] is None
+    assert calls == []
+
+
+def test_polar_coordinates_return_422(server_client, monkeypatch):
+    client, calls = server_client
+    from scripts.ephemeris import ComputationUnsupportedError
+    import server as server_mod
+
+    def raise_unsupported(_inp):
+        raise ComputationUnsupportedError("placidus undefined at high latitude")
+
+    monkeypatch.setattr(server_mod, "build_json", raise_unsupported)
+
+    response = client.post("/chart", json=BODY)
+
+    assert response.status_code == 422
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "computation_unsupported"
+    assert payload["message"] == "chart cannot be computed for the given coordinates"
+    assert "placidus" not in payload["message"]
+    assert set(payload) == {"ok", "error", "message"}
+    assert calls == []
+
+
+def test_internal_error_does_not_leak_exception_message(server_client, monkeypatch):
+    client, calls = server_client
+    import server as server_mod
+    import sentry_config
+
+    captured = []
+
+    def fake_capture(exc):
+        captured.append(exc)
+
+    monkeypatch.setattr(sentry_config, "capture_exception", fake_capture)
+    monkeypatch.setattr(server_mod, "capture_exception", fake_capture)
+
+    def raise_sensitive(_inp):
+        raise RuntimeError("/app/node_modules boom")
+
+    monkeypatch.setattr(server_mod, "build_json", raise_sensitive)
+
+    response = client.post("/chart", json=BODY)
+
+    assert response.status_code == 500
+    payload = response.json()
+    assert payload == {
+        "ok": False,
+        "error": "internal_error",
+        "message": "chart computation failed",
+    }
+    assert "/app" not in response.text
+    assert "boom" not in response.text
+    assert len(captured) == 1
+    assert isinstance(captured[0], RuntimeError)
+    assert calls == []
+
+
+def test_body_not_object_is_invalid_input(server_client):
+    client, calls = server_client
+
+    response = client.post(
+        "/chart",
+        content=b"[1, 2, 3]",
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "invalid_input"
+    assert payload["field"] is None
+    assert payload["detail"] == "body must be a JSON object"
+    assert set(payload) == {"ok", "error", "field", "detail"}
     assert calls == []
