@@ -24,6 +24,7 @@ init_sentry()
 app = FastAPI(title="life-chart-engine")
 
 MESSAGE_NOT_CONFIGURED = "ENGINE_API_KEY not configured"
+MESSAGE_CHART_INTERNAL = "chart computation failed"
 
 
 @app.get("/health")
@@ -48,10 +49,7 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
         )
     except Exception as exc:  # build_json / ephemeris edge input
         capture_exception(exc)
-        return JSONResponse(
-            status_code=500,
-            content={"ok": False, "error": str(exc), "schema_version": "1.2"},
-        )
+        return _message_error(500, ERROR_INTERNAL, MESSAGE_CHART_INTERNAL)
 
 
 @app.post("/synastry")

@@ -470,3 +470,37 @@ def test_polar_coordinates_return_422(server_client, monkeypatch):
     assert "placidus" not in payload["message"]
     assert set(payload) == {"ok", "error", "message"}
     assert calls == []
+
+
+def test_internal_error_does_not_leak_exception_message(server_client, monkeypatch):
+    client, calls = server_client
+    import server as server_mod
+    import sentry_config
+
+    captured = []
+
+    def fake_capture(exc):
+        captured.append(exc)
+
+    monkeypatch.setattr(sentry_config, "capture_exception", fake_capture)
+    monkeypatch.setattr(server_mod, "capture_exception", fake_capture)
+
+    def raise_sensitive(_inp):
+        raise RuntimeError("/app/node_modules boom")
+
+    monkeypatch.setattr(server_mod, "build_json", raise_sensitive)
+
+    response = client.post("/chart", json=BODY)
+
+    assert response.status_code == 500
+    payload = response.json()
+    assert payload == {
+        "ok": False,
+        "error": "internal_error",
+        "message": "chart computation failed",
+    }
+    assert "/app" not in response.text
+    assert "boom" not in response.text
+    assert len(captured) == 1
+    assert isinstance(captured[0], RuntimeError)
+    assert calls == []
