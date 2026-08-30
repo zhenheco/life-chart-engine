@@ -36,8 +36,8 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
     _require_key(x_engine_key)
     try:
         body = await request.json()
-    except JSONDecodeError as exc:
-        raise HTTPException(status_code=400, detail="invalid JSON body") from exc
+    except (ValueError, RecursionError):
+        return _input_error(400, "invalid_json", None, "body must be valid JSON")
     try:
         return build_json(_engine_input(body))
     except HTTPException:

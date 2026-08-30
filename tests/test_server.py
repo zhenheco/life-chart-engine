@@ -412,3 +412,39 @@ def test_non_string_gender_returns_400_not_500(server_client):
     assert response.status_code == 400
     assert "gender" in response.json()["detail"]
     assert calls == []
+
+
+def test_invalid_utf8_body_is_invalid_json(server_client):
+    client, calls = server_client
+
+    response = client.post(
+        "/chart",
+        content=b"\xff\xfe",
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "invalid_json"
+    assert payload["field"] is None
+    assert payload["detail"] == "body must be valid JSON"
+    assert set(payload) == {"ok", "error", "field", "detail"}
+    assert calls == []
+
+
+def test_deeply_nested_body_is_invalid_json(server_client):
+    client, calls = server_client
+    body = b"[" * 10000 + b"]" * 10000
+
+    response = client.post(
+        "/chart",
+        content=body,
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["error"] == "invalid_json"
+    assert payload["field"] is None
+    assert calls == []
