@@ -734,7 +734,7 @@ def test_surrogate_escaped_configured_key_is_401_not_500(client, monkeypatch):
     assert raw_payload["error"] == "unauthorized"
     assert set(raw_payload) == {"ok", "error", "field", "detail"}
 
-    # /chart shares _auth_failure: it must regain its 401, not raise.
+    # /chart shares _auth_failure: it must return the 401 envelope, not raise.
     chart = http.post(
         "/chart",
         json={
@@ -745,7 +745,12 @@ def test_surrogate_escaped_configured_key_is_401_not_500(client, monkeypatch):
     )
 
     assert chart.status_code == 401, chart.text
-    assert chart.json() == {"detail": "unauthorized"}
+    assert chart.json() == {
+        "ok": False,
+        "error": "unauthorized",
+        "field": None,
+        "detail": "missing or incorrect X-Engine-Key",
+    }
 
 
 def test_wrong_key_is_401_unauthorized(client, monkeypatch):

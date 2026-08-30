@@ -34,7 +34,12 @@ def health():
 
 @app.post("/chart")
 async def chart(request: Request, x_engine_key: str | None = Header(default=None)):
-    _require_key(x_engine_key)
+    failure = _auth_failure(x_engine_key)
+    if failure == "not_configured":
+        return _message_error(503, "not_configured", MESSAGE_NOT_CONFIGURED)
+    if failure == "unauthorized":
+        return _input_error(401, "unauthorized", None, "missing or incorrect X-Engine-Key")
+
     try:
         body = await request.json()
     except (ValueError, RecursionError):

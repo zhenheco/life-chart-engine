@@ -148,7 +148,19 @@ def test_api_key_rejects_missing_or_wrong_header(server_client, monkeypatch):
     wrong = client.post("/chart", json=BODY, headers={"X-Engine-Key": "bad"})
 
     assert missing.status_code == 401
+    assert missing.json() == {
+        "ok": False,
+        "error": "unauthorized",
+        "field": None,
+        "detail": "missing or incorrect X-Engine-Key",
+    }
     assert wrong.status_code == 401
+    assert wrong.json() == {
+        "ok": False,
+        "error": "unauthorized",
+        "field": None,
+        "detail": "missing or incorrect X-Engine-Key",
+    }
     assert calls == []
 
 
@@ -172,6 +184,11 @@ def test_fail_closed_when_no_key_configured(server_client, monkeypatch):
     response = client.post("/chart", json=BODY)
 
     assert response.status_code == 503
+    assert response.json() == {
+        "ok": False,
+        "error": "not_configured",
+        "message": "ENGINE_API_KEY not configured",
+    }
     assert calls == []
 
 
