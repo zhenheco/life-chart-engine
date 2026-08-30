@@ -91,7 +91,11 @@ def test_failing_or_hanging_node_converges_to_the_same_loud_path(tmp_path, fake_
     assert "Node.js >= 18" in payload["error"]
 
 
-def test_http_chart_returns_500_with_node_guidance(monkeypatch):
+def test_http_chart_500_withholds_sidecar_message(monkeypatch):
+    """HTTP is a public surface: the sidecar's stderr (container paths, Node
+    output) must never reach the caller. The operator guidance still reaches
+    the CLI (test above), the container log and Sentry — the HTTP body is a
+    fixed message."""
     def node_is_gone(_inp):
         raise RuntimeError(
             "紫微斗數 sidecar failed: node executable not found on PATH "
@@ -118,6 +122,10 @@ def test_http_chart_returns_500_with_node_guidance(monkeypatch):
     sys.modules.pop("server", None)
 
     assert response.status_code == 500
-    body = response.json()
-    assert body["ok"] is False
-    assert "Node.js >= 18" in body["error"]
+    assert response.json() == {
+        "ok": False,
+        "error": "internal_error",
+        "message": "chart computation failed",
+    }
+    assert "Node.js" not in response.text
+    assert "sidecar" not in response.text
