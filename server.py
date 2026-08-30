@@ -39,15 +39,28 @@ async def chart(request: Request, x_engine_key: str | None = Header(default=None
         body = await request.json()
     except (ValueError, RecursionError):
         return _input_error(400, "invalid_json", None, "body must be valid JSON")
+
+    if not isinstance(body, dict):
+        return _input_error(400, "invalid_input", None, "body must be a JSON object")
+
     try:
-        return build_json(_engine_input(body))
-    except HTTPException:
-        raise  # 400s from _engine_input pass through unchanged
+        inp = validate_input(body)
+    except ValueError as exc:
+        field, separator, detail = str(exc).partition(":")
+        if separator:
+            return _input_error(400, "invalid_input", field, detail.strip())
+        return _input_error(400, "invalid_input", None, str(exc))
+    except Exception as exc:
+        capture_exception(exc)
+        return _message_error(500, ERROR_INTERNAL, MESSAGE_CHART_INTERNAL)
+
+    try:
+        return build_json(inp)
     except ComputationUnsupportedError:
         return _message_error(
             422, ERROR_COMPUTATION_UNSUPPORTED, MESSAGE_COMPUTATION_UNSUPPORTED
         )
-    except Exception as exc:  # build_json / ephemeris edge input
+    except Exception as exc:
         capture_exception(exc)
         return _message_error(500, ERROR_INTERNAL, MESSAGE_CHART_INTERNAL)
 
