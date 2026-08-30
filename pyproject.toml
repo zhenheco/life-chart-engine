@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "life-chart-engine"
-version = "1.1.0"
+version = "1.2.0"
 description = "Deterministic offline engine computing Western natal, Human Design, and Zi Wei Dou Shu (紫微斗數) charts from one birth record — CLI + JSON for humans and AI agents."
 readme = "README.md"
 license = "MIT"
