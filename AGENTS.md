@@ -397,7 +397,7 @@ with fixed, mutually exclusive key sets:
 | situation | status | `error` | `field` |
 |---|---|---|---|
 | body is not JSON (invalid UTF-8, or JSON nested too deep to parse — a parser `RecursionError`) | `400` | `invalid_json` | `null` |
-| body not an object | `400` | `invalid_input` | `person_a` |
+| body not an object | `400` | `invalid_input` | `null` (`/chart`) / `person_a` (`/synastry`) |
 | `person_a` / `person_b` missing or not an object | `400` | `invalid_input` | `person_a` / `person_b` |
 | per-person field missing/malformed/out-of-range/out-of-window | `400` | `invalid_input` | prefixed field (`person_a.date`, `person_b.time`, …); first error only, `person_a` before `person_b` |
 | `X-Engine-Key` missing or wrong | `401` | `unauthorized` | `null` |
