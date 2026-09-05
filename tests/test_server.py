@@ -562,3 +562,86 @@ def test_body_not_object_is_invalid_input(server_client):
     assert payload["detail"] == "body must be a JSON object"
     assert set(payload) == {"ok", "error", "field", "detail"}
     assert calls == []
+
+
+def test_api_key_rejects_wrong_key_same_length(server_client, monkeypatch):
+    # Same-length mismatch specifically exercises the hmac.compare_digest
+    # code path rather than a length short-circuit.
+    client, calls = server_client
+    monkeypatch.setenv("ENGINE_API_KEY", "secret")
+
+    response = client.post("/chart", json=BODY, headers={"X-Engine-Key": "wrongo"})
+
+    assert response.status_code == 401
+    assert response.json()["error"] == "unauthorized"
+    assert calls == []
+
+
+def test_api_key_rejects_empty_header(server_client, monkeypatch):
+    client, calls = server_client
+    monkeypatch.setenv("ENGINE_API_KEY", "secret")
+
+    response = client.post("/chart", json=BODY, headers={"X-Engine-Key": ""})
+
+    assert response.status_code == 401
+    assert response.json()["error"] == "unauthorized"
+    assert calls == []
+
+
+def test_oversized_body_returns_413(server_client, monkeypatch):
+    client, calls = server_client
+    monkeypatch.setenv("LIFE_MAX_BODY_BYTES", "100")
+
+    response = client.post(
+        "/chart",
+        content=b"x" * 200,
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 413
+    payload = response.json()
+    assert payload == {
+        "ok": False,
+        "error": "body_too_large",
+        "message": "request body exceeds the configured size limit",
+    }
+    assert calls == []
+
+
+def test_body_under_cap_is_processed_normally(server_client, monkeypatch):
+    client, calls = server_client
+    monkeypatch.setenv("LIFE_MAX_BODY_BYTES", "100")
+
+    response = client.post("/chart", json=BODY)
+
+    assert response.status_code == 200
+    assert len(calls) == 1
+
+
+def test_oversized_synastry_body_returns_413(server_client, monkeypatch):
+    client, calls = server_client
+    monkeypatch.setenv("LIFE_MAX_BODY_BYTES", "100")
+
+    response = client.post(
+        "/synastry",
+        content=b"x" * 200,
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.status_code == 413
+    payload = response.json()
+    assert payload["ok"] is False
+    assert payload["error"] == "body_too_large"
+    assert calls == []
+
+
+def test_default_body_cap_allows_ordinary_chart_request(server_client, monkeypatch):
+    # No LIFE_MAX_BODY_BYTES override: the 64 KiB default must not reject a
+    # normal, unremarkable /chart payload.
+    monkeypatch.delenv("LIFE_MAX_BODY_BYTES", raising=False)
+    client, calls = server_client
+
+    response = client.post("/chart", json=BODY)
+
+    assert response.status_code == 200
+    assert len(calls) == 1

@@ -210,3 +210,56 @@ PY
 with the deploy evidence. As a final outside check,
 `curl https://engine-life.aicycle.cc/health` must return JSON containing
 `"schema_version": "1.2"`.
+
+## 7. Per-IP rate limiting (NOT applied yet — ops task on the host)
+
+`ENGINE_API_KEY` and the `LIFE_MAX_BODY_BYTES` request-size cap (server.py,
+default 64 KiB) are the only request-shedding controls the Python service
+implements. Per-IP request-rate limiting is deliberately **not** implemented
+in Python — it belongs at the reverse-proxy/edge layer in front of the
+container, where it can reject abusive traffic before it reaches the process.
+**This has not been configured on the reference Hetzner host as of this
+writing.**
+
+The reference deployment fronts the container with a Cloudflare Tunnel
+(`cloudflared`, see §3), not a locally-run Caddy/nginx. Cloudflare's own edge
+(WAF rate limiting rules on the zone) is the natural place to add this for
+that specific topology. If a local reverse proxy sits in front of the
+container instead (or is added later), concrete config to adapt:
+
+**Caddy** (`rate_limit` via the `caddy-ratelimit` plugin — not built into
+core Caddy, must be added at build time):
+
+```
+engine-life.aicycle.cc {
+	rate_limit {
+		zone engine_per_ip {
+			key {remote_host}
+			events 60
+			window 1m
+		}
+	}
+	reverse_proxy 127.0.0.1:8012
+}
+```
+
+**nginx** (`limit_req`, built in):
+
+```nginx
+limit_req_zone $binary_remote_addr zone=engine_per_ip:10m rate=60r/m;
+
+server {
+    listen 443 ssl;
+    server_name engine-life.aicycle.cc;
+
+    location / {
+        limit_req zone=engine_per_ip burst=20 nodelay;
+        proxy_pass http://127.0.0.1:8012;
+    }
+}
+```
+
+Either snippet caps at ~60 requests/minute/IP as a starting point — tune to
+the actual `life-web` call volume before relying on it. Whichever layer is
+chosen, verify it actually rejects with a `429` under load before treating
+this section as done; an unapplied snippet in a doc is not a mitigation.

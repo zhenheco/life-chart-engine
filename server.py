@@ -1,4 +1,5 @@
 import hmac
+import json
 import os
 from typing import Any
 
@@ -18,9 +19,93 @@ from scripts.validation import validate_input
 from sentry_config import capture_exception, init_sentry
 
 
+DEFAULT_MAX_BODY_BYTES = 64 * 1024  # 64 KiB
+MESSAGE_BODY_TOO_LARGE = "request body exceeds the configured size limit"
+
+
+def _max_body_bytes() -> int:
+    # Read per-request (not cached at import time) so LIFE_MAX_BODY_BYTES can
+    # be overridden via monkeypatch/env without re-importing the module -- the
+    # same pattern ENGINE_API_KEY already uses in ``_auth_failure``.
+    raw = os.environ.get("LIFE_MAX_BODY_BYTES")
+    if raw is None:
+        return DEFAULT_MAX_BODY_BYTES
+    try:
+        value = int(raw)
+    except ValueError:
+        return DEFAULT_MAX_BODY_BYTES
+    return value if value > 0 else DEFAULT_MAX_BODY_BYTES
+
+
+class _BodyTooLarge(Exception):
+    pass
+
+
+class BodySizeLimitMiddleware:
+    """Reject oversized request bodies with 413 before any JSON parsing.
+
+    Pure-ASGI (not Starlette's ``BaseHTTPMiddleware``, which buffers the
+    whole body) so an attacker cannot force full buffering of an unbounded
+    stream: a declared ``Content-Length`` over the cap is rejected without
+    reading the body at all, and a body lacking (or lying about) that header
+    is rejected as soon as the streamed bytes cross the cap.
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        max_bytes = _max_body_bytes()
+        headers = dict(scope.get("headers") or [])
+        content_length = headers.get(b"content-length")
+        if content_length is not None:
+            try:
+                declared = int(content_length)
+            except ValueError:
+                declared = None
+            if declared is not None and declared > max_bytes:
+                await _send_413(send, max_bytes)
+                return
+
+        seen = 0
+
+        async def limited_receive():
+            nonlocal seen
+            message = await receive()
+            if message["type"] == "http.request":
+                seen += len(message.get("body") or b"")
+                if seen > max_bytes:
+                    raise _BodyTooLarge()
+            return message
+
+        try:
+            await self.app(scope, limited_receive, send)
+        except _BodyTooLarge:
+            await _send_413(send, max_bytes)
+
+
+async def _send_413(send, max_bytes: int) -> None:
+    body = json.dumps(
+        {"ok": False, "error": "body_too_large", "message": MESSAGE_BODY_TOO_LARGE}
+    ).encode("utf-8")
+    await send(
+        {
+            "type": "http.response.start",
+            "status": 413,
+            "headers": [(b"content-type", b"application/json")],
+        }
+    )
+    await send({"type": "http.response.body", "body": body})
+
+
 init_sentry()
 
 app = FastAPI(title="life-chart-engine")
+app.add_middleware(BodySizeLimitMiddleware)
 
 MESSAGE_NOT_CONFIGURED = "ENGINE_API_KEY not configured"
 MESSAGE_CHART_INTERNAL = "chart computation failed"
