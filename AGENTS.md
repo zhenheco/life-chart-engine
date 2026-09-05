@@ -429,6 +429,15 @@ computed normally.
   `422 computation_unsupported`, `503 not_configured`.
 - **Retryable**: `500 internal_error`, plus upstream proxy 5xx and timeouts.
 
+**Request body size cap (pre-auth, pre-parse):** `POST /chart` and
+`POST /synastry` reject a request body over `LIFE_MAX_BODY_BYTES` (default
+`65536`, i.e. 64 KiB) with `413` before the six-token decision order above
+even starts — it runs ahead of `X-Engine-Key` verification and JSON parsing,
+at the ASGI transport layer. Body: `{"ok": false, "error": "body_too_large",
+"message": "request body exceeds the configured size limit"}`. Not one of
+the six tokens (it is not part of the `/chart` vs `/synastry` per-body
+contract above) and not retryable with the same body.
+
 ---
 
 ## 6. MCP surface (`compute_chart`)
