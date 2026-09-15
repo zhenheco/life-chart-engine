@@ -403,10 +403,10 @@
       "頭"
     ],
     "channels": [
-      "3-60",
       "10-34",
       "13-33",
       "26-44",
+      "27-50",
       "30-41"
     ],
     "gates": [
@@ -436,7 +436,7 @@
         "planet": "☊",
         "personality": {
           "gate": 31,
-          "line": 2
+          "line": 3
         },
         "design": {
           "gate": 33,
@@ -447,7 +447,7 @@
         "planet": "☋",
         "personality": {
           "gate": 41,
-          "line": 2
+          "line": 3
         },
         "design": {
           "gate": 19,
@@ -469,7 +469,7 @@
         "planet": "☿",
         "personality": {
           "gate": 10,
-          "line": 3
+          "line": 4
         },
         "design": {
           "gate": 50,
@@ -480,11 +480,11 @@
         "planet": "♀",
         "personality": {
           "gate": 34,
-          "line": 1
+          "line": 2
         },
         "design": {
           "gate": 29,
-          "line": 4
+          "line": 5
         }
       },
       {
@@ -495,7 +495,7 @@
         },
         "design": {
           "gate": 26,
-          "line": 5
+          "line": 6
         }
       },
       {
@@ -505,8 +505,8 @@
           "line": 5
         },
         "design": {
-          "gate": 3,
-          "line": 6
+          "gate": 27,
+          "line": 1
         }
       },
       {
@@ -535,7 +535,7 @@
         "planet": "♆",
         "personality": {
           "gate": 41,
-          "line": 1
+          "line": 2
         },
         "design": {
           "gate": 60,
@@ -545,8 +545,8 @@
       {
         "planet": "♇",
         "personality": {
-          "gate": 9,
-          "line": 6
+          "gate": 5,
+          "line": 1
         },
         "design": {
           "gate": 9,

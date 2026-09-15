@@ -19,22 +19,22 @@
             {
               "design": {
                 "gate": 36,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 12,
-                "line": 1
+                "line": 2
               },
               "planet": "☉"
             },
             {
               "design": {
                 "gate": 6,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 11,
-                "line": 1
+                "line": 2
               },
               "planet": "⊕"
             },
@@ -63,7 +63,7 @@
             {
               "design": {
                 "gate": 43,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 37,
@@ -78,7 +78,7 @@
               },
               "personality": {
                 "gate": 20,
-                "line": 5
+                "line": 6
               },
               "planet": "☿"
             },
@@ -89,7 +89,7 @@
               },
               "personality": {
                 "gate": 2,
-                "line": 5
+                "line": 6
               },
               "planet": "♀"
             },
@@ -100,7 +100,7 @@
               },
               "personality": {
                 "gate": 21,
-                "line": 1
+                "line": 2
               },
               "planet": "♂"
             },
@@ -140,7 +140,7 @@
             {
               "design": {
                 "gate": 38,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 38,
@@ -155,7 +155,7 @@
               },
               "personality": {
                 "gate": 1,
-                "line": 2
+                "line": 3
               },
               "planet": "♇"
             }
@@ -170,7 +170,7 @@
             "邏輯",
             "頭"
           ],
-          "profile": "1/3",
+          "profile": "2/4",
           "type": "投射者"
         },
         "input": {
@@ -1281,7 +1281,7 @@
               },
               "personality": {
                 "gate": 39,
-                "line": 3
+                "line": 4
               },
               "planet": "☊"
             },
@@ -1292,7 +1292,7 @@
               },
               "personality": {
                 "gate": 38,
-                "line": 3
+                "line": 4
               },
               "planet": "☋"
             },
@@ -1314,7 +1314,7 @@
               },
               "personality": {
                 "gate": 55,
-                "line": 4
+                "line": 5
               },
               "planet": "☿"
             },
@@ -1336,14 +1336,14 @@
               },
               "personality": {
                 "gate": 5,
-                "line": 5
+                "line": 6
               },
               "planet": "♂"
             },
             {
               "design": {
                 "gate": 20,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 20,
@@ -1358,25 +1358,25 @@
               },
               "personality": {
                 "gate": 8,
-                "line": 2
+                "line": 3
               },
               "planet": "♄"
             },
             {
               "design": {
                 "gate": 13,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 49,
-                "line": 4
+                "line": 5
               },
               "planet": "♅"
             },
             {
               "design": {
                 "gate": 41,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 19,
@@ -1387,11 +1387,11 @@
             {
               "design": {
                 "gate": 5,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 5,
-                "line": 4
+                "line": 5
               },
               "planet": "♇"
             }
@@ -2412,7 +2412,6 @@
           "channels": [
             "5-15",
             "23-43",
-            "26-44",
             "35-36",
             "37-40",
             "39-55",
@@ -2424,7 +2423,6 @@
             "情緒",
             "意志",
             "根",
-            "脾",
             "薦骨",
             "邏輯",
             "頭"
@@ -2439,7 +2437,7 @@
               },
               "personality": {
                 "gate": 37,
-                "line": 5
+                "line": 6
               },
               "planet": "☉"
             },
@@ -2450,7 +2448,7 @@
               },
               "personality": {
                 "gate": 40,
-                "line": 5
+                "line": 6
               },
               "planet": "⊕"
             },
@@ -2460,8 +2458,8 @@
                 "line": 2
               },
               "personality": {
-                "gate": 24,
-                "line": 6
+                "gate": 2,
+                "line": 1
               },
               "planet": "☊"
             },
@@ -2471,8 +2469,8 @@
                 "line": 2
               },
               "personality": {
-                "gate": 44,
-                "line": 6
+                "gate": 1,
+                "line": 1
               },
               "planet": "☋"
             },
@@ -2490,7 +2488,7 @@
             {
               "design": {
                 "gate": 10,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 37,
@@ -2505,14 +2503,14 @@
               },
               "personality": {
                 "gate": 42,
-                "line": 4
+                "line": 5
               },
               "planet": "♀"
             },
             {
               "design": {
                 "gate": 36,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 2,
@@ -2527,7 +2525,7 @@
               },
               "personality": {
                 "gate": 64,
-                "line": 3
+                "line": 4
               },
               "planet": "♃"
             },
@@ -2545,11 +2543,11 @@
             {
               "design": {
                 "gate": 30,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 55,
-                "line": 3
+                "line": 4
               },
               "planet": "♅"
             },
@@ -2577,8 +2575,10 @@
             }
           ],
           "incarnation_cross": "左角度交叉（37/40 | 5/35）",
-          "open_centers": [],
-          "profile": "5/2",
+          "open_centers": [
+            "脾"
+          ],
+          "profile": "6/2",
           "type": "顯示生產者"
         },
         "input": {
@@ -3669,19 +3669,20 @@
       },
       "build_json": {
         "human_design": {
-          "authority": "意志力(心)權威",
+          "authority": "薦骨型權威",
           "channels": [
             "1-8",
             "11-56",
-            "25-51"
+            "42-53"
           ],
           "defined_centers": [
             "G",
             "喉",
-            "意志",
+            "根",
+            "薦骨",
             "邏輯"
           ],
-          "definition": "一分人(單一定義)",
+          "definition": "二分人",
           "design_date": "2024-11-08",
           "gates": [
             {
@@ -3709,7 +3710,7 @@
             {
               "design": {
                 "gate": 17,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 36,
@@ -3720,7 +3721,7 @@
             {
               "design": {
                 "gate": 18,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 6,
@@ -3731,11 +3732,11 @@
             {
               "design": {
                 "gate": 19,
-                "line": 4
+                "line": 5
               },
               "personality": {
-                "gate": 51,
-                "line": 6
+                "gate": 42,
+                "line": 1
               },
               "planet": "☾"
             },
@@ -3746,18 +3747,18 @@
               },
               "personality": {
                 "gate": 19,
-                "line": 3
+                "line": 4
               },
               "planet": "☿"
             },
             {
               "design": {
                 "gate": 11,
-                "line": 4
+                "line": 5
               },
               "personality": {
                 "gate": 25,
-                "line": 1
+                "line": 2
               },
               "planet": "♀"
             },
@@ -3775,7 +3776,7 @@
             {
               "design": {
                 "gate": 45,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 16,
@@ -3797,7 +3798,7 @@
             {
               "design": {
                 "gate": 8,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 23,
@@ -3808,7 +3809,7 @@
             {
               "design": {
                 "gate": 36,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 36,
@@ -3822,8 +3823,8 @@
                 "line": 4
               },
               "personality": {
-                "gate": 60,
-                "line": 6
+                "gate": 41,
+                "line": 1
               },
               "planet": "♇"
             }
@@ -3831,13 +3832,12 @@
           "incarnation_cross": "右角度交叉（13/7 | 1/2）",
           "open_centers": [
             "情緒",
-            "根",
+            "意志",
             "脾",
-            "薦骨",
             "頭"
           ],
           "profile": "2/4",
-          "type": "顯示者"
+          "type": "生產者"
         },
         "input": {
           "date": "2025-02-03",
@@ -4888,17 +4888,20 @@
       },
       "build_json": {
         "human_design": {
-          "authority": "自我投射型權威",
+          "authority": "情緒型權威",
           "channels": [
             "1-8",
-            "11-56"
+            "11-56",
+            "30-41"
           ],
           "defined_centers": [
             "G",
             "喉",
+            "情緒",
+            "根",
             "邏輯"
           ],
-          "definition": "一分人(單一定義)",
+          "definition": "二分人",
           "design_date": "2024-11-09",
           "gates": [
             {
@@ -4926,7 +4929,7 @@
             {
               "design": {
                 "gate": 17,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 36,
@@ -4937,7 +4940,7 @@
             {
               "design": {
                 "gate": 18,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 6,
@@ -4948,11 +4951,11 @@
             {
               "design": {
                 "gate": 30,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 27,
-                "line": 3
+                "line": 4
               },
               "planet": "☾"
             },
@@ -5014,7 +5017,7 @@
             {
               "design": {
                 "gate": 8,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 23,
@@ -5025,7 +5028,7 @@
             {
               "design": {
                 "gate": 36,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 36,
@@ -5039,17 +5042,15 @@
                 "line": 4
               },
               "personality": {
-                "gate": 60,
-                "line": 6
+                "gate": 41,
+                "line": 1
               },
               "planet": "♇"
             }
           ],
           "incarnation_cross": "右角度交叉（13/7 | 1/2）",
           "open_centers": [
-            "情緒",
             "意志",
-            "根",
             "脾",
             "薦骨",
             "頭"
@@ -6108,19 +6109,21 @@
         "human_design": {
           "authority": "自我投射型權威",
           "channels": [
-            "1-8"
+            "7-31",
+            "23-43"
           ],
           "defined_centers": [
             "G",
-            "喉"
+            "喉",
+            "邏輯"
           ],
           "definition": "一分人(單一定義)",
           "design_date": "2024-11-10",
           "gates": [
             {
               "design": {
-                "gate": 1,
-                "line": 6
+                "gate": 43,
+                "line": 1
               },
               "personality": {
                 "gate": 13,
@@ -6130,8 +6133,8 @@
             },
             {
               "design": {
-                "gate": 2,
-                "line": 6
+                "gate": 23,
+                "line": 1
               },
               "personality": {
                 "gate": 7,
@@ -6142,7 +6145,7 @@
             {
               "design": {
                 "gate": 17,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 36,
@@ -6153,7 +6156,7 @@
             {
               "design": {
                 "gate": 18,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 6,
@@ -6164,18 +6167,18 @@
             {
               "design": {
                 "gate": 37,
-                "line": 4
+                "line": 5
               },
               "personality": {
-                "gate": 2,
-                "line": 6
+                "gate": 23,
+                "line": 1
               },
               "planet": "☾"
             },
             {
               "design": {
                 "gate": 9,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 13,
@@ -6196,8 +6199,8 @@
             },
             {
               "design": {
-                "gate": 56,
-                "line": 6
+                "gate": 31,
+                "line": 1
               },
               "personality": {
                 "gate": 53,
@@ -6230,7 +6233,7 @@
             {
               "design": {
                 "gate": 8,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 23,
@@ -6241,7 +6244,7 @@
             {
               "design": {
                 "gate": 36,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 36,
@@ -6255,23 +6258,22 @@
                 "line": 4
               },
               "personality": {
-                "gate": 60,
-                "line": 6
+                "gate": 41,
+                "line": 1
               },
               "planet": "♇"
             }
           ],
-          "incarnation_cross": "右角度交叉（13/7 | 1/2）",
+          "incarnation_cross": "並列交叉（13/7 | 43/23）",
           "open_centers": [
             "情緒",
             "意志",
             "根",
             "脾",
             "薦骨",
-            "邏輯",
             "頭"
           ],
-          "profile": "4/6",
+          "profile": "4/1",
           "type": "投射者"
         },
         "input": {
@@ -7406,22 +7408,22 @@
             {
               "design": {
                 "gate": 36,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 22,
-                "line": 3
+                "line": 4
               },
               "planet": "☊"
             },
             {
               "design": {
                 "gate": 6,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 47,
-                "line": 3
+                "line": 4
               },
               "planet": "☋"
             },
@@ -7443,29 +7445,29 @@
               },
               "personality": {
                 "gate": 7,
-                "line": 1
+                "line": 2
               },
               "planet": "☿"
             },
             {
               "design": {
                 "gate": 36,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 16,
-                "line": 3
+                "line": 4
               },
               "planet": "♀"
             },
             {
               "design": {
                 "gate": 56,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 64,
-                "line": 3
+                "line": 4
               },
               "planet": "♂"
             },
@@ -7483,7 +7485,7 @@
             {
               "design": {
                 "gate": 36,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 25,
@@ -7497,19 +7499,19 @@
                 "line": 1
               },
               "personality": {
-                "gate": 8,
-                "line": 6
+                "gate": 20,
+                "line": 1
               },
               "planet": "♅"
             },
             {
               "design": {
                 "gate": 25,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 25,
-                "line": 4
+                "line": 5
               },
               "planet": "♆"
             },
@@ -8591,29 +8593,29 @@
             {
               "design": {
                 "gate": 36,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 22,
-                "line": 3
+                "line": 4
               },
               "planet": "☊"
             },
             {
               "design": {
                 "gate": 6,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 47,
-                "line": 3
+                "line": 4
               },
               "planet": "☋"
             },
             {
               "design": {
                 "gate": 32,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 49,
@@ -8635,11 +8637,11 @@
             {
               "design": {
                 "gate": 36,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 16,
-                "line": 4
+                "line": 5
               },
               "planet": "♀"
             },
@@ -8657,11 +8659,11 @@
             {
               "design": {
                 "gate": 45,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 52,
-                "line": 4
+                "line": 5
               },
               "planet": "♃"
             },
@@ -8682,19 +8684,19 @@
                 "line": 1
               },
               "personality": {
-                "gate": 8,
-                "line": 6
+                "gate": 20,
+                "line": 1
               },
               "planet": "♅"
             },
             {
               "design": {
                 "gate": 25,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 25,
-                "line": 4
+                "line": 5
               },
               "planet": "♆"
             },
@@ -9802,11 +9804,11 @@
             {
               "design": {
                 "gate": 28,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 37,
-                "line": 1
+                "line": 2
               },
               "planet": "☾"
             },
@@ -9824,7 +9826,7 @@
             {
               "design": {
                 "gate": 36,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 16,
@@ -9835,7 +9837,7 @@
             {
               "design": {
                 "gate": 56,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 64,
@@ -9846,11 +9848,11 @@
             {
               "design": {
                 "gate": 45,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 52,
-                "line": 4
+                "line": 5
               },
               "planet": "♃"
             },
@@ -9871,8 +9873,8 @@
                 "line": 1
               },
               "personality": {
-                "gate": 8,
-                "line": 6
+                "gate": 20,
+                "line": 1
               },
               "planet": "♅"
             },
@@ -9883,7 +9885,7 @@
               },
               "personality": {
                 "gate": 25,
-                "line": 4
+                "line": 5
               },
               "planet": "♆"
             },
@@ -10922,13 +10924,13 @@
       "annotations": {
         "human_design_boundary": {
           "chart": "design",
-          "gate": 4,
-          "gate_boundary_deg": 0.9375005115,
-          "line": 2,
-          "line_boundary_deg": 5.115e-07,
-          "lon": 140.1875005115,
-          "nearest_boundary_deg": 5.115e-07,
-          "planet": "☉"
+          "gate": 50,
+          "gate_boundary_deg": 2.8031487598,
+          "line": 4,
+          "line_boundary_deg": 0.0093512402,
+          "lon": 209.1968512402,
+          "nearest_boundary_deg": 0.0093512402,
+          "planet": "♄"
         }
       },
       "build_json": {
@@ -10954,7 +10956,7 @@
               },
               "personality": {
                 "gate": 1,
-                "line": 5
+                "line": 6
               },
               "planet": "☉"
             },
@@ -10965,7 +10967,7 @@
               },
               "personality": {
                 "gate": 2,
-                "line": 5
+                "line": 6
               },
               "planet": "⊕"
             },
@@ -10976,7 +10978,7 @@
               },
               "personality": {
                 "gate": 35,
-                "line": 5
+                "line": 6
               },
               "planet": "☊"
             },
@@ -10987,7 +10989,7 @@
               },
               "personality": {
                 "gate": 5,
-                "line": 5
+                "line": 6
               },
               "planet": "☋"
             },
@@ -11016,7 +11018,7 @@
             {
               "design": {
                 "gate": 40,
-                "line": 2
+                "line": 3
               },
               "personality": {
                 "gate": 46,
@@ -11031,25 +11033,25 @@
               },
               "personality": {
                 "gate": 6,
-                "line": 3
+                "line": 4
               },
               "planet": "♂"
             },
             {
               "design": {
                 "gate": 34,
-                "line": 1
+                "line": 2
               },
               "personality": {
                 "gate": 5,
-                "line": 3
+                "line": 4
               },
               "planet": "♃"
             },
             {
               "design": {
                 "gate": 50,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 44,
@@ -11060,7 +11062,7 @@
             {
               "design": {
                 "gate": 34,
-                "line": 5
+                "line": 6
               },
               "personality": {
                 "gate": 9,
@@ -11071,11 +11073,11 @@
             {
               "design": {
                 "gate": 11,
-                "line": 4
+                "line": 5
               },
               "personality": {
                 "gate": 11,
-                "line": 5
+                "line": 6
               },
               "planet": "♆"
             },
@@ -11086,7 +11088,7 @@
               },
               "personality": {
                 "gate": 50,
-                "line": 4
+                "line": 5
               },
               "planet": "♇"
             }
@@ -11099,7 +11101,7 @@
             "脾",
             "頭"
           ],
-          "profile": "5/2",
+          "profile": "6/2",
           "type": "生產者"
         },
         "input": {
@@ -12095,14 +12097,14 @@
     {
       "annotations": {
         "human_design_boundary": {
-          "chart": "personality",
-          "gate": 32,
-          "gate_boundary_deg": 1.7621e-06,
+          "chart": "design",
+          "gate": 38,
+          "gate_boundary_deg": 0.0010399149,
           "line": 6,
-          "line_boundary_deg": 1.7621e-06,
-          "lon": 206.7499982379,
-          "nearest_boundary_deg": 1.7621e-06,
-          "planet": "☾"
+          "line_boundary_deg": 0.0010399149,
+          "lon": 285.1239600851,
+          "nearest_boundary_deg": 0.0010399149,
+          "planet": "☊"
         }
       },
       "build_json": {
@@ -12147,8 +12149,8 @@
                 "line": 6
               },
               "personality": {
-                "gate": 58,
-                "line": 6
+                "gate": 38,
+                "line": 1
               },
               "planet": "☊"
             },
@@ -12158,8 +12160,8 @@
                 "line": 6
               },
               "personality": {
-                "gate": 52,
-                "line": 6
+                "gate": 39,
+                "line": 1
               },
               "planet": "☋"
             },
@@ -12169,8 +12171,8 @@
                 "line": 6
               },
               "personality": {
-                "gate": 32,
-                "line": 6
+                "gate": 50,
+                "line": 1
               },
               "planet": "☾"
             },
@@ -12181,25 +12183,25 @@
               },
               "personality": {
                 "gate": 5,
-                "line": 4
+                "line": 5
               },
               "planet": "☿"
             },
             {
               "design": {
                 "gate": 29,
-                "line": 3
+                "line": 4
               },
               "personality": {
                 "gate": 14,
-                "line": 3
+                "line": 4
               },
               "planet": "♀"
             },
             {
               "design": {
-                "gate": 57,
-                "line": 6
+                "gate": 32,
+                "line": 1
               },
               "personality": {
                 "gate": 26,
@@ -12221,7 +12223,7 @@
             {
               "design": {
                 "gate": 60,
-                "line": 4
+                "line": 5
               },
               "personality": {
                 "gate": 41,
@@ -12236,7 +12238,7 @@
               },
               "personality": {
                 "gate": 38,
-                "line": 4
+                "line": 5
               },
               "planet": "♅"
             },
@@ -12247,7 +12249,7 @@
               },
               "personality": {
                 "gate": 54,
-                "line": 1
+                "line": 2
               },
               "planet": "♆"
             },
@@ -12258,7 +12260,7 @@
               },
               "personality": {
                 "gate": 43,
-                "line": 3
+                "line": 4
               },
               "planet": "♇"
             }
