@@ -874,10 +874,14 @@ def test_time_unknown_channel_confidence_exhaustive_split_pinned():
     conns = synastry.build_synastry(inp_a, b_unknown)["human_design"][
         "channel_connections"
     ]
-    # B's noon fast-planet gates are {2,3,10,13,43,54,55,60}; a connection is
+    # B's noon fast-planet gates are {2,3,10,13,41,43,54,55}; a connection is
     # 0.6 iff one of its endpoints is in that set, else 0.85.
+    # (Gate set updated 2026-09-15 for the corrected Human Design gate wheel
+    # OFFSET, -1.375 -> -1.75 — see tests/fixtures/GOLDEN_PROVENANCE.md. Gate
+    # 60 shifted to gate 41 in B's noon fast gates, which drops the 3-60
+    # dominance connection entirely: 41 is not a fast-side endpoint of any
+    # other CHANNELS pair A0 completes, and no new connection appears.)
     expected = {
-        "hd-chan-3-60-dominance": 0.6,
         "hd-chan-10-20-electromagnetic": 0.6,
         "hd-chan-13-33-compromise": 0.6,
         "hd-chan-25-51-dominance": 0.85,

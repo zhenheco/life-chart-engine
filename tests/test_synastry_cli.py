@@ -29,8 +29,13 @@ PROVENANCE = ROOT / "tests" / "fixtures" / "GOLDEN_PROVENANCE.md"
 # Do not use `git diff` as an oracle: it is blind to staged-only changes and
 # to content after commit. Hashes match the HEAD content as of this pin.
 PROTECTED_SHA256 = {
+    # Updated 2026-09-15: deliberate regeneration for the Human Design gate
+    # wheel OFFSET fix (-1.375 -> -1.75); see tests/fixtures/GOLDEN_PROVENANCE.md
+    # "2026-09-15" entry and tests/fixtures/update_hd_baseline.py. Not a
+    # loosened guard — this pin still fails if anything besides that
+    # deliberate, documented regeneration touches the file.
     "tests/fixtures/ephemeris_baseline.json": (
-        "ca1ca71e50985c1c246fab58b1c6246f7d58e94157f2876262f1b523f689dd8f"
+        "10c4447198e2ace4722c585121828dbc6da128611d6eac0d1fa01204c326b47e"
     ),
     "docs/specs/2026-07-13-engine-polish-funnel-design.md": (
         "7e2ec5669411c9af1f32faa2017d8997586ec1e444e6f4061227f446e31e8e2e"

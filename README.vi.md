@@ -144,7 +144,7 @@ Mẫu thực được cắt ngắn (các khía cạnh được capped ở top-10
   主要相位: 北交點-南交點對分(0.0°)；北交點-上升對分(0.4°)；南交點-上升合相(0.4°)；木星-冥王星三分(0.4°)；月亮-天王星六分(0.8°)…
 
 【人類圖 Human Design】
-類型 投射者 ｜ 權威 自我投射型權威 ｜ 角色 1/3 ｜ 定義 一分人(單一定義)
+類型 投射者 ｜ 權威 自我投射型權威 ｜ 角色 2/4 ｜ 定義 一分人(單一定義)
 輪迴交叉 右角度交叉（12/11 | 36/6）
 定義中心 G,喉 ｜ 開放中心 情緒,意志,根,脾,薦骨,邏輯,頭
 設計日期 1990-03-16
@@ -199,7 +199,7 @@ Mẫu thực được cắt ngắn (mảng bị cắt ngắn thành 1–2 mục;
   "human_design": {
     "type": "投射者",
     "authority": "自我投射型權威",
-    "profile": "1/3",
+    "profile": "2/4",
     "definition": "一分人(單一定義)",
     "incarnation_cross": "右角度交叉（12/11 | 36/6）",
     "design_date": "1990-03-16",
@@ -207,7 +207,7 @@ Mẫu thực được cắt ngắn (mảng bị cắt ngắn thành 1–2 mục;
     "open_centers": ["情緒", "意志", "根", "脾", "薦骨", "邏輯", "頭"],
     "channels": ["13-33"],
     "gates": [
-      { "planet": "☉", "personality": { "gate": 12, "line": 1 }, "design": { "gate": 36, "line": 3 } }
+      { "planet": "☉", "personality": { "gate": 12, "line": 2 }, "design": { "gate": 36, "line": 4 } }
     ]
   },
   "ziwei": {
