@@ -59,3 +59,12 @@ def test_workflow_runs_on_main_push_without_cancelling_main_runs() -> None:
     # push 事件必須 per-SHA group：同 group 的 pending run 會被新 run 取代（即使
     # cancel-in-progress false），共用 refs/heads/main 會讓中間 commit 的 run 被 cancel
     assert "group: qa-gate-${{ github.event.pull_request.number || github.sha }}" in workflow
+
+
+def test_no_api_diff_review_workflow_or_api_keys() -> None:
+    assert not (GITHUB_DIR / "workflows" / "diff-review.yml").exists()
+    assert not (GITHUB_DIR / "scripts" / "diff_review.py").exists()
+    for workflow in (GITHUB_DIR / "workflows").glob("*.yml"):
+        text = workflow.read_text(encoding="utf-8")
+        assert "DEEPSEEK_API_KEY" not in text, workflow.name
+        assert "GEMINI_API_KEY" not in text, workflow.name
